@@ -154,9 +154,6 @@ export default function AdminPermission(){
                   <thead className='text-gray-600 sticky top-0 bg-white'>
                     <tr>
                       <th className='p-2 border-b font-medium text-left'>Cadet Name</th>
-                      <th className='p-2 border-b font-medium text-left'>Student Number</th>
-                      <th className='p-2 border-b font-medium text-left'>Year & Course</th>
-                      <th className='p-2 border-b font-medium text-left'>Registration Date</th>
                       <th className='p-2 border-b font-medium text-center'>Actions</th>
                     </tr>
                   </thead>
@@ -168,16 +165,13 @@ export default function AdminPermission(){
                     ) : filteredAndSortedUsers().length > 0 ? (
                       filteredAndSortedUsers().map(user => (
                         <tr key={user.id} className='hover:bg-gray-50'>
-                          <td className='p-2 border-b'>{user.last_name}, {user.first_name} {user.middle_name}</td>
-                          <td className='p-2 border-b'>{user.student_number}</td>
-                          <td className='p-2 border-b'>{user.year_course_section}</td>
-                          <td className='p-2 border-b'>{new Date(user.created_at).toLocaleDateString()}</td>
+                          <td className='p-2 border-b'>{user.last_name}, {user.first_name}</td>
                           <td className='p-2 border-b text-center'>
                             <div className='flex justify-center gap-4'>
                               <button 
                                 onClick={() => handleReject(user.id)}
                                 disabled={processingUser === user.id}
-                                className='text-red-600 hover:underline disabled:opacity-50'
+                                className='text-primary hover:underline disabled:opacity-50'
                               >
                                 {processingUser === user.id ? 'Processing...' : 'Reject'}
                               </button>
