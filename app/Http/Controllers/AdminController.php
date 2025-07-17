@@ -14,7 +14,7 @@ class AdminController extends Controller
     public function getPendingUsers()
     {
         $pendingUsers = User::where('status', 'pending')
-                           ->where('role', 'user')  // Only regular users, not admins
+                           ->whereIn('role', ['user', 'faculty'])  // Include both users and faculty
                            ->orderBy('created_at', 'desc')
                            ->get();
         
@@ -32,9 +32,9 @@ class AdminController extends Controller
 
         $user = User::findOrFail($request->user_id);
         
-        // Only allow approving pending regular users
-        if ($user->role !== 'user') {
-            return response()->json(['error' => 'Only regular users can be approved'], 400);
+        // Only allow approving pending regular users or faculty
+        if (!in_array($user->role, ['user', 'faculty'])) {
+            return response()->json(['error' => 'Only regular users and faculty can be approved'], 400);
         }
         
         if ($user->status !== 'pending') {
@@ -65,9 +65,9 @@ class AdminController extends Controller
 
         $user = User::findOrFail($request->user_id);
         
-        // Only allow rejecting pending regular users
-        if ($user->role !== 'user') {
-            return response()->json(['error' => 'Only regular users can be rejected'], 400);
+        // Only allow rejecting pending regular users or faculty
+        if (!in_array($user->role, ['user', 'faculty'])) {
+            return response()->json(['error' => 'Only regular users and faculty can be rejected'], 400);
         }
         
         if ($user->status !== 'pending') {

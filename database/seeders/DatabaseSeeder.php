@@ -47,6 +47,22 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Create faculty user
+        User::firstOrCreate(
+            [ 'email' => 'faculty@example.com' ],
+            [
+                'student_number' => '00000001',
+                'first_name' => 'Faculty',
+                'middle_name' => '',
+                'last_name' => 'Member',
+                'year_course_section' => 'N/A',
+                'password' => Hash::make('faculty@123'),
+                'phone_number' => '0000000001',
+                'role' => 'faculty',
+                'status' => 'approved',
+            ]
+        );
+
         // Create 10 random users using the factory (reduced to avoid conflicts)
         User::factory()->count(10)->create([
             'status' => 'approved',

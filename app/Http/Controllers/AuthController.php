@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    protected $redirectTo = '/user/userHome';
+
     public function register(Request $request)
     {
         $request->validate([
@@ -46,6 +48,8 @@ class AuthController extends Controller
         return redirect('/')->with('success', 'Registration submitted! Please wait for admin approval.');
     }
 
+
+
     public function login(Request $request)
     {
         $request->validate([
@@ -62,6 +66,12 @@ class AuthController extends Controller
             if ($user->role === 'admin') {
                 $request->session()->regenerate();
                 return redirect()->intended('/adminHome');
+            }
+            
+            // Faculty users can always log in regardless of status
+            if ($user->role === 'faculty') {
+                $request->session()->regenerate();
+                return redirect()->intended('/faculty/facultyHome');
             }
             
             // For regular users, check approval status
@@ -86,6 +96,17 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
+    }
+
+    public function authenticated(Request $request, $user)
+    {
+        if ($user->role === 'admin') {
+            return redirect('/admin/adminHome');
+        } elseif ($user->role === 'faculty') {
+            return redirect('/faculty/facultyHome');
+        } else {
+            return redirect('/user/userHome');
+        }
     }
 
     public function logout(Request $request)

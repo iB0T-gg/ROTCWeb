@@ -5,12 +5,14 @@ import { createInertiaApp } from '@inertiajs/react'
 import { createRoot } from 'react-dom/client'
 
 
+const pages = import.meta.glob('./pages/**/*.{jsx,tsx}', { eager: true });
+
 createInertiaApp({
   resolve: name => {
-    const pages = import.meta.glob('./pages/**/*.jsx', { eager: true })
-    return pages[`./pages/${name}.jsx`]
+    // Try .tsx first, then .jsx
+    return pages[`./pages/${name}.tsx`] || pages[`./pages/${name}.jsx`];
   },
   setup({ el, App, props }) {
-    createRoot(el).render(<App {...props} />)
+    createRoot(el).render(<App {...props} />);
   },
-})
+});

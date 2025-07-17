@@ -77,7 +77,7 @@ export default function Login({ status }) {
                     <div className='mt-4'>
                     </div>
                 </div>
-                <div className='w-[26rem] mt-6'>
+                <div className='w-[26rem] mt-6 space-y-3'>
                     <Link href='/register' className='block w-full'>
                         <button className='w-full bg-primary text-white p-2 rounded-full hover:bg-opacity-80 transition duration-300'>
                             Create an Account

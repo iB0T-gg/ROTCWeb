@@ -25,13 +25,21 @@ export default function Header({ auth }) {
     return (
         <header className='bg-primary text-white p-2'>
             <div className='px-4 mx-auto flex justify-between items-center'>
-                <Link href="/user/userHome">
+                <Link href={
+                    auth && auth.user ?
+                        auth.user.role === 'admin' ? '/admin/adminHome'
+                        : auth.user.role === 'faculty' ? '/faculty/facultyHome'
+                        : '/user/userHome'
+                    : '/user/userHome'
+                }>
                     <div className='flex items-center gap-3'>
                         <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-11 h-10' />
                         <h1 className='text-xl font-regular'>Bulacan State University ROTC Portal</h1>
                     </div>
                 </Link>
+                 
                 <div className='flex items-center gap-4 relative' ref={dropdownRef}>
+                <Link href="/user/userProfile">
                     <h1 className='hover:underline text-xl'>
                         {auth && auth.user ? 
                             auth.user.role === 'admin' ? 
@@ -39,6 +47,7 @@ export default function Header({ auth }) {
                                 `${auth.user.last_name} ${auth.user.first_name}` 
                             : 'Guest'}
                     </h1>
+                </Link>
                     <button
                         className="focus:outline-none"
                         onClick={() => setDropdownOpen((open) => !open)}

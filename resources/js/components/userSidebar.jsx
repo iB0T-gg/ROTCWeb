@@ -34,10 +34,12 @@ export default function UserSidebar() {
         {
         icons: <TbMessageReportFilled />,
         label: 'Report an Issue',
-        link: '/#',
+        link: '/user/userReportAnIssue',
         },
-    
     ]
+
+    // Get current path for active highlighting
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
     return (
         <div className={`sticky top-0 h-screen ${isOpen ? 'w-56' : 'w-16'} duration-300 bg-sideBarColor text-sideBarTextColor text-s pt-4 shadow-lg overflow-y-auto`}>
@@ -47,11 +49,13 @@ export default function UserSidebar() {
             
             <ul className='flex flex-col space-y-2 w-full px-4'>
                 {menuItems.map((item, index) => {
+                const isActive = currentPath === item.link;
                 return (
                     <li key={index}>
                     <Link 
                         href={item.link} 
-                        className={`flex items-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1' } rounded-md gap-2 w-full transition-colors duration-200 hover:bg-primary hover:bg-opacity-20`}
+                        className={`flex items-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1' } rounded-md gap-2 w-full transition-colors duration-200 
+                        ${isActive ? 'bg-primary bg-opacity-20 font-semibold' : 'hover:bg-primary hover:bg-opacity-20'}`}
                     >
                         {item.icons}
                         <span className={`${!isOpen && 'hidden'} duration-200`}>{item.label}</span>
