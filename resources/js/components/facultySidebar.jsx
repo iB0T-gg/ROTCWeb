@@ -42,7 +42,7 @@ const FacultySidebar = () => {
   ];
 
   return (
-    <div className={`left-0 top-0 h-screen ${isOpen ? 'w-56' : 'w-16'} duration-300 bg-sideBarColor text-sideBarTextColor text-s pt-4 shadow-lg`}>
+    <div className={`sticky top-0 h-screen ${isOpen ? 'w-56' : 'w-16'} duration-300 bg-sideBarColor text-sideBarTextColor text-s pt-4 shadow-lg overflow-y-auto`}>
       <div id='menuBar' className={`flex  ${isOpen ? 'justify-end pr-4' : 'justify-center pr-0'} mb-3`}> 
         <FaBars className='cursor-pointer' onClick={() => setOpen(!isOpen)} />  
       </div>    
