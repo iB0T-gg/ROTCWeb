@@ -1,4 +1,13 @@
 <?php
+/**
+ * Authentication Controller
+ * 
+ * This controller handles all authentication-related functionality including:
+ * - User registration (both regular users and faculty)
+ * - User login and logout
+ * - Password reset requests and processing
+ * - Role-based redirections after login
+ */
 
 namespace App\Http\Controllers;
 
@@ -9,8 +18,21 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    /**
+     * Default redirect path after authentication
+     * Note: This is overridden by authenticated() method for role-specific redirects
+     */
     protected $redirectTo = '/user/userHome';
 
+    /**
+     * Register a new regular user (student)
+     * 
+     * Validates registration data, creates a new user with 'pending' status,
+     * and stores the COR (Certificate of Registration) file.
+     * 
+     * @param Request $request The registration form data
+     * @return \Illuminate\Http\RedirectResponse Redirect to login page with success message
+     */
     public function register(Request $request)
     {
         $request->validate([
@@ -50,6 +72,18 @@ class AuthController extends Controller
 
 
 
+    /**
+     * Authenticate a user and handle login
+     * 
+     * Validates credentials, handles login attempts, and redirects users based on their role.
+     * Different behavior based on user role:
+     * - Admin users can always log in regardless of status
+     * - Faculty users can always log in regardless of status
+     * - Regular users must be approved (status != 'pending' or 'rejected')
+     * 
+     * @param Request $request The login form data
+     * @return \Illuminate\Http\RedirectResponse Redirect to appropriate dashboard or back with errors
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -89,15 +123,27 @@ class AuthController extends Controller
                 }
             }
             
+            // User is approved, regenerate session and redirect to user home
             $request->session()->regenerate();
             return redirect()->intended('/user/userHome');
         }
 
+        // Authentication failed
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
     }
 
+    /**
+     * Handle role-based redirection after authentication
+     * 
+     * This method is used by Laravel's authentication system to determine
+     * where to redirect users after login.
+     * 
+     * @param Request $request The request object
+     * @param User $user The authenticated user
+     * @return \Illuminate\Http\RedirectResponse Redirect to role-specific dashboard
+     */
     public function authenticated(Request $request, $user)
     {
         if ($user->role === 'admin') {
@@ -109,6 +155,15 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Log the user out and redirect to login page
+     * 
+     * This method logs out the current user, invalidates their session,
+     * regenerates the CSRF token, and redirects to the login page.
+     * 
+     * @param Request $request The request object
+     * @return \Illuminate\Http\RedirectResponse Redirect to login page
+     */
     public function logout(Request $request)
     {
         Auth::logout();
@@ -119,6 +174,16 @@ class AuthController extends Controller
         return redirect('/');
     }
 
+    /**
+     * Handle password reset request
+     * 
+     * This method validates the email, checks if a user exists with that email,
+     * and sends a password reset link if found. The actual email sending is 
+     * handled by Laravel's Password facade.
+     * 
+     * @param Request $request The request containing the email
+     * @return \Illuminate\Http\RedirectResponse Back with status or errors
+     */
     public function forgotPassword(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -140,6 +205,16 @@ class AuthController extends Controller
         }
     }
     
+    /**
+     * Reset user password
+     * 
+     * This method handles the password reset form submission.
+     * It validates the token, email, and new password, then
+     * attempts to reset the password using Laravel's Password facade.
+     * 
+     * @param Request $request The request with token, email, and new password
+     * @return \Illuminate\Http\RedirectResponse Redirect to login with success or back with errors
+     */
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -155,13 +230,16 @@ class AuthController extends Controller
                     'password' => \Illuminate\Support\Facades\Hash::make($password)
                 ])->save();
 
+                // Fire password reset event
                 event(new \Illuminate\Auth\Events\PasswordReset($user));
             }
         );
 
         if ($status === \Illuminate\Support\Facades\Password::PASSWORD_RESET) {
+            // Password reset successful, redirect to login page with success message
             return redirect('/')->with('status', 'Your password has been reset successfully!');
         } else {
+            // Password reset failed, return to form with errors
             return back()->withErrors(['email' => [__($status)]]);
         }
     }

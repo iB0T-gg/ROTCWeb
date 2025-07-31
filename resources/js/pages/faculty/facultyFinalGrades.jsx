@@ -8,28 +8,48 @@ const FacultyFinalGrades = ({ auth }) => {
   const [cadets, setCadets] = useState([]);
   const [search, setSearch] = useState('');
   const [merits, setMerits] = useState({});
+  const [attendanceMap, setAttendanceMap] = useState({});
+  const [equivalentGrades, setEquivalentGrades] = useState({});
   const [selectedPlatoon, setSelectedPlatoon] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedBattalion, setSelectedBattalion] = useState('');
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [autoSaving, setAutoSaving] = useState(false);
   const cadetsPerPage = 8;
 
-  useEffect(() => {
-    fetch('/api/cadets')
-      .then(res => res.json())
-      .then(data => setCadets(data))
-      .catch(err => console.error('Failed to fetch cadets:', err));
-  }, []);
-
+  // Fetch cadets, merits, attendance, and equivalent grades
   useEffect(() => {
     fetch('/api/cadets')
       .then(res => res.json())
       .then(data => setCadets(data));
-  
     fetch('/api/merits')
       .then(res => res.json())
       .then(data => setMerits(data));
+    fetch('/api/faculty-attendance')
+      .then(res => res.json())
+      .then(data => {
+        // Map attendance by user_id for quick lookup
+        const map = {};
+        data.forEach(record => {
+          map[record.user_id] = record;
+        });
+        setAttendanceMap(map);
+      });
+    fetch('/direct-grades')
+      .then(res => res.json())
+      .then(data => {
+        const map = {};
+        data.forEach(user => { 
+          if (user.equivalent_grade !== null) {
+            map[user.id] = parseFloat(user.equivalent_grade); 
+          }
+        });
+        setEquivalentGrades(map);
+      })
+      .catch(error => {
+        console.error('Error fetching equivalent grades:', error);
+      });
   }, []);
 
   const formatCadetName = (cadet) => {
@@ -58,6 +78,139 @@ const FacultyFinalGrades = ({ auth }) => {
     currentPage * cadetsPerPage
   );
 
+  // Attendance percentage logic
+  const getAttendancePercentage = (cadet) => {
+    const attendance = attendanceMap[cadet.id];
+    let presentCount = 0;
+    if (attendance && attendance.attendances) {
+      presentCount = Object.values(attendance.attendances).filter(Boolean).length;
+    }
+    return (presentCount / 15) * 30;
+  };
+
+  // Compute equivalent grade (same as before)
+  const computeEquivalentGrade = (merit, attendance, exams) => {
+    const totalPercentage = merit + attendance + exams;
+    if (totalPercentage >= 97) return 1.00;
+    if (totalPercentage >= 94) return 1.25;
+    if (totalPercentage >= 91) return 1.5;
+    if (totalPercentage >= 88) return 1.75;
+    if (totalPercentage >= 85) return 2.00;
+    if (totalPercentage >= 82) return 2.25;
+    if (totalPercentage >= 79) return 2.50;
+    if (totalPercentage >= 76) return 2.75;
+    if (totalPercentage >= 75) return 3.00;
+    return 5.00;
+  };
+  
+  // Auto-save a single equivalent grade and final grade when calculated
+    const autoSaveEquivalentGrade = async (userId, equivalentGrade, finalGrade) => {
+    try {
+      setAutoSaving(true);
+      const response = await fetch('/direct-grades/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        body: JSON.stringify({ 
+          user_id: userId, 
+          equivalent_grade: equivalentGrade,
+          final_grade: finalGrade
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to auto-save grade, status:', response.status);
+      }
+      
+      setTimeout(() => setAutoSaving(false), 1000); // Show saving status for 1 second
+    } catch (error) {
+      console.error('Failed to auto-save grade:', error);
+      setAutoSaving(false);
+    }
+  };
+
+  // Save all equivalent grades to backend
+  const handleSaveEquivalentGrades = async () => {
+    const grades = filteredCadets.map(cadet => {
+      const merit = merits[cadet.id]?.percentage ? Number(merits[cadet.id].percentage) : 0;
+      const attendance = getAttendancePercentage(cadet);
+      const exams = (cadet.midterm_exam !== undefined && cadet.final_exam !== undefined)
+        ? ((Number(cadet.midterm_exam) + Number(cadet.final_exam)) / 100) * 40
+        : 0;
+      // Calculate total percentage (final grade)
+      const finalGrade = merit + attendance + exams;
+      const equivalentGrade = computeEquivalentGrade(merit, attendance, exams);
+      return { 
+        user_id: cadet.id, 
+        equivalent_grade: equivalentGrade,
+        final_grade: finalGrade
+      };
+    });
+    try {
+      const response = await fetch('/direct-grades/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        body: JSON.stringify({ grades })
+      });
+      if (response.ok) {
+        alert('Equivalent grades saved successfully.');
+        // Refresh grades
+        fetch('/direct-grades')
+          .then(res => res.json())
+          .then(data => {
+            const map = {};
+            data.forEach(user => { 
+              if (user.equivalent_grade !== null) {
+                map[user.id] = parseFloat(user.equivalent_grade); 
+              }
+            });
+            setEquivalentGrades(map);
+          });
+      } else {
+        alert('Failed to save equivalent grades: ' + response.status);
+        console.error('Error response:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error saving grades:', error);
+      alert('Failed to save equivalent grades: ' + error.message);
+    }
+  };
+
+  // --- FIX: Move auto-save logic to useEffect ---
+  useEffect(() => {
+    // For each cadet on the current page, check if their computed grade needs to be saved
+    const saveGrades = async () => {
+      let needsSaving = false;
+      for (const cadet of paginatedCadets) {
+        const merit = merits[cadet.id]?.percentage ? Number(merits[cadet.id].percentage) : 0;
+        const attendance = getAttendancePercentage(cadet);
+        const exams = (cadet.midterm_exam !== undefined && cadet.final_exam !== undefined)
+          ? ((Number(cadet.midterm_exam) + Number(cadet.final_exam)) / 100) * 40
+          : 0;
+        // Calculate total percentage (final grade)
+        const finalGrade = merit + attendance + exams;
+        const computedEquivalentGrade = computeEquivalentGrade(merit, attendance, exams);
+        const savedEquivalentGrade = equivalentGrades[cadet.id];
+        if (savedEquivalentGrade === undefined || savedEquivalentGrade !== computedEquivalentGrade) {
+          needsSaving = true;
+          await autoSaveEquivalentGrade(cadet.id, computedEquivalentGrade, finalGrade);
+          setEquivalentGrades(prev => ({
+            ...prev,
+            [cadet.id]: computedEquivalentGrade
+          }));
+        }
+      }
+    };
+    saveGrades();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginatedCadets, merits, attendanceMap]);
+  // --- END FIX ---
+
   return (
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
@@ -71,14 +224,27 @@ const FacultyFinalGrades = ({ auth }) => {
             </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
-              <h1 className='text-2xl font-semibold'>Exams</h1>
+              <h1 className='text-2xl font-semibold'>Exams & Grades</h1>
+              <button
+                className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 ml-4'
+                onClick={handleSaveEquivalentGrades}
+              >
+                Force Save All Grades
+              </button>
             </div>
 
             {/* Main Content */}
             <div className='bg-white p-6 rounded-lg shadow w-full mx-auto'>
               {/* Title and Controls */}
               <div className='flex justify-between items-center mb-6'>
-                <h1 className='text-lg font-semibold text-black'>Equivalent Grades</h1>
+                <div className='flex items-center'>
+                  <h1 className='text-lg font-semibold text-black'>Equivalent Grades</h1>
+                  {autoSaving && (
+                    <span className='ml-3 text-sm text-green-600 animate-pulse'>
+                      Auto-saving...
+                    </span>
+                  )}
+                </div>
                 <div className='flex items-center gap-4'>
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -172,18 +338,19 @@ const FacultyFinalGrades = ({ auth }) => {
                       <th className='p-3 border-b font-medium text-center'>Merits</th>
                       <th className='p-3 border-b font-medium text-center'>Attendance</th>
                       <th className='p-3 border-b font-medium text-center'>Exams</th>
+                      <th className='p-3 border-b font-medium text-center'>Final Grade</th>
                       <th className='p-3 border-b font-medium text-center'>Equivalent Grade</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedCadets.map(cadet => {
                       const merit = merits[cadet.id]?.percentage ? Number(merits[cadet.id].percentage) : 0;
-                      const attendance = 0; // Replace with actual attendance percentage if available
+                      const attendance = getAttendancePercentage(cadet);
                       const exams = (cadet.midterm_exam !== undefined && cadet.final_exam !== undefined)
                         ? ((Number(cadet.midterm_exam) + Number(cadet.final_exam)) / 100) * 40
                         : 0;
-                      const equivalentGrade = merit + attendance + exams;
-
+                      const computedEquivalentGrade = computeEquivalentGrade(merit, attendance, exams);
+                      const savedEquivalentGrade = equivalentGrades[cadet.id];
                       return (
                         <tr className='border-b border-gray-200' key={cadet.id}>
                           <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
@@ -197,7 +364,10 @@ const FacultyFinalGrades = ({ auth }) => {
                             {exams.toFixed(2)}%
                           </td>
                           <td className='p-3 text-center text-black'>
-                            {equivalentGrade.toFixed(2)}%
+                            {(merit + attendance + exams).toFixed(0)}
+                          </td>
+                          <td className='p-3 text-center text-black'>
+                            {savedEquivalentGrade !== undefined ? savedEquivalentGrade.toFixed(2) : computedEquivalentGrade.toFixed(2)}
                           </td>
                         </tr>
                       );
@@ -213,7 +383,7 @@ const FacultyFinalGrades = ({ auth }) => {
                     {Array.from({ length: totalPages }, (_, i) => (
                       <button
                         key={i}
-                        className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-olive-700 text-white' : 'bg-white border'}`}
+                        className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
                         onClick={() => setCurrentPage(i + 1)}
                       >
                         {i + 1}

@@ -104,8 +104,8 @@ const FacultyMerits = ({ auth }) => {
     try {
       const meritsData = cadets.map((cadet, index) => ({
         cadet_id: cadet.id,
-        days: merits[index].days,
-        percentage: merits[index].percentage
+        days: merits[index].days.map(val => (val === '' || isNaN(Number(val)) ? 0 : Number(val))),
+        percentage: Number(merits[index].percentage) || 0
       }));
 
       const response = await fetch('/api/merits/save', {
@@ -120,13 +120,26 @@ const FacultyMerits = ({ auth }) => {
       if (response.ok) {
         const result = await response.json();
         alert('Successfully saved merits.');
-    setIsEditing(false);
+        setIsEditing(false);
+      } else if (response.status === 422) {
+        // Laravel validation error
+        const error = await response.json();
+        let errorMsg = 'Validation error:';
+        if (error.errors) {
+          for (const [field, messages] of Object.entries(error.errors)) {
+            errorMsg += `\n${field}: ${messages.join(', ')}`;
+          }
+        } else {
+          errorMsg += ' ' + JSON.stringify(error);
+        }
+        alert(errorMsg);
       } else {
-        alert('Failed to save merits. Please try again.');
+        const errorText = await response.text();
+        alert('Failed to save merits. Please try again.\n' + errorText);
       }
     } catch (error) {
       console.error('Error saving merits:', error);
-      alert('Error saving merits. Please try again.');
+      alert('Error saving merits. Please try again.\n' + error.message);
     }
   };
 
@@ -309,7 +322,7 @@ const FacultyMerits = ({ auth }) => {
                               type="number"
                               min="0"
                               max="10"
-                              value={val}
+                              value={val === null || val === undefined ? '' : val}
                               onChange={e => handleDayChange(cadetIndex, j, e.target.value)}
                               className={`w-12 text-center border border-gray-300 rounded p-1 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                               placeholder="-"
@@ -337,7 +350,7 @@ const FacultyMerits = ({ auth }) => {
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
                     key={i}
-                    className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-olive-700 text-white' : 'bg-white border'}`}
+                    className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
                     onClick={() => setCurrentPage(i + 1)}
                   >
                     {i + 1}

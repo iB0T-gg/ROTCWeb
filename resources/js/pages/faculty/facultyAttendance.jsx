@@ -6,19 +6,41 @@ import { FaSort } from 'react-icons/fa6';
 
 const FacultyAttendance = ({ auth }) => {
   const [cadets, setCadets] = useState([]);
-  const [search, setSearch] = useState('');
+  const [attendanceMap, setAttendanceMap] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const cadetsPerPage = 8;
+  const [search, setSearch] = useState('');
   const [selectedPlatoon, setSelectedPlatoon] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedBattalion, setSelectedBattalion] = useState('');
   const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const cadetsPerPage = 8;
 
   useEffect(() => {
-    fetch('/api/cadets')
-      .then(res => res.json())
-      .then(data => setCadets(data))
-      .catch(err => console.error('Failed to fetch cadets:', err));
+    const fetchData = async () => {
+      try {
+        // Fetch all cadets
+        const cadetsResponse = await fetch('/api/cadets');
+        let cadetsData = [];
+        if (cadetsResponse.ok) {
+          cadetsData = await cadetsResponse.json();
+          setCadets(cadetsData);
+        }
+        // Fetch all attendance records
+        const attendanceResponse = await fetch('/api/faculty-attendance');
+        if (attendanceResponse.ok) {
+          const attendanceData = await attendanceResponse.json();
+          // Map attendance by user_id for quick lookup
+          const map = {};
+          attendanceData.forEach(record => {
+            map[record.user_id] = record;
+          });
+          setAttendanceMap(map);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
   }, []);
 
   const formatCadetName = (cadet) => {
@@ -41,6 +63,7 @@ const FacultyAttendance = ({ auth }) => {
     })
     .sort((a, b) => formatCadetName(a).localeCompare(formatCadetName(b)));
 
+  // Pagination logic
   const totalPages = Math.ceil(filteredCadets.length / cadetsPerPage);
   const paginatedCadets = filteredCadets.slice(
     (currentPage - 1) * cadetsPerPage,
@@ -54,20 +77,20 @@ const FacultyAttendance = ({ auth }) => {
         <FacultySidebar />
         <div className='flex-1 p-6'>
           <div className='font-regular'>
-            {/* Breadcrumb */}
             <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer'>
               Home {">"} Attendance
             </div>
-            {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
-              <h1 className='text-2xl font-semibold'>Attendance Management</h1>
+              <div>
+                <h1 className='text-2xl font-semibold'>Attendance Management</h1>
+              </div>
             </div>
-
-            {/* Main Content */}
             <div className='bg-white p-6 rounded-lg shadow w-full mx-auto'>
-              {/* Title and Controls */}
               <div className='flex justify-between items-center mb-6'>
-                <h1 className='text-lg font-semibold text-black'>Attendance Record</h1>
+                <div>
+                  <h1 className='text-lg font-semibold text-black'>Attendance Records</h1>
+                  <p className='text-sm text-gray-500'>View attendance for all cadets</p>
+                </div>
                 <div className='flex items-center gap-4'>
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -152,66 +175,75 @@ const FacultyAttendance = ({ auth }) => {
                   </div>
                 </div>
               </div>
-              {/* Attendance Table */}
-              <div className='overflow-y-auto'>
-                <table className='w-full border-collapse'>
-                  <thead className='text-gray-600'>
-                    <tr>
-                      <th className='p-3 border-b font-medium text-left'>Cadet Names</th>
-                      <th className='p-0 border-b font-medium text-left'>Percentage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedCadets.map(cadet => (
+              <table className='w-full border-collapse'>
+                <thead className='text-gray-600'>
+                  <tr>
+                    <th className='p-3 border-b font-medium text-left'>Cadet Name</th>
+                    <th className='p-3 border-b font-medium text-center'>Days Present</th>
+                    <th className='p-3 border-b font-medium text-center'>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCadets.map((cadet) => {
+                    const attendance = attendanceMap[cadet.id];
+                    let presentCount = 0;
+                    if (attendance && attendance.attendances) {
+                      presentCount = Object.values(attendance.attendances).filter(Boolean).length;
+                    }
+                    const percentage = ((presentCount / 15) * 30).toFixed(2);
+                    return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
                         <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
-                        <td className='p-4 text-black'>0%</td>
+                        <td className='p-3 text-center text-black'>{presentCount}/15</td>
+                        <td className='p-3 text-center text-black'>{percentage}%</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Footer with Pagination and Summary */}
-                <div className="flex justify-between items-center mt-4 w-full">
-                  <div className="text-gray-600">
-                    Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
-                  </div>
-                  <div className="flex-1 flex justify-center">
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <button
-                        key={i}
-                        className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-olive-700 text-white' : 'bg-white border'}`}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    {currentPage < totalPages && (
-                      <button
-                        className="mx-1 px-3 py-1 rounded bg-white border"
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                      >
-                        &gt;
-                      </button>
-                    )}
-                    {currentPage > 1 && (
-                      <button
-                        className="mx-1 px-3 py-1 rounded bg-white border"
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                      >
-                        {'<'}
-                      </button>
-                    )}
-                  </div>
-                  <div>{/* (Optional) Action Buttons */}</div>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {/* Pagination Controls */}
+              <div className="flex justify-between items-center mt-4 w-full">
+                {/* Left: Showing data */}
+                <div className="text-gray-600">
+                  Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                 </div>
+                {/* Center: Pagination */}
+                <div className="flex-1 flex justify-center">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
+                      onClick={() => setCurrentPage(i + 1)}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  {currentPage < totalPages && (
+                    <button
+                      className="mx-1 px-3 py-1 rounded bg-white border"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      &gt;
+                    </button>
+                  )}
+                  {currentPage > 1 && (
+                    <button
+                      className="mx-1 px-3 py-1 rounded bg-white border"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      {'<'}
+                    </button>
+                  )}
+                </div>
+                {/* Right: (empty for now) */}
+                <div className="flex justify-end gap-2"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default FacultyAttendance;

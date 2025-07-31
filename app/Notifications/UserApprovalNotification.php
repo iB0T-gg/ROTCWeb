@@ -1,4 +1,10 @@
 <?php
+/**
+ * UserApprovalNotification
+ * 
+ * This notification is sent to users when their registration is approved or rejected.
+ * It sends an email with different content based on the approval status.
+ */
 
 namespace App\Notifications;
 
@@ -7,6 +13,12 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
+/**
+ * User Approval Notification
+ * 
+ * Sends email notifications to users when their account status changes
+ * (either approved or rejected by an administrator).
+ */
 class UserApprovalNotification extends Notification
 {
     use Queueable;

@@ -12,6 +12,7 @@ export default function AdminPermission(){
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('');
+    const [showFilterPicker, setShowFilterPicker] = useState(false);
     const [processingUser, setProcessingUser] = useState(null);
 
     // Fetch pending users
@@ -98,6 +99,102 @@ export default function AdminPermission(){
         }
     };
     
+    // Handle approve all users
+    const [processingBulk, setProcessingBulk] = useState(false);
+    
+    const handleApproveAll = async () => {
+        const filteredUsers = filteredAndSortedUsers();
+        if (filteredUsers.length === 0) {
+            alert('No pending users to approve.');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to approve all ${filteredUsers.length} pending users?`)) {
+            return;
+        }
+        
+        setProcessingBulk(true);
+        
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // Process users one by one to ensure proper handling
+            for (const user of filteredUsers) {
+                try {
+                    await axios.post('/api/approve-user', { user_id: user.id });
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error approving user ${user.id}:`, error);
+                    errorCount++;
+                }
+            }
+            
+            // Update the pending users list by removing all approved users
+            setPendingUsers(prev => prev.filter(user => 
+                !filteredUsers.some(filteredUser => filteredUser.id === user.id)
+            ));
+            
+            if (errorCount === 0) {
+                alert(`Successfully approved all ${successCount} users.`);
+            } else {
+                alert(`Approved ${successCount} users. Failed to approve ${errorCount} users.`);
+            }
+        } catch (error) {
+            console.error('Error in bulk approval process:', error);
+            alert('An error occurred during the bulk approval process.');
+        } finally {
+            setProcessingBulk(false);
+        }
+    };
+    
+    // Handle reject all users
+    const handleRejectAll = async () => {
+        const filteredUsers = filteredAndSortedUsers();
+        if (filteredUsers.length === 0) {
+            alert('No pending users to reject.');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to reject all ${filteredUsers.length} pending users?`)) {
+            return;
+        }
+        
+        setProcessingBulk(true);
+        
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // Process users one by one to ensure proper handling
+            for (const user of filteredUsers) {
+                try {
+                    await axios.post('/api/reject-user', { user_id: user.id });
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error rejecting user ${user.id}:`, error);
+                    errorCount++;
+                }
+            }
+            
+            // Update the pending users list by removing all rejected users
+            setPendingUsers(prev => prev.filter(user => 
+                !filteredUsers.some(filteredUser => filteredUser.id === user.id)
+            ));
+            
+            if (errorCount === 0) {
+                alert(`Successfully rejected all ${successCount} users.`);
+            } else {
+                alert(`Rejected ${successCount} users. Failed to reject ${errorCount} users.`);
+            }
+        } catch (error) {
+            console.error('Error in bulk rejection process:', error);
+            alert('An error occurred during the bulk rejection process.');
+        } finally {
+            setProcessingBulk(false);
+        }
+    };
+    
     return (
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
@@ -120,31 +217,89 @@ export default function AdminPermission(){
               <div className='flex justify-between items-center mb-6'>
                 <h1 className='text-lg font-semibold text-black'>Permission Requests</h1>
 
-                <div className='flex items-center gap-4'>
+                <div className="flex items-center gap-4">
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="search"
                       placeholder="Search Cadets"
+                      className="w-64 p-2 pl-10 border border-gray-300 rounded-lg"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-64 p-2 pl-10 border border-gray-300 rounded-lg"
                     />
                   </div>
-                  
                   <div className="relative">
-                    <select 
-                      className="bg-white border border-gray-300 rounded-lg p-2 pl-9 w-40 appearance-none"
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
+                    <div
+                      className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer flex items-center"
+                      onClick={() => setShowFilterPicker(!showFilterPicker)}
                     >
-                      <option value="">Sort by</option>
-                      <option value="date-newest">Date (Newest)</option>
-                      <option value="date-oldest">Date (Oldest)</option>
-                      <option value="name-az">Name (A-Z)</option>
-                      <option value="name-za">Name (Z-A)</option>
-                    </select>
-                    <FaSort className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <span className="text-gray-600">
+                        {sortBy ? 
+                          sortBy === 'date-newest' ? 'Date (Newest)' : 
+                          sortBy === 'date-oldest' ? 'Date (Oldest)' : 
+                          sortBy === 'name-az' ? 'Name (A-Z)' : 
+                          sortBy === 'name-za' ? 'Name (Z-A)' : 'Sort by'
+                        : 'Sort by'}
+                      </span>
+                      <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                    {showFilterPicker && (
+                      <div
+                        className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg"
+                        style={{ top: '100%', right: 0, width: '240px' }}
+                      >
+                        <div className="space-y-3">
+                          <p className="font-medium text-gray-700 border-b pb-2">Sort Options</p>
+                          <div className="space-y-2">
+                            <div 
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === '' ? 'bg-gray-100' : ''}`}
+                              onClick={() => {
+                                setSortBy('');
+                                setShowFilterPicker(false);
+                              }}
+                            >
+                              No sorting
+                            </div>
+                            <div 
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-newest' ? 'bg-gray-100' : ''}`}
+                              onClick={() => {
+                                setSortBy('date-newest');
+                                setShowFilterPicker(false);
+                              }}
+                            >
+                              Date (Newest)
+                            </div>
+                            <div 
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-oldest' ? 'bg-gray-100' : ''}`}
+                              onClick={() => {
+                                setSortBy('date-oldest');
+                                setShowFilterPicker(false);
+                              }}
+                            >
+                              Date (Oldest)
+                            </div>
+                            <div 
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-az' ? 'bg-gray-100' : ''}`}
+                              onClick={() => {
+                                setSortBy('name-az');
+                                setShowFilterPicker(false);
+                              }}
+                            >
+                              Name (A-Z)
+                            </div>
+                            <div 
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-za' ? 'bg-gray-100' : ''}`}
+                              onClick={() => {
+                                setSortBy('name-za');
+                                setShowFilterPicker(false);
+                              }}
+                            >
+                              Name (Z-A)
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -195,6 +350,22 @@ export default function AdminPermission(){
                     )}
                   </tbody>
                 </table>
+                <div className='flex right-0 justify-end mt-4 space-x-3'>
+                  <button 
+                    onClick={handleRejectAll}
+                    disabled={processingBulk || loading || filteredAndSortedUsers().length === 0}
+                    className='text-primary px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed'
+                  >
+                    {processingBulk ? 'Processing...' : 'Reject All'}
+                  </button>
+                  <button 
+                    onClick={handleApproveAll}
+                    disabled={processingBulk || loading || filteredAndSortedUsers().length === 0}
+                    className='bg-primary text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed'
+                  >
+                    {processingBulk ? 'Processing...' : 'Approve All'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,60 +1,99 @@
 <?php
+/**
+ * Web Routes
+ * 
+ * This file contains all the web routes for the ROTC Portal application.
+ * Routes are organized into middleware groups to control access based on user role:
+ * 
+ * - Guest middleware: Only accessible when NOT logged in (auth pages)
+ * - Auth middleware: Requires user to be logged in
+ * - Role-specific middleware: AdminMiddleware, UserMiddleware, FacultyMiddleware
+ * 
+ * All role-specific routes are protected by both 'auth' middleware (to ensure
+ * the user is logged in) and the respective role middleware (to ensure the
+ * user has the correct role for the requested page).
+ * 
+ * MIDDLEWARE SECURITY IMPLEMENTATION:
+ * 1. Authentication routes (login, register, password reset) are under 'guest' middleware
+ *    to ensure they're only accessible when NOT logged in.
+ * 2. Admin routes are protected by AdminMiddleware to restrict access to admin users only.
+ * 3. User routes are protected by UserMiddleware to restrict access to regular users only.
+ * 4. Faculty routes are protected by FacultyMiddleware to restrict access to faculty only.
+ * 5. API routes are protected based on the role requirements for each endpoint.
+ * 
+ * This ensures proper access control throughout the application, preventing users
+ * from accessing pages or functionality not intended for their role.
+ */
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\UserMiddleware;
+use App\Http\Middleware\FacultyMiddleware;
 
-Route::get('/', function () {
-    return Inertia::render('auth/Login');
+// Authentication Routes - Accessible without login
+Route::middleware('guest')->group(function () {
+    // Login
+    Route::get('/', function () {
+        return Inertia::render('auth/Login');
+    });
+
+    Route::get('/login', function () {
+        return Inertia::render('auth/Login');
+    })->name('login');
+
+    // Registration
+    Route::get('/register', function () {
+        return Inertia::render('auth/Register');
+    });
+
+    Route::get('/register-faculty', function () {
+        return Inertia::render('auth/RegisterFaculty');
+    });
+
+    // Password Reset
+    Route::get('/forgotPassword', function () {
+        return Inertia::render('auth/forgotPassword');
+    })->name('password.request');
+
+    Route::get('/reset-password/{token}', function (string $token) {
+        return Inertia::render('auth/resetPassword', [
+            'token' => $token,
+            'email' => request('email'),
+        ]);
+    })->name('password.reset');
+
+    // Auth Controller Actions
+    Route::post('/register', [AuthController::class, 'register'])
+        ->name('register');
+
+    Route::post('/register-faculty', [AuthController::class, 'registerFaculty'])
+        ->name('register.faculty');
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login');
+
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->name('password.email');
+
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->name('password.update');
 });
 
-Route::get('/register', function () {
-    return Inertia::render('auth/Register');
-});
-
-Route::get('/register-faculty', function () {
-    return Inertia::render('auth/RegisterFaculty');
-});
-
+// Pending page - accessible to authenticated users with pending status
 Route::get('/pending', function () {
     return Inertia::render('auth/pending');
-})->name('pending');
+})->middleware('auth')->name('pending');
 
-Route::get('/forgotPassword', function () {
-    return Inertia::render('auth/forgotPassword');
-})->name('password.request');
-
-Route::get('/reset-password/{token}', function (string $token) {
-    return Inertia::render('auth/resetPassword', [
-        'token' => $token,
-        'email' => request('email'),
-    ]);
-})->name('password.reset');
-
-Route::post('/register', [AuthController::class, 'register'])
-    ->name('register');
-
-Route::post('/register-faculty', [AuthController::class, 'registerFaculty'])
-    ->name('register.faculty');
-
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login');
-
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
-    ->name('password.email');
-
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])
-    ->name('password.update');
-
-Route::get('/login', function () {
-    return Inertia::render('auth/Login');
-})->name('login');
-
+// Logout - requires auth
 Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
     ->name('logout');
 
 // Test email route (remove in production)
@@ -71,7 +110,8 @@ Route::get('/test-email', function () {
     }
 });
 
-Route::middleware('auth')->group(function () {
+// Admin Routes - Only accessible to admins
+Route::middleware(['auth', AdminMiddleware::class])->group(function () {
     Route::get('/adminHome', function () {
         return Inertia::render('admin/adminHome');
     });
@@ -87,12 +127,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/adminMasterlist', function () {
         return Inertia::render('admin/adminMasterlist');
     });
+    
+    Route::get('/adminMasterlist/profile', function () {
+        return Inertia::render('admin/adminCadetsProfile');
+    });
 
     Route::get('/Issue', function () {
         return Inertia::render('admin/Issue');
     });
+});
 
-    // User routes
+// User Routes - Only accessible to users
+Route::middleware(['auth', UserMiddleware::class])->group(function () {
     Route::get('/user/userHome', function () {
         return Inertia::render('user/userHome');
     });
@@ -108,6 +154,7 @@ Route::middleware('auth')->group(function () {
             'user' => auth()->user()
         ]);
     });
+    
     Route::get('/user/userAttendance', function () {
         return Inertia::render('user/userAttendance', [
             'user' => auth()->user()
@@ -125,8 +172,10 @@ Route::middleware('auth')->group(function () {
             'user' => auth()->user()
         ]);
     });
+});
 
-    // Faculty routes
+// Faculty routes - Only accessible to faculty
+Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
     Route::get('/faculty/facultyHome', function () {
         return Inertia::render('faculty/facultyHome');
     });
@@ -150,10 +199,73 @@ Route::middleware('auth')->group(function () {
     Route::get('/faculty/facultyReportAnIssue', function () {
         return Inertia::render('faculty/facultyReportAnIssue');
     });
+});
 
-    // API routes
-    Route::prefix('api')->group(function () {
+// Direct grade routes without API prefix
+Route::middleware(['auth', FacultyMiddleware::class])->group(function() {
+    Route::get('/direct-grades', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);
+    Route::post('/direct-grades/save', [App\Http\Controllers\GradeController::class, 'saveEquivalentGrades']);
+    Route::post('/direct-grades/update', [App\Http\Controllers\GradeController::class, 'updateEquivalentGrade']);
+});
+
+// API routes - Role-specific endpoints
+Route::middleware('auth')->prefix('api')->group(function () {
+    // Common API endpoints for all authenticated users
+    Route::post('/user/profile/update', [UserController::class, 'updateProfile']);
+    Route::post('/user/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
+    Route::get('/filter-options', [UserController::class, 'getFilterOptions']);
+    
+    // Admin-only API endpoints
+    Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/admin-cadets', function (Request $request) {
+            $cadets = User::where('role', 'user')->select(
+                'id',
+                'student_number',
+                'first_name',
+                'last_name',
+                'middle_name',
+                'year_course_section',
+                'gender',
+                'midterm_exam',
+                'final_exam',
+                'equivalent_grade',
+                'final_grade',
+                'platoon',
+                'company',
+                'battalion',
+                'role',
+                'birthday',
+                'blood_type',
+                'address',
+                'region',
+                'height',
+                'phone_number'
+            )->get();
+            
+            // Log sample birthday for debugging
+            if ($cadets->count() > 0) {
+                $sampleBirthday = $cadets->first()->birthday;
+                \Log::info('Sample birthday from database: ' . json_encode($sampleBirthday));
+            }
+            
+            // Log for debugging
+            \Log::info('Admin Cadets API endpoint called, returning ' . $cadets->count() . ' records');
+            
+            return $cadets;
+        });
+        
+        // Attendance API endpoints for admin
+        Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
+        Route::get('/attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
+        Route::post('/attendance/update', [AttendanceController::class, 'updateAttendance']);
+        Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
+        Route::post('/approve-user', [AdminController::class, 'approveUser']);
+        Route::post('/reject-user', [AdminController::class, 'rejectUser']);
+    });
+    
+    // Faculty-only API endpoints
+    Route::middleware(FacultyMiddleware::class)->group(function () {
         Route::get('/cadets', function (Request $request) {
             return \App\Models\User::where('role', 'user')->select(
                 'id',
@@ -168,18 +280,16 @@ Route::middleware('auth')->group(function () {
                 'final_exam'
             )->get();
         });
-        Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
- 
-        Route::post('/approve-user', [AdminController::class, 'approveUser']);
-        Route::post('/reject-user', [AdminController::class, 'rejectUser']);
-        Route::post('/user/profile/update', [UserController::class, 'updateProfile']);
-        Route::post('/user/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
         Route::get('/merits', [UserController::class, 'getMerits']);
         Route::post('/merits/save', [UserController::class, 'saveMerits']);
-        Route::get('/filter-options', [UserController::class, 'getFilterOptions']);
+        
+        // Attendance API endpoints for faculty
+        Route::get('/faculty-attendance', [AttendanceController::class, 'getAllAttendance']);
+        Route::get('/faculty-attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
     });
-
-    Route::post('/api/exams/save', function (Request $request) {
+    
+    // Faculty exam scores API endpoint
+    Route::middleware(FacultyMiddleware::class)->post('/exams/save', function (Request $request) {
         $scores = $request->input('scores');
         foreach ($scores as $score) {
             $user = User::find($score['id']);
@@ -191,4 +301,9 @@ Route::middleware('auth')->group(function () {
         }
         return response()->json(['message' => 'Successfully saved exam scores.']);
     });
+    
+    // Equivalent Grades API endpoints - not in API group
+    Route::get('/grade-equivalents', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);
+    Route::post('/grade-equivalents/save', [App\Http\Controllers\GradeController::class, 'saveEquivalentGrades']);
+    Route::post('/grade-equivalents/update', [App\Http\Controllers\GradeController::class, 'updateEquivalentGrade']);
 });

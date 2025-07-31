@@ -266,7 +266,7 @@ const FacultyExams = ({ auth }) => {
                   {Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i}
-                      className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-olive-700 text-white' : 'bg-white border'}`}
+                      className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
                       onClick={() => setCurrentPage(i + 1)}
                     >
                       {i + 1}

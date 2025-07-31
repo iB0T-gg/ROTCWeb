@@ -1,4 +1,11 @@
 <?php
+/**
+ * ResetPassword Notification
+ * 
+ * This notification is sent to users when they request a password reset.
+ * It extends Laravel's built-in notification system and customizes the email
+ * that is sent to users containing their password reset link.
+ */
 
 namespace App\Notifications;
 
@@ -70,10 +77,10 @@ class ResetPassword extends Notification
         if (static::$createUrlCallback) {
             $url = call_user_func(static::$createUrlCallback, $notifiable, $this->token);
         } else {
-            $url = url(route('password.reset', [
-                'token' => $this->token,
-                'email' => $notifiable->getEmailForPasswordReset(),
-            ], false));
+        $url = url(route('password.reset', [
+            'token' => $this->token,
+            'email' => $notifiable->getEmailForPasswordReset(),
+        ], false));
         }
 
         return $this->buildMailMessage($url);

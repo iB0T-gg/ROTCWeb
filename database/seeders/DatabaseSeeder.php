@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Call the user seeder first
+        $this->call(UserSeeder::class);
         // Create a test user
         User::firstOrCreate(
             ['email' => 'test@example.com'],
@@ -54,7 +56,7 @@ class DatabaseSeeder extends Seeder
                 'student_number' => '00000001',
                 'first_name' => 'Faculty',
                 'middle_name' => '',
-                'last_name' => 'Member',
+                'last_name' => '',
                 'year_course_section' => 'N/A',
                 'password' => Hash::make('faculty@123'),
                 'phone_number' => '0000000001',
