@@ -289,7 +289,7 @@ const FacultyExams = ({ auth }) => {
                     </button>
                   )}
                 </div>
-                <div>
+                <div className="flex justify-end gap-2">
                   {!isEditing ? (
                     <button 
                       onClick={handleEdit}
@@ -300,16 +300,17 @@ const FacultyExams = ({ auth }) => {
                   ) : (
                     <>
                       <button 
-                        onClick={handleSave}
-                        className='bg-primary text-white px-4 py-2 rounded hover:bg-primary transition-colors duration-150'
-                      >
-                        Save Scores
-                      </button>
-                      <button 
                         onClick={handleCancel}
-                        className='bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors duration-150'
+                        className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors duration-150"
                       >
                         Cancel
+                      </button>
+
+                      <button 
+                        onClick={handleSave}
+                        className="bg-primary text-white px-4 py-2 rounded hover:bg-primary transition-colors duration-150"
+                      >
+                        Save
                       </button>
                     </>
                   )}

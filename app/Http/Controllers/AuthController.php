@@ -41,6 +41,8 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'middle_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'gender' => 'required|in:Male,Female',
+            'campus' => 'required|string|max:255',
             'year_course_section' => 'required|string|max:255',
             'password' => ['required', 'confirmed', 'min:6'],
             'phone_number' => 'required|string|max:20',
@@ -60,6 +62,8 @@ class AuthController extends Controller
             'first_name' => $request->first_name,
             'middle_name' => $request->middle_name,
             'last_name' => $request->last_name,
+            'gender' => $request->gender,
+            'campus' => $request->campus,
             'year_course_section' => $request->year_course_section,
             'password' => Hash::make($request->password),
             'phone_number' => $request->phone_number,
@@ -68,6 +72,57 @@ class AuthController extends Controller
         ]);
 
         return redirect('/')->with('success', 'Registration submitted! Please wait for admin approval.');
+    }
+
+    /**
+     * Register a new faculty member
+     * 
+     * Validates registration data, creates a new faculty user with 'pending' status,
+     * and stores the credentials file.
+     * 
+     * @param Request $request The registration form data
+     * @return \Illuminate\Http\RedirectResponse Redirect to login page with success message
+     */
+    public function registerFaculty(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email|max:255|unique:users',
+            'employee_id' => 'required|string|unique:users,student_number',
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'gender' => 'required|in:Male,Female',
+            'campus' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
+            'password' => ['required', 'confirmed', 'min:6'],
+            'phone_number' => 'required|string|max:20',
+            'credentials_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ]);
+
+        $credentialsFilePath = null;
+        if ($request->hasFile('credentials_file')) {
+            $file = $request->file('credentials_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $credentialsFilePath = $file->storeAs('credentials_files', $fileName, 'public');
+        }
+
+        $user = User::create([
+            'email' => $request->email,
+            'student_number' => $request->employee_id, // Using student_number field for employee_id
+            'first_name' => $request->first_name,
+            'middle_name' => $request->middle_name,
+            'last_name' => $request->last_name,
+            'gender' => $request->gender,
+            'campus' => $request->campus,
+            'year_course_section' => $request->department, // Using year_course_section field for department
+            'password' => Hash::make($request->password),
+            'phone_number' => $request->phone_number,
+            'cor_file_path' => $credentialsFilePath, // Using cor_file_path field for credentials_file
+            'role' => 'faculty',
+            'status' => 'pending',
+        ]);
+
+        return redirect('/')->with('success', 'Faculty registration submitted! Please wait for admin approval.');
     }
 
 
@@ -147,7 +202,7 @@ class AuthController extends Controller
     public function authenticated(Request $request, $user)
     {
         if ($user->role === 'admin') {
-            return redirect('/admin/adminHome');
+            return redirect('/adminHome');
         } elseif ($user->role === 'faculty') {
             return redirect('/faculty/facultyHome');
         } else {

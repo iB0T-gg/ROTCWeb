@@ -16,7 +16,8 @@ class Merit extends Model
         'day_6', 'day_7', 'day_8', 'day_9', 'day_10',
         'day_11', 'day_12', 'day_13', 'day_14', 'day_15',
         'percentage',
-        'updated_by'
+        'updated_by',
+        'days_array'
     ];
 
     protected $casts = [

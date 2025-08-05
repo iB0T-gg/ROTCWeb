@@ -48,7 +48,8 @@ export default function AdminMasterlist(){
         const filtered = cadets.filter(cadet => 
             cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             `${cadet.first_name} ${cadet.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cadet.year_course_section?.toLowerCase().includes(searchTerm.toLowerCase())
+            cadet.year_course_section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            cadet.campus?.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
         // Sort alphabetically by last name, first name
@@ -72,11 +73,19 @@ export default function AdminMasterlist(){
         return 'N/A';
     };
 
-    // Determine if passed based on equivalent grade (1.00-3.00 is passing)
-    const getRemarks = (finalGrade, equivalentGrade) => {
-        if (finalGrade === 'N/A' || !equivalentGrade) return 'No Grade';
+    // Get remarks from database or calculate based on equivalent grade
+    const getRemarks = (cadet) => {
+        // Use database remarks if available
+        if (cadet.remarks) {
+            return cadet.remarks;
+        }
         
-        const eqGrade = parseFloat(equivalentGrade);
+        // Fallback calculation
+        if (getFinalGrade(cadet) === 'N/A' || !cadet.equivalent_grade) {
+            return 'No Grade';
+        }
+        
+        const eqGrade = parseFloat(cadet.equivalent_grade);
         if (eqGrade >= 1.00 && eqGrade <= 3.00) {
             return 'Passed';
         } else {
@@ -87,11 +96,11 @@ export default function AdminMasterlist(){
     // Function to export cadet data to Excel
     const exportToExcel = () => {
         // Create CSV content
-        let csvContent = "Student Number,Name,CY&S,Gender,Final Grade,Equivalent,Remarks\n";
+        let csvContent = "Student Number,Name,CY&S,Gender,Campus,Final Grade,Equivalent,Remarks\n";
         
         filteredCadets.forEach(cadet => {
             const finalGrade = getFinalGrade(cadet);
-            const remarks = getRemarks(finalGrade, cadet.equivalent_grade);
+            const remarks = getRemarks(cadet);
             const fullName = `${cadet.last_name}, ${cadet.first_name} ${cadet.middle_name || ''}`.trim();
             
             // Format each row and handle potential commas in data
@@ -100,6 +109,7 @@ export default function AdminMasterlist(){
                 `"${fullName}"`,
                 cadet.year_course_section || 'N/A',
                 cadet.gender || 'N/A',
+                cadet.campus || 'N/A',
                 finalGrade,
                 cadet.equivalent_grade || 'N/A',
                 remarks
@@ -175,6 +185,7 @@ export default function AdminMasterlist(){
                       <th className='p-2 border-b font-medium text-left'>Name</th>
                       <th className='p-2 border-b font-medium text-left'>CY&S</th>
                       <th className='p-2 border-b font-medium text-left'>Gender</th>
+                      <th className='p-2 border-b font-medium text-left'>Campus</th>
                       <th className='p-2 border-b font-medium text-left'>Final Grade (%)</th>
                       <th className='p-2 border-b font-medium text-left'>Equivalent</th>
                       <th className='p-2 border-b font-medium text-left'>Remarks</th>
@@ -183,20 +194,20 @@ export default function AdminMasterlist(){
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="7" className="p-4 text-center text-gray-500">
+                        <td colSpan="8" className="p-4 text-center text-gray-500">
                           Loading cadets...
                         </td>
                       </tr>
                     ) : paginatedCadets.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="p-4 text-center text-gray-500">
+                        <td colSpan="8" className="p-4 text-center text-gray-500">
                           {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
                         </td>
                       </tr>
                     ) : (
                       paginatedCadets.map((cadet) => {
                         const finalGrade = getFinalGrade(cadet);
-                        const remarks = getRemarks(finalGrade, cadet.equivalent_grade);
+                        const remarks = getRemarks(cadet);
                         
                         return (
                           <tr key={cadet.id} className='hover:bg-gray-50'>
@@ -206,6 +217,7 @@ export default function AdminMasterlist(){
                             </td>
                             <td className='p-2 border-b text-left'>{cadet.year_course_section || 'N/A'}</td>
                             <td className='p-2 border-b text-left'>{cadet.gender || 'N/A'}</td>
+                            <td className='p-2 border-b text-left'>{cadet.campus || 'N/A'}</td>
                             <td className='p-2 border-b text-left font-medium'>{finalGrade}</td>
                             <td className='p-2 border-b text-left'>{cadet.equivalent_grade || 'N/A'}</td>
                             <td className='p-2 border-b text-left'>

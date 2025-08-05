@@ -94,16 +94,17 @@ const userReportAnIssue = ({ auth }) => {
               </div>
               {/* Action buttons - only show if user has made input */}
               {hasUserInput && (
-                <div className='flex justify-end gap-4'>
-                  <button 
-                    className='text-[#6B6A6A] px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-150'
+                <div className="flex justify-end mt-8">
+                  <button
+                    type="button"
+                    className="bg-gray-400 text-white px-4 py-2 rounded mr-2"
                     onClick={handleCancel}
                   >
                     Cancel
                   </button>
-                  <button 
-                    className='bg-primary text-white px-6 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
-                    onClick={handleSubmit}
+                  <button
+                    type="submit"
+                    className="bg-primary text-white px-4 py-2 rounded"
                   >
                     Submit
                   </button>

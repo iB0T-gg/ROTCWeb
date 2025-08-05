@@ -13,6 +13,8 @@ const RegisterFaculty = () => {
     first_name: '',
     middle_name: '',
     last_name: '',
+    gender: '',
+    campus: '',
     department: '',
     password: '',
     password_confirmation: '',
@@ -77,16 +79,16 @@ const RegisterFaculty = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email Address
                 </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your email"
-                  value={data.email}
-                  onChange={(e) => setData('email', e.target.value)}
-                />
+                                 <input
+                   id="email"
+                   name="email"
+                   type="email"
+                   required
+                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                   placeholder="Enter your email address"
+                   value={data.email}
+                   onChange={(e) => setData('email', e.target.value)}
+                 />
                 {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email}</div>}
               </div>
 
@@ -95,16 +97,16 @@ const RegisterFaculty = () => {
                 <label htmlFor="employee_id" className="block text-sm font-medium text-gray-700">
                   Employee ID
                 </label>
-                <input
-                  id="employee_id"
-                  name="employee_id"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your employee ID"
-                  value={data.employee_id}
-                  onChange={(e) => setData('employee_id', e.target.value)}
-                />
+                                 <input
+                   id="employee_id"
+                   name="employee_id"
+                   type="text"
+                   required
+                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                   placeholder="Enter your employee ID number"
+                   value={data.employee_id}
+                   onChange={(e) => setData('employee_id', e.target.value)}
+                 />
                 {errors.employee_id && <div className="text-red-500 text-sm mt-1">{errors.employee_id}</div>}
               </div>
 
@@ -114,16 +116,16 @@ const RegisterFaculty = () => {
                   <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
                     First Name
                   </label>
-                  <input
-                    id="first_name"
-                    name="first_name"
-                    type="text"
-                    required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                    placeholder="First name"
-                    value={data.first_name}
-                    onChange={(e) => setData('first_name', e.target.value)}
-                  />
+                                     <input
+                     id="first_name"
+                     name="first_name"
+                     type="text"
+                     required
+                     className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                     placeholder="Enter your first name"
+                     value={data.first_name}
+                     onChange={(e) => setData('first_name', e.target.value)}
+                   />
                   {errors.first_name && <div className="text-red-500 text-sm mt-1">{errors.first_name}</div>}
                 </div>
 
@@ -131,16 +133,16 @@ const RegisterFaculty = () => {
                   <label htmlFor="middle_name" className="block text-sm font-medium text-gray-700">
                     Middle Name
                   </label>
-                  <input
-                    id="middle_name"
-                    name="middle_name"
-                    type="text"
-                    required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                    placeholder="Middle name"
-                    value={data.middle_name}
-                    onChange={(e) => setData('middle_name', e.target.value)}
-                  />
+                                     <input
+                     id="middle_name"
+                     name="middle_name"
+                     type="text"
+                     required
+                     className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                     placeholder="Enter your middle name"
+                     value={data.middle_name}
+                     onChange={(e) => setData('middle_name', e.target.value)}
+                   />
                   {errors.middle_name && <div className="text-red-500 text-sm mt-1">{errors.middle_name}</div>}
                 </div>
 
@@ -148,18 +150,76 @@ const RegisterFaculty = () => {
                   <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
                     Last Name
                   </label>
-                  <input
-                    id="last_name"
-                    name="last_name"
-                    type="text"
-                    required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                    placeholder="Last name"
-                    value={data.last_name}
-                    onChange={(e) => setData('last_name', e.target.value)}
-                  />
+                                     <input
+                     id="last_name"
+                     name="last_name"
+                     type="text"
+                     required
+                     className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                     placeholder="Enter your last name"
+                     value={data.last_name}
+                     onChange={(e) => setData('last_name', e.target.value)}
+                   />
                   {errors.last_name && <div className="text-red-500 text-sm mt-1">{errors.last_name}</div>}
                 </div>
+              </div>
+
+              {/* Gender */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Gender
+                </label>
+                <div className="flex gap-4 mt-1">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="Male"
+                      checked={data.gender === 'Male'}
+                      onChange={(e) => setData('gender', e.target.value)}
+                      className="mr-2"
+                      required
+                    />
+                    <span className="text-gray-700">Male</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="Female"
+                      checked={data.gender === 'Female'}
+                      onChange={(e) => setData('gender', e.target.value)}
+                      className="mr-2"
+                      required
+                    />
+                    <span className="text-gray-700">Female</span>
+                  </label>
+                </div>
+                {errors.gender && <div className="text-red-500 text-sm mt-1">{errors.gender}</div>}
+              </div>
+
+              {/* Campus */}
+              <div className="mb-4">
+                <label htmlFor="campus" className="block text-sm font-medium text-gray-700">
+                  Campus
+                </label>
+                <select
+                  id="campus"
+                  name="campus"
+                  required
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                  value={data.campus}
+                  onChange={(e) => setData('campus', e.target.value)}
+                >
+                  <option value="">Select Campus</option>
+                  <option value="Hagonoy Campus">Hagonoy Campus</option>
+                  <option value="Meneses Campus">Meneses Campus</option>
+                  <option value="Sarmiento Campus">Sarmiento Campus</option>
+                  <option value="Bustos Campus">Bustos Campus</option>
+                  <option value="San Rafael Campus">San Rafael Campus</option>
+                  <option value="Main Campus">Main Campus</option>
+                </select>
+                {errors.campus && <div className="text-red-500 text-sm mt-1">{errors.campus}</div>}
               </div>
 
               {/* Department */}
@@ -167,16 +227,16 @@ const RegisterFaculty = () => {
                 <label htmlFor="department" className="block text-sm font-medium text-gray-700">
                   Department
                 </label>
-                <input
-                  id="department"
-                  name="department"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your department"
-                  value={data.department}
-                  onChange={(e) => setData('department', e.target.value)}
-                />
+                                 <input
+                   id="department"
+                   name="department"
+                   type="text"
+                   required
+                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                   placeholder="e.g., Computer Science, Engineering"
+                   value={data.department}
+                   onChange={(e) => setData('department', e.target.value)}
+                 />
                 {errors.department && <div className="text-red-500 text-sm mt-1">{errors.department}</div>}
               </div>
 
@@ -185,16 +245,16 @@ const RegisterFaculty = () => {
                 <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
                   Phone Number
                 </label>
-                <input
-                  id="phone_number"
-                  name="phone_number"
-                  type="tel"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your phone number"
-                  value={data.phone_number}
-                  onChange={(e) => setData('phone_number', e.target.value)}
-                />
+                                 <input
+                   id="phone_number"
+                   name="phone_number"
+                   type="tel"
+                   required
+                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                   placeholder="Enter your phone number"
+                   value={data.phone_number}
+                   onChange={(e) => setData('phone_number', e.target.value)}
+                 />
                 {errors.phone_number && <div className="text-red-500 text-sm mt-1">{errors.phone_number}</div>}
               </div>
 
@@ -204,16 +264,16 @@ const RegisterFaculty = () => {
                   Password
                 </label>
                 <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                    placeholder="Enter your password"
-                    value={data.password}
-                    onChange={(e) => setData('password', e.target.value)}
-                  />
+                                     <input
+                     id="password"
+                     name="password"
+                     type={showPassword ? 'text' : 'password'}
+                     required
+                     className="mt-1 appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                     placeholder="Enter your password (min. 6 characters)"
+                     value={data.password}
+                     onChange={(e) => setData('password', e.target.value)}
+                   />
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
@@ -231,16 +291,16 @@ const RegisterFaculty = () => {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <input
-                    id="password_confirmation"
-                    name="password_confirmation"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                    placeholder="Confirm your password"
-                    value={data.password_confirmation}
-                    onChange={(e) => setData('password_confirmation', e.target.value)}
-                  />
+                                     <input
+                     id="password_confirmation"
+                     name="password_confirmation"
+                     type={showConfirmPassword ? 'text' : 'password'}
+                     required
+                     className="mt-1 appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                     placeholder="Confirm your password"
+                     value={data.password_confirmation}
+                     onChange={(e) => setData('password_confirmation', e.target.value)}
+                   />
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"

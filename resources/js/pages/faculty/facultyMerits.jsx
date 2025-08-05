@@ -3,8 +3,9 @@ import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
+import { toast } from 'react-toastify';
 
-const days = Array.from({ length: 15 }, (_, i) => `Day ${i + 1}`);
+const days = Array.from({ length: 15 }, (_, i) => `Week ${i + 1}`);
 
 const FacultyMerits = ({ auth }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -57,9 +58,11 @@ const FacultyMerits = ({ auth }) => {
           }
         } else {
           console.error('Failed to fetch cadets');
+          toast.error('Failed to fetch cadets data');
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        toast.error('Error loading data. Please refresh the page.');
       }
     };
 
@@ -108,19 +111,31 @@ const FacultyMerits = ({ auth }) => {
         percentage: Number(merits[index].percentage) || 0
       }));
 
+      // Get CSRF token from meta tag
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (!csrfToken) {
+        toast.error('CSRF token not found. Please refresh the page and try again.');
+        return;
+      }
+
       const response = await fetch('/api/merits/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ merits: meritsData })
       });
 
       if (response.ok) {
         const result = await response.json();
-        alert('Successfully saved merits.');
+        toast.success('Successfully saved merits.');
         setIsEditing(false);
+      } else if (response.status === 419) {
+        // CSRF token mismatch or session expired
+        toast.error('Session expired. Please refresh the page and try again.');
+        window.location.reload();
       } else if (response.status === 422) {
         // Laravel validation error
         const error = await response.json();
@@ -132,19 +147,42 @@ const FacultyMerits = ({ auth }) => {
         } else {
           errorMsg += ' ' + JSON.stringify(error);
         }
-        alert(errorMsg);
+        toast.error(errorMsg);
+      } else if (response.status === 401) {
+        // Unauthorized
+        toast.error('You are not authorized to perform this action. Please log in again.');
+        window.location.href = '/login';
       } else {
-        const errorText = await response.text();
-        alert('Failed to save merits. Please try again.\n' + errorText);
+        // Try to get JSON error response first
+        let errorText;
+        try {
+          const errorJson = await response.json();
+          errorText = errorJson.message || JSON.stringify(errorJson);
+        } catch (e) {
+          // If JSON parsing fails, get text response
+          errorText = await response.text();
+        }
+        
+        // Check if the response contains HTML (like a Laravel error page)
+        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
+          toast.error('Server error occurred. Please try again or contact support if the problem persists.');
+        } else {
+          toast.error('Failed to save merits: ' + errorText);
+        }
       }
     } catch (error) {
       console.error('Error saving merits:', error);
-      alert('Error saving merits. Please try again.\n' + error.message);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        toast.error('Network error. Please check your connection and try again.');
+      } else {
+        toast.error('Error saving merits: ' + error.message);
+      }
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    toast.info('Editing cancelled. Changes discarded.');
     // Reload data from database
     window.location.reload();
   };
@@ -369,24 +407,29 @@ const FacultyMerits = ({ auth }) => {
               <div className="flex justify-end gap-2">
                 {!isEditing ? (
                   <button 
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => {
+                      setIsEditing(true);
+                      toast.info('Edit mode enabled. You can now modify merits.');
+                    }}
                     className="bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150"
                   >
                     Edit Merits
                   </button>
                 ) : (
                   <>
-                    <button 
-                      onClick={handleSave}
-                      className="bg-primary text-white px-4 py-2 rounded hover:bg-primary transition-colors duration-150"
-                    >
-                      Save
-                    </button>
+                    
                     <button 
                       onClick={handleCancel}
                       className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors duration-150"
                     >
                       Cancel
+                    </button>
+
+                    <button 
+                      onClick={handleSave}
+                      className="bg-primary text-white px-4 py-2 rounded hover:bg-primary transition-colors duration-150"
+                    >
+                      Save
                     </button>
                   </>
                 )}

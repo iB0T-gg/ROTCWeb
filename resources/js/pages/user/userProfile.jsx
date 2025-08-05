@@ -16,10 +16,11 @@ const UserProfile = ({ auth, user }) => {
     gender: user?.gender || '-',
     age: user?.age ? String(user.age) : '',
     phone_number: user?.phone_number || '-',
+    campus: user?.campus || '-',
     student_number: user?.student_number || '',
     platoon: user?.platoon || '-',
     company: user?.company || '-',
-    battalion: user?.gender === 'Male' ? '1st Battalion' : (user?.battalion || '-'),
+         battalion: user?.battalion || '-',
     email: user?.email || '',
     year_course_section: user?.year_course_section || '-',
     blood_type: user?.blood_type || '',
@@ -103,30 +104,13 @@ const UserProfile = ({ auth, user }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => {
-      const updatedForm = { ...prev, [name]: value };
-      
-      // Auto-set battalion based on gender
-      if (name === 'gender') {
-        if (value === 'Female') {
-          updatedForm.battalion = '2nd Battalion';
-        } else if (value === 'Male') {
-          updatedForm.battalion = '1st Battalion';
-        }
-      }
-      
-      return updatedForm;
-    });
+    setForm((prev) => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Update battalion when form.gender changes
-  useEffect(() => {
-    if (form.gender === 'Female') {
-      setForm(prev => ({ ...prev, battalion: '2nd Battalion' }));
-    } else if (form.gender === 'Male') {
-      setForm(prev => ({ ...prev, battalion: '1st Battalion' }));
-    }
-  }, [form.gender]);
+
 
   const handleDateChange = (date) => {
     if (date) {
@@ -185,6 +169,7 @@ const UserProfile = ({ auth, user }) => {
 
   // Example options for dropdowns (customize as needed)
   const genderOptions = ['Male', 'Female'];
+  const campusOptions = ['Hagonoy Campus', 'Meneses Campus', 'Sarmiento Campus', 'Bustos Campus', 'San Rafael Campus', 'Main Campus'];
   const platoonOptions = ['1st Platoon', '2nd Platoon', '3rd Platoon'];
   const companyOptions = ['Alpha', 'Beta', 'Charlie', 'Delta'];
   // Battalion options based on gender
@@ -239,7 +224,32 @@ const UserProfile = ({ auth, user }) => {
     const file = e.target.files[0];
     setSelectedFile(file);
     if (file) {
+      // Validate file type and size
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, JPG, or GIF).');
+        e.target.value = '';
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB.');
+        e.target.value = '';
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        return;
+      }
+      
       setPreviewUrl(URL.createObjectURL(file));
+      console.log('File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
     } else {
       setPreviewUrl(null);
     }
@@ -251,32 +261,34 @@ const UserProfile = ({ auth, user }) => {
       alert("Please select a file.");
       return;
     }
-    const formData = new FormData();
-    formData.append("profile_picture", selectedFile);
 
-    // You may need to adjust the endpoint and headers for your backend
-    try {
-      const response = await fetch("/api/user/profile/upload-avatar", {
-        method: "POST",
-        body: formData,
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+    // Use Inertia.js router for file upload to handle CSRF automatically
+    router.post('/api/user/profile/upload-avatar', 
+      { profile_picture: selectedFile },
+      {
+        forceFormData: true,
+        onSuccess: (page) => {
+          console.log('Upload successful:', page);
+          setShowAvatarModal(false);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          alert("Profile picture uploaded successfully!");
+          window.location.reload();
         },
-        credentials: "same-origin",
-      });
-
-      if (response.ok) {
-        // Optionally, update the profilePic state with the new image URL
-        // You may want to reload the user data or just update the image
-        setShowAvatarModal(false);
-        window.location.reload(); // or fetch new user data
-      } else {
-        alert("Failed to upload image.");
+        onError: (errors) => {
+          console.error('Upload errors:', errors);
+          if (errors && typeof errors === 'object') {
+            const errorMessages = Object.values(errors).flat();
+            alert('Upload failed:\n' + errorMessages.join('\n'));
+          } else {
+            alert('Upload failed. Please try again.');
+          }
+        },
+        onFinish: () => {
+          console.log('Upload request finished');
+        }
       }
-    } catch (err) {
-      alert("Error uploading image.");
-    }
+    );
   };
 
   // Replace with your actual image or fallback
@@ -490,11 +502,34 @@ const UserProfile = ({ auth, user }) => {
                       onChange={handleChange}
                     />
                   </div>
+                  <div className="flex-1">
+                    <label className="block font-medium text-black">Campus</label>
+                    {editing ? (
+                      <select
+                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        name="campus"
+                        value={form.campus}
+                        onChange={handleChange}
+                      >
+                        <option value="">-</option>
+                        {campusOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.campus || '-'}
+                        readOnly
+                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Row 3 */}
                 <div className="flex gap-x-4 mb-3">
-                  <div className="flex-[2]">
+                  <div className="flex-1">
                     <label className="block font-medium text-black">Student Number</label>
                     <input
                       type="text"
@@ -575,7 +610,7 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="flex-[2]">
+                  <div className="flex-1">
                     <label className="block font-medium text-black">Email</label>
                     <input
                       type="text"
@@ -589,7 +624,7 @@ const UserProfile = ({ auth, user }) => {
 
                 {/* Row 4 */}
                 <div className="flex gap-x-4 mb-3">
-                  <div className="flex-[2]">
+                  <div className="flex-1">
                     <label className="block font-medium text-black">Course/ Year/ Section</label>
                     <input
                       type="text"
@@ -671,7 +706,7 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="flex-[2]">
+                  <div className="flex-1">
                     <label className="block font-medium text-black">Address</label>
                     {editing ? (
                       <div style={{ position: "relative", maxWidth: 600 }}>
@@ -823,7 +858,7 @@ const UserProfile = ({ auth, user }) => {
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 bg-primary text-white rounded hover:bg-green-700"
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary"
                   onClick={handleSaveAvatar}
                   type="button"
                 >
@@ -836,6 +871,6 @@ const UserProfile = ({ auth, user }) => {
       )}
     </div>
   );
-};
-
-export default UserProfile;
+  };
+  
+  export default UserProfile;

@@ -46,6 +46,8 @@ class User extends Authenticatable implements CanResetPasswordContract
     'first_name',
     'middle_name',
     'last_name',
+    'gender',
+    'campus',
     'year_course_section',
     'password',
     'phone_number',
@@ -53,7 +55,6 @@ class User extends Authenticatable implements CanResetPasswordContract
     'role',
     'status',
     'birthday',
-    'gender',
     'age',
     'platoon',
     'company',
@@ -65,6 +66,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     'profile_pic',
     'equivalent_grade',
     'final_grade',
+    'remarks',
 ];
 
     /**
@@ -145,5 +147,71 @@ class User extends Authenticatable implements CanResetPasswordContract
         if ($totalPercentage >= 76) return 2.75;
         if ($totalPercentage >= 75) return 3.00;
         return 5.00;
+    }
+
+    /**
+     * Calculate the final grade percentage for the user.
+     *
+     * @param float $meritPercentage
+     * @param float $attendancePercentage
+     * @param float|null $midtermExam
+     * @param float|null $finalExam
+     * @return float
+     */
+    public function calculateFinalGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam)
+    {
+        $merit = $meritPercentage;
+        $attendance = $attendancePercentage;
+        $exams = ($midtermExam !== null && $finalExam !== null)
+            ? ((floatval($midtermExam) + floatval($finalExam)) / 100) * 40
+            : 0;
+        
+        return $merit + $attendance + $exams;
+    }
+
+    /**
+     * Get remarks based on equivalent grade.
+     *
+     * @param float|null $equivalentGrade
+     * @return string
+     */
+    public function getRemarks($equivalentGrade = null)
+    {
+        if ($equivalentGrade === null) {
+            $equivalentGrade = $this->equivalent_grade;
+        }
+        
+        if ($equivalentGrade === null) {
+            return 'No Grade';
+        }
+        
+        $eqGrade = floatval($equivalentGrade);
+        if ($eqGrade >= 1.00 && $eqGrade <= 3.00) {
+            return 'Passed';
+        } else {
+            return 'Failed';
+        }
+    }
+
+    /**
+     * Update final grade, equivalent grade, and remarks for the user.
+     *
+     * @param float $meritPercentage
+     * @param float $attendancePercentage
+     * @param float|null $midtermExam
+     * @param float|null $finalExam
+     * @return bool
+     */
+    public function updateGrades($meritPercentage, $attendancePercentage, $midtermExam, $finalExam)
+    {
+        $finalGrade = $this->calculateFinalGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam);
+        $equivalentGrade = $this->computeEquivalentGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam);
+        $remarks = $this->getRemarks($equivalentGrade);
+        
+        return $this->update([
+            'final_grade' => $finalGrade,
+            'equivalent_grade' => $equivalentGrade,
+            'remarks' => $remarks
+        ]);
     }
 }

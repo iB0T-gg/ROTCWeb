@@ -3,23 +3,7 @@ import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
 import { usePage } from '@inertiajs/react';
 
-const attendanceData = [
-  { day: 1, date: '01-JAN-2025', status: 'PRESENT' },
-  { day: 2, date: '08-JAN-2025', status: 'PRESENT' },
-  { day: 3, date: '15-JAN-2025', status: 'PRESENT' },
-  { day: 4, date: '22-JAN-2025', status: 'PRESENT' },
-  { day: 5, date: '29-JAN-2025', status: 'PRESENT' },
-  { day: 6, date: '05-FEB-2025', status: 'PRESENT' },
-  { day: 7, date: '12-FEB-2025', status: 'PRESENT' },
-  { day: 8, date: '19-FEB-2025', status: 'PRESENT' },
-  { day: 9, date: '26-FEB-2025', status: 'PRESENT' },
-  { day: 10, date: '05-MAR-2025', status: 'PRESENT' },
-  { day: 11, date: '12-MAR-2025', status: 'PRESENT' },
-  { day: 12, date: '19-MAR-2025', status: 'PRESENT' },
-  { day: 13, date: '26-MAR-2025', status: 'PRESENT' },
-  { day: 14, date: '03-MAR-2025', status: 'PRESENT' },
-  { day: 15, date: '10-MAR-2025', status: 'PRESENT' },
-];
+const attendanceData = [];
 
 const userAttendance = ({ auth }) => {
     const { user } = usePage().props;
@@ -76,13 +60,21 @@ const userAttendance = ({ auth }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {attendanceData.map((row) => (
-                      <tr key={row.day} className='border-b border-gray-100'>
-                        <td className='py-2 px-4'>{row.day}</td>
-                        <td className='py-2 px-4'>{row.date}</td>
-                        <td className='py-2 px-4'>{row.status}</td>
+                    {attendanceData.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="py-8 px-4 text-center text-gray-500">
+                          No attendance records available at the moment.
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      attendanceData.map((row) => (
+                        <tr key={row.day} className='border-b border-gray-100'>
+                          <td className='py-2 px-4'>{row.day}</td>
+                          <td className='py-2 px-4'>{row.date}</td>
+                          <td className='py-2 px-4'>{row.status}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -179,7 +179,7 @@ const FacultyAttendance = ({ auth }) => {
                 <thead className='text-gray-600'>
                   <tr>
                     <th className='p-3 border-b font-medium text-left'>Cadet Name</th>
-                    <th className='p-3 border-b font-medium text-center'>Days Present</th>
+                    <th className='p-3 border-b font-medium text-center'>Weeks Present</th>
                     <th className='p-3 border-b font-medium text-center'>Percentage</th>
                   </tr>
                 </thead>

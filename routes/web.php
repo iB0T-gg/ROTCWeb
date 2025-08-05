@@ -110,6 +110,39 @@ Route::get('/test-email', function () {
     }
 });
 
+// Test session and CSRF route (remove in production)
+Route::get('/test-session', function () {
+    return response()->json([
+        'session_id' => session()->getId(),
+        'csrf_token' => csrf_token(),
+        'user' => auth()->user() ? auth()->user()->id : null,
+        'timestamp' => now()->toISOString()
+    ]);
+})->middleware('auth');
+
+// Test file upload route (remove in production)
+Route::post('/test-upload', function (Request $request) {
+    return response()->json([
+        'has_file' => $request->hasFile('test_file'),
+        'file_info' => $request->file('test_file') ? [
+            'name' => $request->file('test_file')->getClientOriginalName(),
+            'size' => $request->file('test_file')->getSize(),
+            'mime' => $request->file('test_file')->getMimeType(),
+        ] : null,
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId(),
+    ]);
+})->middleware('auth');
+
+// Refresh CSRF token route
+Route::post('/refresh-csrf', function (Request $request) {
+    $request->session()->regenerateToken();
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId(),
+    ]);
+})->middleware('auth');
+
 // Admin Routes - Only accessible to admins
 Route::middleware(['auth', AdminMiddleware::class])->group(function () {
     Route::get('/adminHome', function () {
@@ -214,46 +247,12 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/user/profile/update', [UserController::class, 'updateProfile']);
     Route::post('/user/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
     Route::get('/filter-options', [UserController::class, 'getFilterOptions']);
+    Route::get('/user/grades', [UserController::class, 'getUserGrades']);
     
     // Admin-only API endpoints
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
-        Route::get('/admin-cadets', function (Request $request) {
-            $cadets = User::where('role', 'user')->select(
-                'id',
-                'student_number',
-                'first_name',
-                'last_name',
-                'middle_name',
-                'year_course_section',
-                'gender',
-                'midterm_exam',
-                'final_exam',
-                'equivalent_grade',
-                'final_grade',
-                'platoon',
-                'company',
-                'battalion',
-                'role',
-                'birthday',
-                'blood_type',
-                'address',
-                'region',
-                'height',
-                'phone_number'
-            )->get();
-            
-            // Log sample birthday for debugging
-            if ($cadets->count() > 0) {
-                $sampleBirthday = $cadets->first()->birthday;
-                \Log::info('Sample birthday from database: ' . json_encode($sampleBirthday));
-            }
-            
-            // Log for debugging
-            \Log::info('Admin Cadets API endpoint called, returning ' . $cadets->count() . ' records');
-            
-            return $cadets;
-        });
+        Route::get('/admin-cadets', [App\Http\Controllers\GradeController::class, 'getAdminMasterlistGrades']);
         
         // Attendance API endpoints for admin
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
@@ -306,4 +305,5 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::get('/grade-equivalents', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);
     Route::post('/grade-equivalents/save', [App\Http\Controllers\GradeController::class, 'saveEquivalentGrades']);
     Route::post('/grade-equivalents/update', [App\Http\Controllers\GradeController::class, 'updateEquivalentGrade']);
+    Route::post('/grade-equivalents/calculate', [App\Http\Controllers\GradeController::class, 'calculateAndUpdateGrades']);
 });

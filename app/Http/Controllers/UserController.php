@@ -54,6 +54,7 @@ class UserController extends Controller
                 'gender' => 'nullable|string|max:20',
                 'age' => 'nullable|string|max:10',
                 'phone_number' => 'nullable|string|max:20',
+                'campus' => 'nullable|string|max:255',
                 'student_number' => 'nullable|string|max:50',
                 'platoon' => 'nullable|string|max:50',
                 'company' => 'nullable|string|max:50',
@@ -77,14 +78,7 @@ class UserController extends Controller
 
             \Log::info('Data to update', ['data' => $dataToUpdate]);
 
-            // Auto-set battalion based on gender
-            if (isset($dataToUpdate['gender'])) {
-                if ($dataToUpdate['gender'] === 'Female') {
-                    $dataToUpdate['battalion'] = '2nd Battalion';
-                } elseif ($dataToUpdate['gender'] === 'Male') {
-                    $dataToUpdate['battalion'] = '1st Battalion';
-                }
-            }
+
 
             // Update the user
             $user->update($dataToUpdate);
@@ -112,25 +106,60 @@ class UserController extends Controller
 
     public function uploadAvatar(Request $request)
     {
-        \Log::info('uploadAvatar called', [
-            'all' => $request->all(),
-            'files' => $request->files->all(),
-            'hasFile' => $request->hasFile('profile_picture'),
-            'file' => $request->file('profile_picture')
-        ]);
-        $request->validate([
-            'profile_picture' => 'required|image|max:5120', // 5MB
-        ]);
+        try {
+            \Log::info('uploadAvatar called', [
+                'all' => $request->all(),
+                'files' => $request->files->all(),
+                'hasFile' => $request->hasFile('profile_picture'),
+                'file' => $request->file('profile_picture'),
+                'session_id' => session()->getId()
+            ]);
 
-        $user = auth()->user();
-        $file = $request->file('profile_picture');
-        $path = $file->store('avatars', 'public');
+            $request->validate([
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB
+            ]);
 
-        // Save the path to the user
-        $user->profile_pic_url = '/storage/' . $path;
-        $user->save();
+            $user = auth()->user();
+            
+            if (!$user) {
+                return back()->withErrors(['error' => 'User not authenticated']);
+            }
 
-        return response()->json(['success' => true, 'url' => $user->profile_pic_url]);
+            $file = $request->file('profile_picture');
+            
+            if (!$file) {
+                return back()->withErrors(['error' => 'No file uploaded']);
+            }
+
+            // Generate unique filename
+            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            
+            // Store the file
+            $path = $file->storeAs('avatars', $filename, 'public');
+
+            if (!$path) {
+                return back()->withErrors(['error' => 'Failed to store file']);
+            }
+
+            // Save the path to the user
+            $user->profile_pic_url = '/storage/' . $path;
+            $user->save();
+
+            \Log::info('Avatar uploaded successfully', [
+                'user_id' => $user->id,
+                'path' => $path,
+                'url' => $user->profile_pic_url
+            ]);
+
+            return back()->with('success', 'Profile picture uploaded successfully!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in uploadAvatar', ['errors' => $e->errors()]);
+            return back()->withErrors($e->errors());
+        } catch (\Exception $e) {
+            \Log::error('Error in uploadAvatar', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->withErrors(['error' => 'Upload failed: ' . $e->getMessage()]);
+        }
     }
 
     // Get merits for all cadets
@@ -147,59 +176,94 @@ class UserController extends Controller
     // Save merits for cadets
     public function saveMerits(Request $request)
     {
-        $request->validate([
-            'merits' => 'required|array',
-            'merits.*.cadet_id' => 'required|exists:users,id',
-            'merits.*.days' => 'required|array|size:15',
-            'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
-            'merits.*.percentage' => 'required|numeric|min:0|max:30',
-        ]);
+        try {
+            // Log the incoming request for debugging
+            \Log::info('saveMerits called', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
 
-        $faculty = auth()->user();
-        $savedCount = 0;
+            $request->validate([
+                'merits' => 'required|array',
+                'merits.*.cadet_id' => 'required|exists:users,id',
+                'merits.*.days' => 'required|array|size:15',
+                'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.percentage' => 'required|numeric|min:0|max:30',
+            ]);
 
-        foreach ($request->merits as $meritData) {
-            $sum = array_sum($meritData['days']); // $meritData['days'] is an array of 15 day scores
-            $percentage = ($sum / 150) * 30;
-
-            $merit = \App\Models\Merit::updateOrCreate(
-                [
-                    'cadet_id' => $meritData['cadet_id'],
-                    'type' => 'military_attitude'
-                ],
-                [
-                    'percentage' => $percentage,
-                    'updated_by' => $faculty->id,
-                    'days_array' => $meritData['days'],
-                    // Optionally, also set day_1 ... day_15 here
-                ]
-            );
-
-            // Update day scores
-            for ($i = 1; $i <= 15; $i++) {
-                $merit->{"day_$i"} = $meritData['days'][$i - 1] ?? null;
+            $faculty = auth()->user();
+            if (!$faculty) {
+                \Log::error('No authenticated user found in saveMerits');
+                return response()->json(['error' => 'Authentication required'], 401);
             }
-            // Also set days_array JSON field
-            $merit->days_array = $meritData['days'];
-            $merit->save();
 
-            // Recompute and save equivalent grade for the user
-            $user = \App\Models\User::find($meritData['cadet_id']);
-            // Get latest merit percentage (just saved), attendance percentage, and exam scores
-            $attendanceRecord = \DB::table('attendance')->where('cadet_id', $user->id)->first();
-            $attendancePercentage = $attendanceRecord ? floatval($attendanceRecord->percentage) : 0;
-            $midtermExam = $user->midterm_exam;
-            $finalExam = $user->final_exam;
-            $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $midtermExam, $finalExam);
-            $user->save();
-            $savedCount++;
+            $savedCount = 0;
+
+            foreach ($request->merits as $meritData) {
+                try {
+                    $sum = array_sum($meritData['days']); // $meritData['days'] is an array of 15 day scores
+                    $percentage = ($sum / 150) * 30;
+
+                    $merit = \App\Models\Merit::updateOrCreate(
+                        [
+                            'cadet_id' => $meritData['cadet_id'],
+                            'type' => 'military_attitude'
+                        ],
+                        [
+                            'percentage' => $percentage,
+                            'updated_by' => $faculty->id,
+                            'days_array' => $meritData['days'],
+                            // Optionally, also set day_1 ... day_15 here
+                        ]
+                    );
+
+                    // Update day scores
+                    for ($i = 1; $i <= 15; $i++) {
+                        $merit->{"day_$i"} = $meritData['days'][$i - 1] ?? null;
+                    }
+                    // Also set days_array JSON field
+                    $merit->days_array = $meritData['days'];
+                    $merit->save();
+
+                    // Recompute and save equivalent grade for the user
+                    $user = \App\Models\User::find($meritData['cadet_id']);
+                    if ($user) {
+                        // Get latest merit percentage (just saved), attendance percentage, and exam scores
+                        $attendanceRecord = \DB::table('attendances')->where('cadet_id', $user->id)->first();
+                        $attendancePercentage = $attendanceRecord ? floatval($attendanceRecord->percentage) : 0;
+                        $midtermExam = $user->midterm_exam;
+                        $finalExam = $user->final_exam;
+                        $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $midtermExam, $finalExam);
+                        $user->save();
+                    }
+                    $savedCount++;
+                } catch (\Exception $e) {
+                    \Log::error('Error processing merit for cadet ' . $meritData['cadet_id'], [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    throw $e;
+                }
+            }
+
+            \Log::info('saveMerits completed successfully', ['saved_count' => $savedCount]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully saved merits for {$savedCount} cadets",
+                'saved_count' => $savedCount
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in saveMerits', ['errors' => $e->errors()]);
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error in saveMerits', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Successfully saved merits for {$savedCount} cadets",
-            'saved_count' => $savedCount
-        ]);
     }
 
     public function getFilterOptions()
@@ -303,5 +367,43 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error saving attendance: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get the current user's grades
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserGrades()
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+        
+        // Get the user's grades from the database
+        $userGrades = User::where('id', $user->id)
+                         ->select(
+                             'id',
+                             'first_name',
+                             'last_name',
+                             'middle_name',
+                             'email',
+                             'student_number',
+                             'year_course_section',
+                             'midterm_exam',
+                             'final_exam',
+                             'equivalent_grade',
+                             'final_grade',
+                             'remarks'
+                         )
+                         ->first();
+        
+        if (!$userGrades) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        
+        return response()->json($userGrades);
     }
 }

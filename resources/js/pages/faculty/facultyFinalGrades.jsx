@@ -104,10 +104,10 @@ const FacultyFinalGrades = ({ auth }) => {
   };
   
   // Auto-save a single equivalent grade and final grade when calculated
-    const autoSaveEquivalentGrade = async (userId, equivalentGrade, finalGrade) => {
+    const autoSaveEquivalentGrade = async (userId, equivalentGrade, finalGrade, meritPercentage, attendancePercentage, midtermExam, finalExam) => {
     try {
       setAutoSaving(true);
-      const response = await fetch('/direct-grades/update', {
+      const response = await fetch('/api/grade-equivalents/calculate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,8 +115,10 @@ const FacultyFinalGrades = ({ auth }) => {
         },
         body: JSON.stringify({ 
           user_id: userId, 
-          equivalent_grade: equivalentGrade,
-          final_grade: finalGrade
+          merit_percentage: meritPercentage,
+          attendance_percentage: attendancePercentage,
+          midterm_exam: midtermExam,
+          final_exam: finalExam
         })
       });
       
@@ -198,7 +200,15 @@ const FacultyFinalGrades = ({ auth }) => {
         const savedEquivalentGrade = equivalentGrades[cadet.id];
         if (savedEquivalentGrade === undefined || savedEquivalentGrade !== computedEquivalentGrade) {
           needsSaving = true;
-          await autoSaveEquivalentGrade(cadet.id, computedEquivalentGrade, finalGrade);
+          await autoSaveEquivalentGrade(
+            cadet.id, 
+            computedEquivalentGrade, 
+            finalGrade, 
+            merit, 
+            attendance, 
+            cadet.midterm_exam, 
+            cadet.final_exam
+          );
           setEquivalentGrades(prev => ({
             ...prev,
             [cadet.id]: computedEquivalentGrade
@@ -225,12 +235,8 @@ const FacultyFinalGrades = ({ auth }) => {
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
               <h1 className='text-2xl font-semibold'>Exams & Grades</h1>
-              <button
-                className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 ml-4'
-                onClick={handleSaveEquivalentGrades}
-              >
-                Force Save All Grades
-              </button>
+              
+
             </div>
 
             {/* Main Content */}
@@ -338,7 +344,7 @@ const FacultyFinalGrades = ({ auth }) => {
                       <th className='p-3 border-b font-medium text-center'>Merits</th>
                       <th className='p-3 border-b font-medium text-center'>Attendance</th>
                       <th className='p-3 border-b font-medium text-center'>Exams</th>
-                      <th className='p-3 border-b font-medium text-center'>Final Grade</th>
+                      <th className='p-3 border-b font-medium text-center'>Final Average</th>
                       <th className='p-3 border-b font-medium text-center'>Equivalent Grade</th>
                     </tr>
                   </thead>
@@ -364,7 +370,7 @@ const FacultyFinalGrades = ({ auth }) => {
                             {exams.toFixed(2)}%
                           </td>
                           <td className='p-3 text-center text-black'>
-                            {(merit + attendance + exams).toFixed(0)}
+                            {(merit + attendance + exams).toFixed(2)}%
                           </td>
                           <td className='p-3 text-center text-black'>
                             {savedEquivalentGrade !== undefined ? savedEquivalentGrade.toFixed(2) : computedEquivalentGrade.toFixed(2)}

@@ -316,21 +316,21 @@ export default function AdminAttendance(){
                                     <thead className='text-gray-600 sticky top-0 bg-white'>
                                         <tr>
                                             <th className='p-2 border-b font-medium text-left'>Cadet Name</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 1</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 2</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 3</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 4</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 5</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 6</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 7</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 8</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 9</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 10</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 11</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 12</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 13</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 14</th>
-                                            <th className='p-2 border-b font-medium text-left'>Day 15</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 1</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 2</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 3</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 4</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 5</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 6</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 7</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 8</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 9</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 10</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 11</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 12</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 13</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 14</th>
+                                            <th className='p-2 border-b font-medium text-left'>Week 15</th>
                                             <th className='p-2 border-b font-medium text-left'>Attendance Percentage</th>
                                         </tr>
                                     </thead>
@@ -413,7 +413,7 @@ export default function AdminAttendance(){
                                     )}
                                     <button 
                                         className={`${editMode 
-                                            ? 'bg-green-600 hover:bg-green-700' 
+                                            ? 'bg-primary hover:bg-primary' 
                                             : 'bg-primary hover:bg-[#3d4422]'
                                         } text-white px-4 py-2 rounded transition-colors duration-150`}
                                         onClick={toggleEditMode}
