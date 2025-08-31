@@ -88,7 +88,7 @@ export default function AdminCadetsProfile(){
         const filtered = cadets.filter(cadet => 
             cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             `${cadet.first_name} ${cadet.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cadet.year_course_section?.toLowerCase().includes(searchTerm.toLowerCase())
+            `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}`.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
         // Sort alphabetically by last name, first name
@@ -119,7 +119,7 @@ export default function AdminCadetsProfile(){
                 `"${cadet.first_name || 'N/A'}"`,
                 `"${cadet.middle_name || 'N/A'}"`,
                 `"${cadet.last_name || 'N/A'}"`,
-                cadet.year_course_section || 'N/A',
+                `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A',
                 `"${formattedBirthday}"`,
                 cadet.blood_type || 'N/A',
                 `"${cadet.address || 'N/A'}"`,
@@ -227,7 +227,7 @@ export default function AdminCadetsProfile(){
                           <td className='p-2 border-b text-left'>{cadet.first_name || 'N/A'}</td>
                           <td className='p-2 border-b text-left'>{cadet.middle_name || 'N/A'}</td>
                           <td className='p-2 border-b text-left'>{cadet.last_name || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.year_course_section || 'N/A'}</td>
+                          <td className='p-2 border-b text-left'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
                           <td className='p-2 border-b text-left'>
                             {getBirthdayFromDatabase(cadet.birthday)}
                           </td>

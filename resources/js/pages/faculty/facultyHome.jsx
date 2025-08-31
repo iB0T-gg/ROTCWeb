@@ -30,7 +30,6 @@ const FacultyHome = ({ auth }) => {
               </a>
               <a href="/faculty/facultyAttendance">
                 <div className="bg-white p-6 rounded-lg drop-shadow-lg hover:scale-105 transition-shadow duration-300 cursor-pointer">
-                  <h3 className="text-lg font-bold mb-2 text-black">Attendance</h3>
                   <p className="text-gray-600">Monitor student attendance</p>
                 </div>
               </a>

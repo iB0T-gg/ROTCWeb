@@ -22,7 +22,9 @@ const UserProfile = ({ auth, user }) => {
     company: user?.company || '-',
          battalion: user?.battalion || '-',
     email: user?.email || '',
-    year_course_section: user?.year_course_section || '-',
+    year: user?.year || '-',
+    course: user?.course || '-',
+    section: user?.section || '-',
     blood_type: user?.blood_type || '',
     region: user?.region || '-',
     height: user?.height || '-',
@@ -488,6 +490,7 @@ const UserProfile = ({ auth, user }) => {
                       readOnly
                       className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
                       name="age"
+                      placeholder='-'
                     />
                   </div>
                   <div className="flex-1">
@@ -625,14 +628,38 @@ const UserProfile = ({ auth, user }) => {
                 {/* Row 4 */}
                 <div className="flex gap-x-4 mb-3">
                   <div className="flex-1">
-                    <label className="block font-medium text-black">Course/ Year/ Section</label>
+                    <label className="block font-medium text-black">Course</label>
                     <input
                       type="text"
-                      value={form.year_course_section}
+                      value={form.course}
                       readOnly={!editing}
                       required
                       className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
-                      name="year_course_section"
+                      name="course"
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block font-medium text-black">Year</label>
+                    <input
+                      type="text"
+                      value={form.year}
+                      readOnly={!editing}
+                      required
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
+                      name="year"
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block font-medium text-black">Section</label>
+                    <input
+                      type="text"
+                      value={form.section}
+                      readOnly={!editing}
+                      required
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
+                      name="section"
                       onChange={handleChange}
                     />
                   </div>
@@ -715,7 +742,7 @@ const UserProfile = ({ auth, user }) => {
                           value={form.address}
                           readOnly
                           className="w-full bg-gray-100 p-2 rounded py-3 cursor-pointer"
-                          placeholder="Click to select address"
+                          placeholder="-"
                           onClick={() => setShowPicker(true)}
                         />
                         {showPicker && (

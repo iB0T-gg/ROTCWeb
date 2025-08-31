@@ -48,7 +48,9 @@ class User extends Authenticatable implements CanResetPasswordContract
     'last_name',
     'gender',
     'campus',
-    'year_course_section',
+    'year',
+    'course',
+    'section',
     'password',
     'phone_number',
     'cor_file_path',
@@ -109,6 +111,20 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->middle_name} {$this->last_name}";
+    }
+
+    /**
+     * Get the combined year-course-section display.
+     */
+    public function getYearCourseSectionAttribute()
+    {
+        $result = $this->course . ' ' . $this->year;
+        
+        if (!empty($this->section)) {
+            $result .= '-' . $this->section;
+        }
+        
+        return $result;
     }
     
     /**

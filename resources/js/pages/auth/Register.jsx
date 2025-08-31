@@ -14,7 +14,9 @@ export default function Register() {
         last_name: '',
         gender: '',
         campus: '',
-        year_course_section: '',
+        year: '',
+        course: '',
+        section: '',
         password: '',
         password_confirmation: '',
         phone_number: '',
@@ -84,7 +86,7 @@ export default function Register() {
                                         id='email'
                                         value={data.email}
                                         onChange={e => setData('email', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         placeholder='Enter your email address'
                                         required
                                     />
@@ -98,7 +100,7 @@ export default function Register() {
                                         id='student_number'
                                         value={data.student_number}
                                         onChange={e => setData('student_number', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         placeholder='Enter your student number'
                                         required
                                     />
@@ -113,7 +115,7 @@ export default function Register() {
                                             id='first_name'
                                             value={data.first_name}
                                             onChange={e => setData('first_name', e.target.value)}
-                                            className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                             placeholder='Enter your first name'
                                             required
                                         />
@@ -126,7 +128,7 @@ export default function Register() {
                                             id='middle_name'
                                             value={data.middle_name}
                                             onChange={e => setData('middle_name', e.target.value)}
-                                            className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                             placeholder='Enter your middle name'
                                             required
                                         />
@@ -139,7 +141,7 @@ export default function Register() {
                                             id='last_name'
                                             value={data.last_name}
                                             onChange={e => setData('last_name', e.target.value)}
-                                            className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                             placeholder='Enter your last name'
                                             required
                                         />
@@ -153,32 +155,71 @@ export default function Register() {
                                         id='campus'
                                         value={data.campus}
                                         onChange={e => setData('campus', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         required
                                     >
-                                        <option value="">Select Campus</option>
-                                        <option value="Hagonoy Campus">Hagonoy Campus</option>
-                                        <option value="Meneses Campus">Meneses Campus</option>
-                                        <option value="Sarmiento Campus">Sarmiento Campus</option>
-                                        <option value="Bustos Campus">Bustos Campus</option>
-                                        <option value="San Rafael Campus">San Rafael Campus</option>
-                                        <option value="Main Campus">Main Campus</option>
+                                        <option value="" className="text-gray-400">Select Campus</option>
+                                        <option value="Hagonoy Campus" className="text-gray-700">Hagonoy Campus</option>
+                                        <option value="Meneses Campus" className="text-gray-700">Meneses Campus</option>
+                                        <option value="Sarmiento Campus" className="text-gray-700">Sarmiento Campus</option>
+                                        <option value="Bustos Campus" className="text-gray-700">Bustos Campus</option>
+                                        <option value="San Rafael Campus" className="text-gray-700">San Rafael Campus</option>
+                                        <option value="Main Campus" className="text-gray-700">Main Campus</option>
                                     </select>
                                     {errors.campus && <div className="text-red-500 text-sm mt-1">{errors.campus}</div>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='year_course_section'>Year Course & Section</label>
-                                    <input
-                                        type='text'
-                                        id='year_course_section'
-                                        value={data.year_course_section}
-                                        onChange={e => setData('year_course_section', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
-                                        placeholder='e.g., BSIT 1G-G1'
-                                        required
-                                    />
-                                    {errors.year_course_section && <div className="text-red-500 text-sm mt-1">{errors.year_course_section}</div>}
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='course'>Course</label>
+                                        <select
+                                            id='course'
+                                            value={data.course}
+                                            onChange={e => setData('course', e.target.value)}
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            required
+                                        >
+                                            <option value="" className="text-gray-400">Select Course</option>
+                                            <option value="BSIT" className="text-gray-700">BSIT</option>
+                                            <option value="BSIS" className="text-gray-700">BSIS</option>
+                                            <option value="BSCS" className="text-gray-700">BSCS</option>
+                                            <option value="BSA" className="text-gray-700">BSA</option>
+                                            <option value="BSBA" className="text-gray-700">BSBA</option>
+                                            <option value="BSED" className="text-gray-700">BSED</option>
+                                            <option value="BEED" className="text-gray-700">BEED</option>
+                                            <option value="BSN" className="text-gray-700">BSN</option>
+                                            <option value="BSHM" className="text-gray-700">BSHM</option>
+                                            <option value="BSTM" className="text-gray-700">BSTM</option>
+                                        </select>
+                                        {errors.course && <div className="text-red-500 text-sm mt-1">{errors.course}</div>}
+                                    </div>
+                                    <div>
+                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='year'>Year Level</label>
+                                        <input
+                                            type='text'
+                                            id='year'
+                                            value={data.year}
+                                            onChange={e => setData('year', e.target.value)}
+                                            placeholder='e.g., 2nd Year - G'
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            required
+                                        />
+                                        {errors.year && <div className="text-red-500 text-sm mt-1">{errors.year}</div>}
+                                    </div>
+                                    <div>
+                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='section'>Section</label>
+                                        <select
+                                            id='section'
+                                            value={data.section}
+                                            onChange={e => setData('section', e.target.value)}
+                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        >
+                                            <option value="" className="text-gray-400">Select Sub-Section</option>
+                                            <option value="G1" className="text-gray-700">G1</option>
+                                            <option value="G2" className="text-gray-700">G2</option>
+                                        </select>
+                                        {errors.section && <div className="text-red-500 text-sm mt-1">{errors.section}</div>}
+                                    </div>
                                 </div>
 
                                 <div className="mb-4">
@@ -188,7 +229,7 @@ export default function Register() {
                                         id='password'
                                         value={data.password}
                                         onChange={e => setData('password', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         placeholder='Enter your password (min. 6 characters)'
                                         required
                                     />
@@ -202,7 +243,7 @@ export default function Register() {
                                         id='password_confirmation'
                                         value={data.password_confirmation}
                                         onChange={e => setData('password_confirmation', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         placeholder='Confirm your password'
                                         required
                                     />
@@ -216,7 +257,7 @@ export default function Register() {
                                         id='phone_number'
                                         value={data.phone_number}
                                         onChange={e => setData('phone_number', e.target.value)}
-                                        className='w-full p-2 rounded-lg bg-white text-black placeholder-gray-400'
+                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         placeholder='Enter your phone number'
                                         required
                                     />

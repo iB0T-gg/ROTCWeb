@@ -48,7 +48,7 @@ export default function AdminMasterlist(){
         const filtered = cadets.filter(cadet => 
             cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             `${cadet.first_name} ${cadet.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cadet.year_course_section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
             cadet.campus?.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
@@ -107,7 +107,7 @@ export default function AdminMasterlist(){
             const row = [
                 cadet.student_number || 'N/A',
                 `"${fullName}"`,
-                cadet.year_course_section || 'N/A',
+                `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A',
                 cadet.gender || 'N/A',
                 cadet.campus || 'N/A',
                 finalGrade,
@@ -215,7 +215,7 @@ export default function AdminMasterlist(){
                             <td className='p-2 border-b text-left'>
                               {cadet.last_name}, {cadet.first_name} {cadet.middle_name ? cadet.middle_name.charAt(0) + '.' : ''}
                             </td>
-                            <td className='p-2 border-b text-left'>{cadet.year_course_section || 'N/A'}</td>
+                            <td className='p-2 border-b text-left'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
                             <td className='p-2 border-b text-left'>{cadet.gender || 'N/A'}</td>
                             <td className='p-2 border-b text-left'>{cadet.campus || 'N/A'}</td>
                             <td className='p-2 border-b text-left font-medium'>{finalGrade}</td>
