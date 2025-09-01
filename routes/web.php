@@ -253,6 +253,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/admin-cadets', [App\Http\Controllers\GradeController::class, 'getAdminMasterlistGrades']);
+        Route::get('/top-cadet', [App\Http\Controllers\GradeController::class, 'getTopCadet']);
         
         // Attendance API endpoints for admin
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);

@@ -21,16 +21,11 @@ const FacultyHome = ({ auth }) => {
               <h1 className='text-2xl font-semibold'>Welcome Instructor!</h1>
             </div>
             {/* Main Content: Card Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <a href="/faculty/facultyMerits">
                 <div className="bg-white p-6 rounded-lg drop-shadow-lg hover:scale-105 transition-shadow duration-300 cursor-pointer">
                   <h3 className="text-lg font-bold mb-2 text-black">Merits</h3>
                   <p className="text-gray-600">Manage and review merits</p>
-                </div>
-              </a>
-              <a href="/faculty/facultyAttendance">
-                <div className="bg-white p-6 rounded-lg drop-shadow-lg hover:scale-105 transition-shadow duration-300 cursor-pointer">
-                  <p className="text-gray-600">Monitor student attendance</p>
                 </div>
               </a>
               <a href="/faculty/facultyExams">

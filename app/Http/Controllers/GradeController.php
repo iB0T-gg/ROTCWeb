@@ -179,4 +179,48 @@ class GradeController extends Controller
             return response()->json(['message' => 'Error fetching grades: ' . $e->getMessage()], 500);
         }
     }
+    
+    /**
+     * Get the top-performing cadet based on the highest equivalent grade
+     * Note: In this system, the best grade is 1.0 (closest to 1.0 is better)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTopCadet()
+    {
+        try {
+            $topCadet = User::where('role', 'user')
+                ->whereNotNull('equivalent_grade')
+                ->select(
+                    'id',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'equivalent_grade',
+                    'final_grade',
+                    'year',
+                    'course',
+                    'section'
+                )
+                ->orderBy('equivalent_grade') // Order by grade ascending (1.0 is better than 5.0)
+                ->first();
+
+            if (!$topCadet) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No cadets with grades found.'
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $topCadet
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error fetching top cadet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
