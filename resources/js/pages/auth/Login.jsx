@@ -28,7 +28,7 @@ export default function Login({ status }) {
             <div className='container mx-auto flex flex-col items-center justify-center h-full z-10 relative '>
                 <div className='w-[30rem] bg-black bg-opacity-80 text-textColor p-8 rounded-2xl shadow-lg'>
                     <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-24 h-24 mx-auto mb-4' />
-                    <h1 className='text-lg font-semibold mb-6 text-center'>Login to your Account</h1>
+                    <h1 className='text-lg font-semibold mb-6 text-center'>Login to your </h1>
                     
                     {status && (
                         <div className="mb-4 font-medium text-sm text-green-600 bg-green-100 p-2 rounded">
