@@ -3,10 +3,10 @@ import { FaBars } from 'react-icons/fa'
 import { FaChartSimple } from 'react-icons/fa6'
 import { FaUserCheck } from 'react-icons/fa6'
 import { BiSolidReport } from "react-icons/bi";
-import { TbMessageReportFilled } from "react-icons/tb";
 import { Link, usePage } from '@inertiajs/react'
 import { PiExamFill } from "react-icons/pi";
 import { FaMedal } from "react-icons/fa6";
+import { FaLock } from "react-icons/fa";
 
 const FacultySidebar = () => {
   const [isOpen, setOpen] = useState(true);
@@ -37,6 +37,11 @@ const FacultySidebar = () => {
       icons: <BiSolidReport />,
       label: 'Final Grades',
       link: '/faculty/facultyFinalGrades',
+    },
+    {
+      icons: <FaLock />,
+      label: 'Change Password',
+      link: '/faculty/change-password',
     },
     
   ];

@@ -39,7 +39,25 @@ export default function Header({ auth }) {
                 </Link>
                  
                 <div className='flex items-center gap-4 relative' ref={dropdownRef}>
-                <Link href="/user/userProfile">
+                <Link href="/user/userProfile" className="flex items-center gap-3">
+                    {auth && auth.user && auth.user.role !== 'admin' && auth.user.role !== 'faculty' ? (
+                        auth.user.profile_pic_url || auth.user.profile_pic ? (
+                            <img 
+                                src={auth.user.profile_pic_url || (auth.user.profile_pic ? (auth.user.profile_pic.startsWith('http') ? auth.user.profile_pic : `/storage/${auth.user.profile_pic}`) : null)}
+                                alt="Profile" 
+                                className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                                onError={(e) => {
+                                    console.error("Header image failed to load:", e.target.src);
+                                    e.target.onerror = null;
+                                    e.target.src = '/images/default-profile.png';
+                                }}
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 border-2 border-white">
+                                {auth.user.first_name?.charAt(0) || 'U'}
+                            </div>
+                        )
+                    ) : null}
                     <h1 className='hover:underline text-xl'>
                         {auth && auth.user ? 
                             auth.user.role === 'admin' ? 

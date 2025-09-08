@@ -7,6 +7,11 @@ import { TbMessageReportFilled } from "react-icons/tb";
 import { Link } from '@inertiajs/react'
 import { usePage } from '@inertiajs/react'
 import { PiExamFill } from "react-icons/pi";
+import { IoPersonAddSharp } from "react-icons/io5";
+import { PiUserListFill } from "react-icons/pi";
+import { RiLockPasswordFill } from "react-icons/ri";
+import { MdApproval } from "react-icons/md";
+
 
 export default function AdminSidebar() {
     const [isOpen, setOpen] = useState(true);
@@ -24,9 +29,19 @@ export default function AdminSidebar() {
     link: '/adminHome',
   },
   {
-    icons: <FaUser />,
+    icons: <MdApproval />,
     label: 'Permission',
     link: '/adminPermission',
+  },
+  {
+    icons: <IoPersonAddSharp />,
+    label: 'User Management',
+    link: '/admin/add-users',
+  },
+  {
+    icons: <PiUserListFill />,
+    label: 'List of Users',
+    link: '/admin/user-list',
   },
   {
     icons: <FaUserCheck />,
@@ -46,6 +61,11 @@ export default function AdminSidebar() {
         link: '/adminMasterlist',
       },
     ],
+  },
+  {
+    icons: <RiLockPasswordFill />,
+    label: 'Change Password',
+    link: '/admin/change-password',
   },
   {
     icons: <TbMessageReportFilled />,

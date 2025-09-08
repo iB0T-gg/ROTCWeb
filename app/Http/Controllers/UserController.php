@@ -11,7 +11,20 @@ class UserController extends Controller
     // Get all users (for admin/API)
     public function index()
     {
-        $users = User::select('last_name', 'first_name', 'middle_name')->get();
+        $users = User::select(
+            'id', 
+            'email', 
+            'student_number', 
+            'first_name', 
+            'middle_name', 
+            'last_name', 
+            'role', 
+            'status',
+            'archived',
+            'archived_at', 
+            'created_at', 
+            'updated_at'
+        )->get();
         return response()->json($users);
     }
 

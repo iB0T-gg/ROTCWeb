@@ -1,14 +1,23 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, router } from '@inertiajs/react';
 
 export default function Login({ status }) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post('/login');
+        post('/login', {
+            onSuccess: () => {
+                // The server will handle the redirection
+                // No need for client-side redirect checks
+            },
+            onError: (errors) => {
+                // Handle errors if needed
+                console.log(errors);
+            }
+        });
     };
 
     return (

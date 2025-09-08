@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('fingerprint')->nullable()->after('profile_pic');
+            $table->boolean('archived')->default(false)->after('status');
+            $table->timestamp('archived_at')->nullable()->after('archived');
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('fingerprint');
+            $table->dropColumn(['archived', 'archived_at']);
         });
     }
 };

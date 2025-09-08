@@ -56,6 +56,8 @@ class User extends Authenticatable implements CanResetPasswordContract
     'cor_file_path',
     'role',
     'status',
+    'archived',
+    'archived_at',
     'birthday',
     'age',
     'platoon',
@@ -91,6 +93,8 @@ class User extends Authenticatable implements CanResetPasswordContract
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'archived' => 'boolean',
+            'archived_at' => 'datetime',
         ];
     }
     

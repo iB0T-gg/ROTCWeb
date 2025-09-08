@@ -86,10 +86,20 @@ Route::middleware('guest')->group(function () {
         ->name('password.update');
 });
 
-// Pending page - accessible to authenticated users with pending status
+// Pending page - accessible to users with pending status (doesn't require auth)
 Route::get('/pending', function () {
+    // If user is logged in and not pending, redirect to appropriate home page
+    if (auth()->check() && auth()->user()->status !== 'pending') {
+        if (auth()->user()->role === 'admin') {
+            return redirect('/adminHome');
+        } elseif (auth()->user()->role === 'faculty') {
+            return redirect('/faculty/facultyHome');
+        } else {
+            return redirect('/user/userHome');
+        }
+    }
     return Inertia::render('auth/pending');
-})->middleware('auth')->name('pending');
+})->name('pending');
 
 // Logout - requires auth
 Route::post('/logout', [AuthController::class, 'logout'])
@@ -165,6 +175,18 @@ Route::middleware(['auth', AdminMiddleware::class])->group(function () {
         return Inertia::render('admin/adminCadetsProfile');
     });
 
+    Route::get('/admin/add-users', function () {
+        return Inertia::render('admin/adminAddUsers');
+    });
+
+    Route::get('/admin/user-list', function () {
+        return Inertia::render('admin/adminUserList');
+    });
+
+    Route::get('/admin/change-password', function () {
+        return Inertia::render('admin/adminChangePassword');
+    });
+
     Route::get('/Issue', function () {
         return Inertia::render('admin/Issue');
     });
@@ -232,6 +254,10 @@ Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
     Route::get('/faculty/facultyReportAnIssue', function () {
         return Inertia::render('faculty/facultyReportAnIssue');
     });
+    
+    Route::get('/faculty/change-password', function () {
+        return Inertia::render('faculty/facultyChangePassword');
+    });
 });
 
 // Direct grade routes without API prefix
@@ -248,12 +274,14 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/user/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
     Route::get('/filter-options', [UserController::class, 'getFilterOptions']);
     Route::get('/user/grades', [UserController::class, 'getUserGrades']);
+    Route::post('/change-password', [App\Http\Controllers\PasswordController::class, 'changePassword']);
     
     // Admin-only API endpoints
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/admin-cadets', [App\Http\Controllers\GradeController::class, 'getAdminMasterlistGrades']);
         Route::get('/top-cadet', [App\Http\Controllers\GradeController::class, 'getTopCadet']);
+        Route::post('/admin/change-password', [App\Http\Controllers\PasswordController::class, 'adminChangePassword']);
         
         // Attendance API endpoints for admin
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
@@ -262,6 +290,9 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
         Route::post('/approve-user', [AdminController::class, 'approveUser']);
         Route::post('/reject-user', [AdminController::class, 'rejectUser']);
+        Route::post('/archive-user', [AdminController::class, 'archiveUser']);
+        Route::post('/restore-user', [AdminController::class, 'restoreUser']);
+        Route::get('/archived-users', [AdminController::class, 'getArchivedUsers']);
     });
     
     // Faculty-only API endpoints
@@ -282,6 +313,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         });
         Route::get('/merits', [UserController::class, 'getMerits']);
         Route::post('/merits/save', [UserController::class, 'saveMerits']);
+        Route::post('/faculty/change-password', [App\Http\Controllers\PasswordController::class, 'facultyChangePassword']);
         
         // Attendance API endpoints for faculty
         Route::get('/faculty-attendance', [AttendanceController::class, 'getAllAttendance']);

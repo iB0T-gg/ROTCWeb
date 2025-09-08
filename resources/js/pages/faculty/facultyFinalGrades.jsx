@@ -341,10 +341,10 @@ const FacultyFinalGrades = ({ auth }) => {
                   <thead className='text-gray-600'>
                     <tr>
                       <th className='p-3 border-b font-medium text-left'>Cadet Names</th>
-                      <th className='p-3 border-b font-medium text-center'>Merits</th>
-                      <th className='p-3 border-b font-medium text-center'>Attendance</th>
-                      <th className='p-3 border-b font-medium text-center'>Exams</th>
-                      <th className='p-3 border-b font-medium text-center'>Final Average</th>
+                      <th className='p-3 border-b font-medium text-center'>Merits 30%</th>
+                      <th className='p-3 border-b font-medium text-center'>Attendance 30%</th>
+                      <th className='p-3 border-b font-medium text-center'>Exams 40%</th>
+                      <th className='p-3 border-b font-medium text-center'>Final Average 100%</th>
                       <th className='p-3 border-b font-medium text-center'>Equivalent Grade</th>
                     </tr>
                   </thead>

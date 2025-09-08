@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,34 +16,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Call the user seeder first
-        $this->call(UserSeeder::class);
-        // Create a test user
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'student_number' => '70022768',
-                'first_name' => 'Test',
-                'middle_name' => 'White',
-                'last_name' => 'User',
-                'year' => '1G',
-                'course' => 'BSIT',
-                'section' => 'G1',
-                'phone_number' => '09730341394',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'approved',
-            ]
-        );
-
+        // Clear existing users to prevent unique constraint violations
+        // Comment this line if you want to keep existing users
+        DB::table('users')->truncate();
+        
         // Create admin user
         User::firstOrCreate(
-            [ 'email' => 'admin@example.com' ],
+            ['email' => 'admin@example.com'],
             [
-                'student_number' => '00000000',
+                'student_number' => 'ADMIN000',
                 'first_name' => 'Admin',
                 'middle_name' => '',
-                'last_name' => '',
+                'last_name' => 'User',
                 'year' => 'N/A',
                 'course' => 'N/A',
                 'section' => 'N/A',
@@ -55,12 +40,12 @@ class DatabaseSeeder extends Seeder
 
         // Create faculty user
         User::firstOrCreate(
-            [ 'email' => 'faculty@example.com' ],
+            ['email' => 'faculty@example.com'],
             [
-                'student_number' => '00000001',
+                'student_number' => 'FACULTY000',
                 'first_name' => 'Faculty',
                 'middle_name' => '',
-                'last_name' => '',
+                'last_name' => 'User',
                 'year' => 'N/A',
                 'course' => 'N/A',
                 'section' => 'N/A',
@@ -70,10 +55,29 @@ class DatabaseSeeder extends Seeder
                 'status' => 'approved',
             ]
         );
+        
+        // Create a test cadet user
+        User::firstOrCreate(
+            ['email' => 'cadet@example.com'],
+            [
+                'student_number' => '70022768',
+                'first_name' => 'Test',
+                'middle_name' => 'White',
+                'last_name' => 'Cadet',
+                'year' => '1G',
+                'course' => 'BSIT',
+                'section' => 'G1',
+                'phone_number' => '09730341394',
+                'password' => Hash::make('cadet@123'),
+                'role' => 'user', // 'user' role represents cadets
+                'status' => 'approved',
+            ]
+        );
 
-        // Create 10 random users using the factory (reduced to avoid conflicts)
+        // Create 10 random cadet users using the factory
         User::factory()->count(10)->create([
             'status' => 'approved',
+            'role' => 'user', // Ensure all are cadets
         ]);
     }
 }

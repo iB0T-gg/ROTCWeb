@@ -293,7 +293,7 @@ const UserProfile = ({ auth, user }) => {
     );
   };
 
-  // Replace with your actual image or fallback
+  // Get the profile picture URL, check if it's a full URL or a relative path
   const profilePic = user?.profile_pic_url ? user.profile_pic_url : null;
 
   return (
@@ -325,6 +325,11 @@ const UserProfile = ({ auth, user }) => {
                             src={profilePic}
                             alt="Profile"
                             className="w-full h-full object-cover rounded-full"
+                            onError={(e) => {
+                              console.error("Image failed to load:", profilePic);
+                              e.target.onerror = null;
+                              e.target.src = "/images/default-profile.png";
+                            }}
                           />
                           {/* Overlay on hover */}
                           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -352,6 +357,11 @@ const UserProfile = ({ auth, user }) => {
                           src={profilePic}
                           alt="Profile"
                           className="w-full h-full object-cover rounded-full"
+                          onError={(e) => {
+                            console.error("Image failed to load:", profilePic);
+                            e.target.onerror = null;
+                            e.target.src = "/images/default-profile.png";
+                          }}
                         />
                       ) : (
                         <span>No Image</span>
@@ -688,29 +698,6 @@ const UserProfile = ({ auth, user }) => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="block font-medium text-black">Region</label>
-                    {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="region"
-                        value={form.region}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {regionOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.region || '-'}
-                        readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
                     <label className="block font-medium text-black">Height</label>
                     {editing ? (
                       <select
@@ -733,6 +720,30 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
+                  <div className="flex-1">
+                    <label className="block font-medium text-black">Region</label>
+                    {editing ? (
+                      <select
+                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        name="region"
+                        value={form.region}
+                        onChange={handleChange}
+                      >
+                        <option value="">-</option>
+                        {regionOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.region || '-'}
+                        readOnly
+                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                      />
+                    )}
+                  </div>
+                  
                   <div className="flex-1">
                     <label className="block font-medium text-black">Address</label>
                     {editing ? (
@@ -866,9 +877,15 @@ const UserProfile = ({ auth, user }) => {
             <h2 className="text-xl font-semibold mb-4 text-center">Choose profile picture</h2>
             <div className="flex flex-col items-center">
               <img
-                src={previewUrl || profilePic || "/images/default-avatar.png"}
+                src={previewUrl || profilePic || "/images/default-profile.png"}
                 alt="Profile Preview"
                 className="w-32 h-32 rounded-full object-cover mb-4"
+                onError={(e) => {
+                  if (e.target.src !== "/images/default-profile.png") {
+                    e.target.onerror = null;
+                    e.target.src = "/images/default-profile.png";
+                  }
+                }}
               />
               <input
                 type="file"

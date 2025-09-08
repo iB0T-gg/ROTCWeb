@@ -155,13 +155,21 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             
+            // Check if user is archived (except for admin users)
+            if ($user->archived && $user->role !== 'admin') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Your account has been archived. Please contact the administrator.',
+                ])->onlyInput('email');
+            }
+            
             // Admin users can always log in regardless of status
             if ($user->role === 'admin') {
                 $request->session()->regenerate();
                 return redirect()->intended('/adminHome');
             }
             
-            // Faculty users can always log in regardless of status
+            // Faculty users can log in if not archived
             if ($user->role === 'faculty') {
                 $request->session()->regenerate();
                 return redirect()->intended('/faculty/facultyHome');
@@ -171,6 +179,7 @@ class AuthController extends Controller
             if (isset($user->status)) {
                 if ($user->status === 'pending') {
                     Auth::logout();
+                    $request->session()->regenerate();
                     return redirect()->route('pending');
                 }
                 

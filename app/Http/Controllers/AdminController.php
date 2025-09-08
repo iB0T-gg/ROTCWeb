@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Notifications\UserApprovalNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class AdminController extends Controller
 {
@@ -85,5 +87,68 @@ class AdminController extends Controller
         }
 
         return response()->json(['message' => 'User rejected successfully', 'user' => $user]);
+    }
+    
+    /**
+     * Archive a user
+     */
+    public function archiveUser(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        
+        // Only allow archiving non-admin users
+        if ($user->role === 'admin') {
+            return response()->json(['error' => 'Admin users cannot be archived'], 400);
+        }
+        
+        // Archive the user
+        $user->update([
+            'archived' => true,
+            'archived_at' => Carbon::now()
+        ]);
+
+        return response()->json(['message' => 'User archived successfully', 'user' => $user]);
+    }
+    
+    /**
+     * Restore an archived user
+     */
+    public function restoreUser(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        
+        // Only restore if the user is actually archived
+        if (!$user->archived) {
+            return response()->json(['error' => 'User is not archived'], 400);
+        }
+        
+        // Restore the user
+        $user->update([
+            'archived' => false,
+            'archived_at' => null,
+            'status' => 'approved' // Ensure they are approved when restored
+        ]);
+
+        return response()->json(['message' => 'User restored successfully', 'user' => $user]);
+    }
+    
+    /**
+     * Get all archived users
+     */
+    public function getArchivedUsers()
+    {
+        $archivedUsers = User::where('archived', true)
+                            ->orderBy('archived_at', 'desc')
+                            ->get();
+        
+        return response()->json($archivedUsers);
     }
 } 
