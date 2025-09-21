@@ -12,23 +12,76 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add semester column to merits table
-        if (!Schema::hasColumn('merits', 'semester')) {
+        // For MySQL, we need a different approach due to foreign key constraints
+        if (config('database.default') === 'mysql') {
+            // Create a new table with the updated schema
+            Schema::create('merits_new', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('cadet_id')->constrained('users')->onDelete('cascade');
+                $table->string('type');
+                $table->string('semester')->default('2025-2026 1st semester');
+                $table->string('day_1')->nullable();
+                $table->string('day_2')->nullable();
+                $table->string('day_3')->nullable();
+                $table->string('day_4')->nullable();
+                $table->string('day_5')->nullable();
+                $table->string('day_6')->nullable();
+                $table->string('day_7')->nullable();
+                $table->string('day_8')->nullable();
+                $table->string('day_9')->nullable();
+                $table->string('day_10')->nullable();
+                $table->string('day_11')->nullable();
+                $table->string('day_12')->nullable();
+                $table->string('day_13')->nullable();
+                $table->string('day_14')->nullable();
+                $table->string('day_15')->nullable();
+                $table->decimal('percentage', 5, 2)->default(0);
+                $table->foreignId('updated_by')->nullable()->constrained('users');
+                $table->json('days_array')->nullable();
+                $table->timestamps();
+                
+                // Add the new unique constraint with semester included
+                $table->unique(['cadet_id', 'type', 'semester']);
+            });
+            
+            // Copy data from old table to new table, adding default semester value
+            if (Schema::hasTable('merits')) {
+                $merits = DB::table('merits')->get();
+                foreach ($merits as $merit) {
+                    $data = (array) $merit;
+                    // Add the semester field if it doesn't exist
+                    if (!array_key_exists('semester', $data)) {
+                        $data['semester'] = '2025-2026 1st semester';
+                    }
+                    DB::table('merits_new')->insert($data);
+                }
+                
+                // Drop the old table and rename the new one
+                Schema::dropIfExists('merits');
+                Schema::rename('merits_new', 'merits');
+            }
+        } else {
+            // For SQLite, we can follow the original approach
+            // Add semester column to merits table
+            if (!Schema::hasColumn('merits', 'semester')) {
+                Schema::table('merits', function (Blueprint $table) {
+                    $table->string('semester')->default('2025-2026 1st semester')->after('type');
+                });
+            }
+            
+            // Drop and recreate the unique constraint
             Schema::table('merits', function (Blueprint $table) {
-                $table->string('semester')->default('2025-2026 1st semester')->after('type');
+                // Drop the old unique constraint if it exists
+                try {
+                    $table->dropUnique('merits_cadet_id_type_unique');
+                } catch (\Exception $e) {
+                    // Ignore if it doesn't exist
+                }
+                
+                // Add the new constraint
+                $table->unique(['cadet_id', 'type', 'semester']);
             });
         }
-        
-        // Drop and recreate the unique constraint after adding the semester column
-        // First, check if the unique constraint exists and drop it using raw SQL
-        $indexExists = DB::select("SHOW INDEX FROM merits WHERE Key_name = 'merits_cadet_id_type_unique'");
-        if (!empty($indexExists)) {
-            DB::statement('ALTER TABLE merits DROP INDEX merits_cadet_id_type_unique');
-        }
-        
-        Schema::table('merits', function (Blueprint $table) {
-            $table->unique(['cadet_id', 'type', 'semester']);
-        });
 
         // Add semester column to attendances table
         if (!Schema::hasColumn('attendances', 'semester')) {
