@@ -13,12 +13,18 @@ class GradeController extends Controller
      * 
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getEquivalentGrades()
+    public function getEquivalentGrades(Request $request)
     {
-        $users = User::where('role', 'user')
-                    ->select('id', 'equivalent_grade', 'final_grade')
-                    ->whereNotNull('equivalent_grade')
-                    ->get();
+        $query = User::where('role', 'user')
+                    ->select('id', 'equivalent_grade', 'final_grade', 'semester')
+                    ->whereNotNull('equivalent_grade');
+        
+        // Filter by semester if provided
+        if ($request->has('semester')) {
+            $query->where('semester', $request->semester);
+        }
+        
+        $users = $query->get();
         
         return response()->json($users);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
+import { Link } from '@inertiajs/react';
 
 const userGrades = ({ auth, user }) => {
   const [userGrades, setUserGrades] = useState(null);
@@ -22,38 +23,27 @@ const userGrades = ({ auth, user }) => {
       });
   }, []);
 
-  // Helper function to format grade display
-  const formatGrade = (grade) => {
-    if (grade === null || grade === undefined) {
-      return 'N/A';
-    }
-    return grade.toString();
+  // Helper function to format grade display (hidden for students)
+  const formatGrade = () => {
+    return '-';
   };
 
-  // Helper function to format final grade percentage
-  const formatFinalGrade = (finalGrade) => {
-    if (finalGrade === null || finalGrade === undefined) {
-      return 'N/A';
-    }
-    return parseFloat(finalGrade).toFixed(0) + '%';
-  };
+  // Final grade is faculty-facing; hide from student view
+  const formatFinalGrade = () => '-';
 
   // Helper function to get remarks with fallback
   const getRemarks = (remarks, equivalentGrade) => {
     if (remarks) {
       return remarks;
     }
-    
-    if (!equivalentGrade) {
-      return 'No Grade';
+    if (equivalentGrade === null || equivalentGrade === undefined || equivalentGrade === '') {
+      return '-';
     }
-    
-    const eqGrade = parseFloat(equivalentGrade);
-    if (eqGrade >= 1.00 && eqGrade <= 3.00) {
+    const eq = parseFloat(equivalentGrade);
+    if (!isNaN(eq) && eq >= 1.0 && eq <= 3.0) {
       return 'Passed';
-    } else {
-      return 'Failed';
     }
+    return 'Failed';
   };
 
 
@@ -66,8 +56,12 @@ const userGrades = ({ auth, user }) => {
         <div className='flex-1 p-6'>
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer'>
-              Home {">"} Grades
+            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5'>
+              <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
+                Dashboard
+              </Link>
+              <span className="mx-2 font-semibold">{">"}</span>
+              <span className="cursor-default font-bold">Grades</span>
             </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
@@ -114,7 +108,7 @@ const userGrades = ({ auth, user }) => {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-black">
-                        {userGrades ? `${userGrades.first_name || 'User'} ${userGrades.last_name || 'Name'}` : `${user?.first_name || 'User'} ${user?.last_name || 'Name'}`}
+                        {userGrades ? `${userGrades.last_name || 'Name'}, ${userGrades.first_name || 'User'}` : `${user?.last_name || 'Name'}, ${user?.first_name || 'User'}`}
                       </h2>
                       <p className="text-sm text-gray-600">
                         {userGrades ? userGrades.email : (user?.email || 'user@example.com')}

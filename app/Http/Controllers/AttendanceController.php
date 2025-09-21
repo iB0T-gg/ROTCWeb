@@ -3,12 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\SecondSemesterAttendance;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AttendanceController extends Controller
 {
+    /**
+     * Get the appropriate attendance model based on semester.
+     *
+     * @param  string  $semester
+     * @return string
+     */
+    private function getAttendanceModelForSemester($semester)
+    {
+        if (strpos($semester, '1st semester') !== false) {
+            return Attendance::class;
+        } elseif (strpos($semester, '2nd semester') !== false) {
+            return SecondSemesterAttendance::class;
+        }
+        return Attendance::class; // Default to first semester
+    }
+
     /**
      * Update attendance record for a user.
      *
@@ -21,11 +38,16 @@ class AttendanceController extends Controller
             'user_id' => 'required|exists:users,id',
             'day_number' => 'required|integer|min:1|max:15',
             'is_present' => 'required|boolean',
+            'semester' => 'required|string',
         ]);
 
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        $attendanceModel = $this->getAttendanceModelForSemester($semester);
+
         // Check if record exists
-        $attendance = Attendance::where('user_id', $request->user_id)
+        $attendance = $attendanceModel::where('user_id', $request->user_id)
             ->where('day_number', $request->day_number)
+            ->where('semester', $semester)
             ->first();
 
         if ($attendance) {
@@ -34,11 +56,12 @@ class AttendanceController extends Controller
             $attendance->save();
         } else {
             // Create new record
-            Attendance::create([
+            $attendanceModel::create([
                 'user_id' => $request->user_id,
                 'day_number' => $request->day_number,
                 'is_present' => $request->is_present,
                 'attendance_date' => now()->toDateString(),
+                'semester' => $semester,
             ]);
         }
 
@@ -49,11 +72,17 @@ class AttendanceController extends Controller
      * Get all attendance records for a specific user.
      *
      * @param  int  $userId
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function getUserAttendance($userId)
+    public function getUserAttendance($userId, Request $request)
     {
-        $attendances = Attendance::where('user_id', $userId)->get();
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        $attendanceModel = $this->getAttendanceModelForSemester($semester);
+        
+        $attendances = $attendanceModel::where('user_id', $userId)
+            ->where('semester', $semester)
+            ->get();
         return response()->json($attendances);
     }
 
@@ -62,15 +91,20 @@ class AttendanceController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function getAllAttendance()
+    public function getAllAttendance(Request $request)
     {
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        $attendanceModel = $this->getAttendanceModelForSemester($semester);
+        
         // Get all users with role 'user' (cadets)
         $users = User::where('role', 'user')->get();
         \Log::info('Getting attendance for ' . $users->count() . ' cadets');
         $attendanceData = [];
 
         foreach ($users as $user) {
-            $attendances = $user->attendances()->get();
+            $attendances = $attendanceModel::where('user_id', $user->id)
+                ->where('semester', $semester)
+                ->get();
             
             // Create an array with 15 days
             $daysAttendance = [];

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
+import { Link } from '@inertiajs/react';
 
 const userReportAnIssue = ({ auth }) => {
   const [selectedIssue, setSelectedIssue] = useState(null);
@@ -22,11 +23,32 @@ const userReportAnIssue = ({ auth }) => {
     setIssueDescription('');
   };
 
-  const handleSubmit = () => {
-    // Handle form submission here
-    console.log('Selected Issue:', selectedIssue);
-    console.log('Description:', issueDescription);
-    // You can add your submission logic here
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!selectedIssue && !issueDescription.trim()) {
+      alert('Please select an issue type or provide a description.');
+      return;
+    }
+    
+    // Prepare the issue report data
+    const issueReport = {
+      issue_type: selectedIssue,
+      description: issueDescription.trim(),
+      user_id: auth?.user?.id,
+      user_email: auth?.user?.email,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Submitting issue report:', issueReport);
+    
+    // Here you would typically send the data to your backend
+    // For now, we'll show a success message
+    alert('Issue report submitted successfully! We will review it and get back to you soon.');
+    
+    // Reset the form
+    setSelectedIssue(null);
+    setIssueDescription('');
   };
 
   // Define descriptive issue examples
@@ -51,15 +73,19 @@ const userReportAnIssue = ({ auth }) => {
         <div className='flex-1 p-6'>
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer mb-4'>
-              Home {'>'} Report an Issue
+            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 mb-4'>
+              <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
+                Dashboard
+              </Link>
+              <span className="mx-2 font-semibold">{">"}</span>
+              <span className="cursor-default font-bold">Report an Issue</span>
             </div>
             {/* Title */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
               <h1 className='text-2xl font-semibold'>Report an Issue</h1>
             </div>
             {/* Card */}
-            <div className='bg-white p-6 rounded-lg shadow w-full h-[650px]'>
+            <form onSubmit={handleSubmit} className='bg-white p-6 rounded-lg shadow w-full h-[650px]'>
               {/* Reason for reporting */}
               <div className='mb-6'>
                 <p className='font-semibold mb-2 mt-4'>Reason for reporting this issue?</p>
@@ -104,13 +130,14 @@ const userReportAnIssue = ({ auth }) => {
                   </button>
                   <button
                     type="submit"
-                    className="bg-primary text-white px-4 py-2 rounded"
+                    className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+                    onClick={handleSubmit}
                   >
                     Submit
                   </button>
                 </div>
               )}
-            </div>
+            </form>
           </div>
         </div>
       </div>

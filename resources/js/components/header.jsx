@@ -62,7 +62,7 @@ export default function Header({ auth }) {
                         {auth && auth.user ? 
                             auth.user.role === 'admin' ? 
                                 'Admin' : 
-                                `${auth.user.last_name} ${auth.user.first_name}` 
+                                `${auth.user.last_name}, ${auth.user.first_name}` 
                             : 'Guest'}
                     </h1>
                 </Link>

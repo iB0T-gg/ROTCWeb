@@ -29,12 +29,18 @@ class UserController extends Controller
     }
 
     // Get cadets (users with role 'user') for faculty merits
-    public function getCadets()
+    public function getCadets(Request $request)
     {
-        $cadets = User::where('role', 'user')
-                     ->where('status', 'approved')
-                     ->orderBy('last_name')
-                     ->get(['id', 'first_name', 'middle_name', 'last_name', 'platoon', 'company', 'battalion']);
+        $query = User::where('role', 'user')
+                     ->where('status', 'approved');
+        
+        // Filter by semester if provided
+        if ($request->has('semester')) {
+            $query->where('semester', $request->semester);
+        }
+        
+        $cadets = $query->orderBy('last_name')
+                        ->get(['id', 'first_name', 'middle_name', 'last_name', 'platoon', 'company', 'battalion', 'midterm_exam', 'final_exam', 'semester']);
         return response()->json($cadets);
     }
 
@@ -59,27 +65,29 @@ class UserController extends Controller
         
         try {
             // Validate input
+            // Blue fields (unchangeable): first_name, middle_name, last_name, student_number, email - remain nullable
+            // All other fields are required when editing
             $validated = $request->validate([
                 'first_name' => 'nullable|string|max:255',
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'nullable|string|max:255',
-                'birthday' => 'nullable|string|max:255',
-                'gender' => 'nullable|string|max:20',
-                'age' => 'nullable|string|max:10',
-                'phone_number' => 'nullable|string|max:20',
-                'campus' => 'nullable|string|max:255',
+                'birthday' => 'required|string|max:255',
+                'gender' => 'required|string|max:20',
+                'age' => 'required|string|max:10',
+                'phone_number' => 'required|string|max:20',
+                'campus' => 'required|string|max:255',
                 'student_number' => 'nullable|string|max:50',
-                'platoon' => 'nullable|string|max:50',
-                'company' => 'nullable|string|max:50',
-                'battalion' => 'nullable|string|max:50',
+                'platoon' => 'required|string|max:50',
+                'company' => 'required|string|max:50',
+                'battalion' => 'required|string|max:50',
                 'email' => 'nullable|email|max:255',
-                'year' => 'nullable|string|max:10',
-                'course' => 'nullable|string|max:10',
-                'section' => 'nullable|string|max:10',
-                'blood_type' => 'nullable|string|max:10',
-                'region' => 'nullable|string|max:50',
-                'height' => 'nullable|string|max:10',
-                'address' => 'nullable|string|max:255',
+                'year' => 'required|string|max:10',
+                'course' => 'required|string|max:10',
+                'section' => 'required|string|max:10',
+                'blood_type' => 'required|string|max:10',
+                'region' => 'required|string|max:50',
+                'height' => 'required|string|max:10',
+                'address' => 'required|string|max:255',
             ]);
 
             \Log::info('Validation passed', ['validated_data' => $validated]);
@@ -178,12 +186,20 @@ class UserController extends Controller
     }
 
     // Get merits for all cadets
-    public function getMerits()
+    public function getMerits(Request $request)
     {
-        $merits = \App\Models\Merit::with('cadet')
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        $meritModel = $this->getMeritModelForSemester($semester);
+        
+        if (!$meritModel) {
+            return response()->json(['error' => 'Invalid semester provided'], 400);
+        }
+        
+        $query = $meritModel::with('cadet')
             ->where('type', 'military_attitude')
-            ->get()
-            ->keyBy('cadet_id');
+            ->where('semester', $semester);
+        
+        $merits = $query->get()->keyBy('cadet_id');
         
         return response()->json($merits);
     }
@@ -198,12 +214,19 @@ class UserController extends Controller
                 'request_data' => $request->all()
             ]);
 
+            // Determine week count based on semester
+            $semester = $request->input('semester');
+            $weekCount = strpos($semester, '1st semester') !== false ? 10 : 15;
+            
             $request->validate([
                 'merits' => 'required|array',
                 'merits.*.cadet_id' => 'required|exists:users,id',
-                'merits.*.days' => 'required|array|size:15',
+                'merits.*.days' => "required|array|size:$weekCount",
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.demerits' => "nullable|array|size:$weekCount",
+                'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
                 'merits.*.percentage' => 'required|numeric|min:0|max:30',
+                'semester' => 'required|string',
             ]);
 
             $faculty = auth()->user();
@@ -212,39 +235,77 @@ class UserController extends Controller
                 return response()->json(['error' => 'Authentication required'], 401);
             }
 
+            // Determine which model to use based on semester
+            $semester = $request->input('semester');
+            $meritModel = $this->getMeritModelForSemester($semester);
+            
+            if (!$meritModel) {
+                return response()->json(['error' => 'Invalid semester provided'], 400);
+            }
+
+            // Use database transaction to ensure atomicity
             $savedCount = 0;
-
-            foreach ($request->merits as $meritData) {
+            \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, $weekCount, &$savedCount) {
+                foreach ($request->merits as $meritData) {
                 try {
-                    $sum = array_sum($meritData['days']); // $meritData['days'] is an array of 15 day scores
-                    $percentage = ($sum / 150) * 30;
+                    // Calculate net scores (merits - demerits) for each week
+                    $netScores = [];
+                    for ($i = 0; $i < $weekCount; $i++) {
+                        $merit = $meritData['days'][$i] ?? 0;
+                        $demerit = $meritData['demerits'][$i] ?? 0;
+                        $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                    }
+                    
+                    $sum = array_sum($netScores);
+                    $totalPossible = $weekCount * 10; // 10 points per week
+                    $percentage = ($sum / $totalPossible) * 30;
 
-                    $merit = \App\Models\Merit::updateOrCreate(
+                    $merit = $meritModel::updateOrCreate(
                         [
                             'cadet_id' => $meritData['cadet_id'],
-                            'type' => 'military_attitude'
+                            'type' => 'military_attitude',
+                            'semester' => $semester
                         ],
                         [
                             'percentage' => $percentage,
                             'updated_by' => $faculty->id,
                             'days_array' => $meritData['days'],
-                            // Optionally, also set day_1 ... day_15 here
+                            'semester' => $semester
                         ]
                     );
 
-                    // Update day scores
-                    for ($i = 1; $i <= 15; $i++) {
-                        $merit->{"day_$i"} = $meritData['days'][$i - 1] ?? null;
+                    // Update week scores - preserve empty strings instead of converting to null
+                    for ($i = 1; $i <= $weekCount; $i++) {
+                        $weekValue = $meritData['days'][$i - 1] ?? '';
+                        // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                        $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
                     }
-                    // Also set days_array JSON field
-                    $merit->days_array = $meritData['days'];
+
+                    // Update demerits week scores if provided
+                    if (isset($meritData['demerits'])) {
+                        for ($i = 1; $i <= $weekCount; $i++) {
+                            $demeritValue = $meritData['demerits'][$i - 1] ?? '';
+                            // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                            $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
+                        }
+                    }
+                    // Also set days_array and demerits_array JSON fields - convert 0s to empty strings for consistency
+                    $processedDays = array_map(function($day) {
+                        return ($day === 0 || $day === '0') ? '' : $day;
+                    }, $meritData['days']);
+                    $processedDemerits = array_map(function($demerit) {
+                        return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
+                    }, $meritData['demerits'] ?? []);
+                    
+                    $merit->days_array = $processedDays;
+                    $merit->demerits_array = $processedDemerits;
                     $merit->save();
 
                     // Recompute and save equivalent grade for the user
                     $user = \App\Models\User::find($meritData['cadet_id']);
                     if ($user) {
                         // Get latest merit percentage (just saved), attendance percentage, and exam scores
-                        $attendanceRecord = \DB::table('attendances')->where('cadet_id', $user->id)->first();
+                        $attendanceRecord = \DB::table('first_semester_attendance')->where('user_id', $user->id)->first();
                         $attendancePercentage = $attendanceRecord ? floatval($attendanceRecord->percentage) : 0;
                         $midtermExam = $user->midterm_exam;
                         $finalExam = $user->final_exam;
@@ -260,8 +321,13 @@ class UserController extends Controller
                     throw $e;
                 }
             }
+            });
 
             \Log::info('saveMerits completed successfully', ['saved_count' => $savedCount]);
+
+            // Clear any relevant caches to ensure immediate data availability
+            \Cache::forget("merits_{$semester}");
+            \Cache::forget("cadets_{$semester}");
 
             return response()->json([
                 'success' => true,
@@ -314,18 +380,21 @@ class UserController extends Controller
     /**
      * Get attendance records for all cadets
      */
-    public function getAttendance()
+    public function getAttendance(Request $request)
     {
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        $tableName = strpos($semester, '1st semester') !== false ? 'first_semester_attendance' : 'second_semester_attendance';
+        
         // Get all attendance records from the database
-        $attendanceRecords = \DB::table('attendance')->get();
+        $attendanceRecords = \DB::table($tableName)->get();
         
         // Format as an associative array with cadet_id as keys
         $formattedAttendance = [];
         foreach ($attendanceRecords as $record) {
-            $formattedAttendance[$record->cadet_id] = [
-                'cadet_id' => $record->cadet_id,
-                'present_count' => $record->present_count,
-                'percentage' => $record->percentage,
+            $formattedAttendance[$record->user_id] = [
+                'user_id' => $record->user_id,
+                'present_count' => $record->present_count ?? 0,
+                'percentage' => $record->percentage ?? 0,
                 'days_array' => json_decode($record->days_array ?? '[]')
             ];
         }
@@ -340,11 +409,13 @@ class UserController extends Controller
     {
         try {
             $attendanceRecords = $request->input('attendance');
+            $semester = $request->input('semester', '2025-2026 1st semester');
+            $tableName = strpos($semester, '1st semester') !== false ? 'first_semester_attendance' : 'second_semester_attendance';
             
             foreach ($attendanceRecords as $record) {
                 // Check if record exists
-                $exists = \DB::table('attendance')
-                    ->where('cadet_id', $record['cadet_id'])
+                $exists = \DB::table($tableName)
+                    ->where('user_id', $record['user_id'])
                     ->exists();
                 
                 $data = [
@@ -356,18 +427,18 @@ class UserController extends Controller
                 
                 if ($exists) {
                     // Update existing record
-                    \DB::table('attendance')
-                        ->where('cadet_id', $record['cadet_id'])
+                    \DB::table($tableName)
+                        ->where('user_id', $record['user_id'])
                         ->update($data);
                 } else {
                     // Create new record
-                    $data['cadet_id'] = $record['cadet_id'];
+                    $data['user_id'] = $record['user_id'];
                     $data['created_at'] = now();
-                    \DB::table('attendance')->insert($data);
+                    \DB::table($tableName)->insert($data);
                 }
 
                 // Recompute and save equivalent grade for the user
-                $user = \App\Models\User::find($record['cadet_id']);
+                $user = \App\Models\User::find($record['user_id']);
                 // Get latest attendance percentage (just saved), merit percentage, and exam scores
                 $attendancePercentage = isset($record['percentage']) ? floatval($record['percentage']) : 0;
                 $merit = \App\Models\Merit::where('cadet_id', $user->id)->where('type', 'military_attitude')->first();
@@ -422,5 +493,273 @@ class UserController extends Controller
         }
         
         return response()->json($userGrades);
+    }
+
+    /**
+     * Get the appropriate merit model based on semester
+     */
+    private function getMeritModelForSemester($semester)
+    {
+        if (strpos($semester, '1st semester') !== false) {
+            return \App\Models\Merit::class;
+        } elseif (strpos($semester, '2nd semester') !== false) {
+            return \App\Models\SecondSemesterMerit::class;
+        }
+        
+        return null;
+    }
+
+    // Get first semester merits
+    public function getFirstSemesterMerits(Request $request)
+    {
+        $meritModel = \App\Models\Merit::class;
+        
+        $query = $meritModel::with('cadet')
+            ->where('type', 'military_attitude')
+            ->where('semester', '2025-2026 1st semester');
+        
+        $merits = $query->get()->keyBy('cadet_id');
+        
+        return response()->json($merits);
+    }
+
+    // Save first semester merits
+    public function saveFirstSemesterMerits(Request $request)
+    {
+        try {
+            \Log::info('saveFirstSemesterMerits called', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            $request->validate([
+                'merits' => 'required|array',
+                'merits.*.cadet_id' => 'required|exists:users,id',
+                'merits.*.days' => 'required|array|size:10',
+                'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.demerits' => 'nullable|array|size:10',
+                'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.percentage' => 'required|numeric|min:0|max:30',
+            ]);
+
+            $faculty = auth()->user();
+            if (!$faculty) {
+                \Log::error('No authenticated user found in saveFirstSemesterMerits');
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
+            $meritModel = \App\Models\Merit::class;
+            $semester = '2025-2026 1st semester';
+            $savedCount = 0;
+
+            \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
+                foreach ($request->merits as $meritData) {
+                    try {
+                        // Calculate net scores (merits - demerits) for each week
+                        $weekCount = 10; // First semester has 10 weeks
+                        $netScores = [];
+                        for ($i = 0; $i < $weekCount; $i++) {
+                            $merit = $meritData['days'][$i] ?? 0;
+                            $demerit = $meritData['demerits'][$i] ?? 0;
+                            $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                        }
+                        
+                        $sum = array_sum($netScores);
+                        $totalPossible = $weekCount * 10; // 10 points per week
+                        $percentage = ($sum / $totalPossible) * 30;
+
+                        $merit = $meritModel::updateOrCreate(
+                            [
+                                'cadet_id' => $meritData['cadet_id'],
+                                'type' => 'military_attitude',
+                                'semester' => $semester
+                            ],
+                            [
+                                'days_array' => $meritData['days'],
+                                'percentage' => $percentage,
+                                'faculty_id' => $faculty->id,
+                                'updated_at' => now()
+                            ]
+                        );
+
+                        // Update week scores - preserve empty strings instead of converting to null
+                        for ($i = 1; $i <= $weekCount; $i++) {
+                            $weekValue = $meritData['days'][$i - 1] ?? '';
+                            // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                            $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
+                        }
+
+                        // Update demerits week scores if provided
+                        if (isset($meritData['demerits'])) {
+                            for ($i = 1; $i <= $weekCount; $i++) {
+                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
+                                // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                                $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
+                            }
+                            
+                            // Save demerits array
+                            $processedDemerits = array_map(function($demerit) {
+                                return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
+                            }, $meritData['demerits']);
+                            $merit->demerits_array = $processedDemerits;
+                        }
+
+                        $merit->save();
+                        $savedCount++;
+                    } catch (\Exception $e) {
+                        \Log::error('Error saving merit for cadet ' . $meritData['cadet_id'], [
+                            'error' => $e->getMessage(),
+                            'merit_data' => $meritData
+                        ]);
+                        throw $e;
+                    }
+                }
+            });
+
+            \Log::info('saveFirstSemesterMerits completed successfully', ['saved_count' => $savedCount]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully saved first semester merits for {$savedCount} cadets",
+                'saved_count' => $savedCount
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in saveFirstSemesterMerits', ['errors' => $e->errors()]);
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error in saveFirstSemesterMerits', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // Get second semester merits
+    public function getSecondSemesterMerits(Request $request)
+    {
+        $meritModel = \App\Models\SecondSemesterMerit::class;
+        
+        $query = $meritModel::with('cadet')
+            ->where('type', 'military_attitude')
+            ->where('semester', '2026-2027 2nd semester');
+        
+        $merits = $query->get()->keyBy('cadet_id');
+        
+        return response()->json($merits);
+    }
+
+    // Save second semester merits
+    public function saveSecondSemesterMerits(Request $request)
+    {
+        try {
+            \Log::info('saveSecondSemesterMerits called', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            $request->validate([
+                'merits' => 'required|array',
+                'merits.*.cadet_id' => 'required|exists:users,id',
+                'merits.*.days' => 'required|array|size:15',
+                'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.demerits' => 'nullable|array|size:15',
+                'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
+                'merits.*.percentage' => 'required|numeric|min:0|max:30',
+            ]);
+
+            $faculty = auth()->user();
+            if (!$faculty) {
+                \Log::error('No authenticated user found in saveSecondSemesterMerits');
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
+            $meritModel = \App\Models\SecondSemesterMerit::class;
+            $semester = '2026-2027 2nd semester';
+            $savedCount = 0;
+
+            \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
+                foreach ($request->merits as $meritData) {
+                    try {
+                        // Calculate net scores (merits - demerits) for each week
+                        $weekCount = 15; // Second semester has 15 weeks
+                        $netScores = [];
+                        for ($i = 0; $i < $weekCount; $i++) {
+                            $merit = $meritData['days'][$i] ?? 0;
+                            $demerit = $meritData['demerits'][$i] ?? 0;
+                            $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                        }
+                        
+                        $sum = array_sum($netScores);
+                        $totalPossible = $weekCount * 10; // 10 points per week
+                        $percentage = ($sum / $totalPossible) * 30;
+
+                        $merit = $meritModel::updateOrCreate(
+                            [
+                                'cadet_id' => $meritData['cadet_id'],
+                                'type' => 'military_attitude',
+                                'semester' => $semester
+                            ],
+                            [
+                                'days_array' => $meritData['days'],
+                                'percentage' => $percentage,
+                                'faculty_id' => $faculty->id,
+                                'updated_at' => now()
+                            ]
+                        );
+
+                        // Update week scores - preserve empty strings instead of converting to null
+                        for ($i = 1; $i <= $weekCount; $i++) {
+                            $weekValue = $meritData['days'][$i - 1] ?? '';
+                            // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                            $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
+                        }
+
+                        // Update demerits week scores if provided
+                        if (isset($meritData['demerits'])) {
+                            for ($i = 1; $i <= $weekCount; $i++) {
+                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
+                                // Keep empty strings as empty strings, convert 0 to empty string for consistency
+                                $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
+                            }
+                            
+                            // Save demerits array
+                            $processedDemerits = array_map(function($demerit) {
+                                return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
+                            }, $meritData['demerits']);
+                            $merit->demerits_array = $processedDemerits;
+                        }
+
+                        $merit->save();
+                        $savedCount++;
+                    } catch (\Exception $e) {
+                        \Log::error('Error saving merit for cadet ' . $meritData['cadet_id'], [
+                            'error' => $e->getMessage(),
+                            'merit_data' => $meritData
+                        ]);
+                        throw $e;
+                    }
+                }
+            });
+
+            \Log::info('saveSecondSemesterMerits completed successfully', ['saved_count' => $savedCount]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully saved second semester merits for {$savedCount} cadets",
+                'saved_count' => $savedCount
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in saveSecondSemesterMerits', ['errors' => $e->errors()]);
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error in saveSecondSemesterMerits', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+        }
     }
 }

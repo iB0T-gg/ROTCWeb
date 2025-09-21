@@ -1,7 +1,7 @@
 import React from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 
 const attendanceData = [];
 
@@ -15,8 +15,12 @@ const userAttendance = ({ auth }) => {
         <div className='flex-1 p-6'>
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer'>
-              Home {">"} Attendance
+            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5'>
+              <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
+                Dashboard
+              </Link>
+              <span className="mx-2 font-semibold">{">"}</span>
+              <span className="cursor-default font-bold">Attendance</span>
             </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
@@ -41,7 +45,7 @@ const userAttendance = ({ auth }) => {
                   No Image
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-black">{`${user?.first_name || 'User'} ${user?.last_name || 'Name'}`}</h2>
+                  <h2 className="text-lg font-semibold text-black">{`${user?.last_name || 'Name'}, ${user?.first_name || 'User'}`}</h2>
                   <p className="text-sm text-gray-600">{user?.email || 'user@example.com'}</p>
                 </div>
               </div>

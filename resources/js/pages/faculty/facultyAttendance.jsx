@@ -4,6 +4,17 @@ import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
 
+const ChevronDownIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const FacultyAttendance = ({ auth }) => {
   const [cadets, setCadets] = useState([]);
   const [attendanceMap, setAttendanceMap] = useState({});
@@ -12,22 +23,30 @@ const FacultyAttendance = ({ auth }) => {
   const [selectedPlatoon, setSelectedPlatoon] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedBattalion, setSelectedBattalion] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
   const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const cadetsPerPage = 8;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch all cadets
-        const cadetsResponse = await fetch('/api/cadets');
-        let cadetsData = [];
-        if (cadetsResponse.ok) {
-          cadetsData = await cadetsResponse.json();
-          setCadets(cadetsData);
-        }
-        // Fetch all attendance records
-        const attendanceResponse = await fetch('/api/faculty-attendance');
-        if (attendanceResponse.ok) {
+  // Semester options
+  const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
+
+  // Function to fetch data based on selected semester
+  const fetchDataForSemester = async (semester) => {
+    setIsLoading(true);
+    const semesterParam = encodeURIComponent(semester);
+    
+    try {
+      // Fetch all cadets
+      const cadetsResponse = await fetch(`/api/cadets?semester=${semesterParam}`);
+      let cadetsData = [];
+      if (cadetsResponse.ok) {
+        cadetsData = await cadetsResponse.json();
+        setCadets(cadetsData);
+      }
+      // Fetch all attendance records
+      const attendanceResponse = await fetch(`/api/faculty-attendance?semester=${semesterParam}`);
+      if (attendanceResponse.ok) {
           const attendanceData = await attendanceResponse.json();
           // Map attendance by user_id for quick lookup
           const map = {};
@@ -38,10 +57,22 @@ const FacultyAttendance = ({ auth }) => {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchData();
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDataForSemester(selectedSemester);
   }, []);
+
+  // Fetch data when semester changes
+  useEffect(() => {
+    if (selectedSemester) {
+      fetchDataForSemester(selectedSemester);
+    }
+  }, [selectedSemester]);
 
   const formatCadetName = (cadet) => {
     const lastName = cadet.last_name || '';
@@ -85,13 +116,33 @@ const FacultyAttendance = ({ auth }) => {
                 <h1 className='text-2xl font-semibold'>Attendance Management</h1>
               </div>
             </div>
-            <div className='bg-white p-6 rounded-lg shadow w-full mx-auto'>
-              <div className='flex justify-between items-center mb-6'>
-                <div>
-                  <h1 className='text-lg font-semibold text-black'>Attendance Records</h1>
-                  <p className='text-sm text-gray-500'>View attendance for all cadets</p>
+            {/* Tab Navigation */}
+            <div className="bg-white p-6 rounded-lg shadow mb-6">
+              <div className="flex items-center justify-between gap-6">
+                {/* Semester Selection Tabs */}
+                <div className="flex items-center gap-4">
+                  {semesterOptions.map((semester) => (
+                    <button
+                      key={semester}
+                      onClick={() => setSelectedSemester(semester)}
+                      disabled={isLoading}
+                      className={`py-2 px-4 rounded-lg transition-colors duration-150 ${
+                        selectedSemester === semester
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {semester}
+                    </button>
+                  ))}
+                  {isLoading && (
+                    <div className="ml-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    </div>
+                  )}
                 </div>
-                <div className='flex items-center gap-4'>
+
+                <div className="flex items-center gap-4">
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
@@ -114,7 +165,7 @@ const FacultyAttendance = ({ auth }) => {
                               selectedCompany || '',
                               selectedBattalion || ''
                             ].filter(Boolean).join(', ')}`
-                          : 'Filter by : All'}
+                          : 'Sort by : All'}
                       </span>
                       <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
@@ -175,12 +226,21 @@ const FacultyAttendance = ({ auth }) => {
                   </div>
                 </div>
               </div>
-              <table className='w-full border-collapse'>
+            </div>
+
+            {/* Main Content */}
+            <div className="bg-white p-6 rounded-lg shadow w-full mx-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-lg font-semibold text-black">Attendance Records</h1>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
                 <thead className='text-gray-600'>
                   <tr>
-                    <th className='p-3 border-b font-medium text-left'>Cadet Name</th>
-                    <th className='p-3 border-b font-medium text-center'>Weeks Present</th>
-                    <th className='p-3 border-b font-medium text-center'>Percentage</th>
+                    <th className='py-4 px-3 border-b font-medium text-left'>Cadet Name</th>
+                    <th className='py-4 px-3 border-b font-medium text-center'>Weeks Present</th>
+                    <th className='py-4 px-3 border-b font-medium text-center'>Percentage</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,16 +253,16 @@ const FacultyAttendance = ({ auth }) => {
                     const percentage = ((presentCount / 15) * 30).toFixed(2);
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
-                        <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
-                        <td className='p-3 text-center text-black'>{presentCount}/15</td>
-                        <td className='p-3 text-center text-black'>{percentage}%</td>
+                        <td className='py-4 px-3 text-black'>{formatCadetName(cadet)}</td>
+                        <td className='py-4 px-3 text-center text-black'>{presentCount}/15</td>
+                        <td className='py-4 px-3 text-center text-black'>{percentage}%</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              {/* Pagination Controls */}
-              <div className="flex justify-between items-center mt-4 w-full">
+            </div>
+            <div className="flex items-center justify-between mt-4 w-full">
                 {/* Left: Showing data */}
                 <div className="text-gray-600">
                   Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets

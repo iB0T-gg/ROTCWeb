@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model
+class SecondSemesterAttendance extends Model
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'first_semester_attendance';
+    protected $table = 'second_semester_attendance';
 
     /**
      * The attributes that are mass assignable.

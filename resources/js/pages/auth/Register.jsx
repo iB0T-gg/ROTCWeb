@@ -194,7 +194,7 @@ export default function Register() {
                                         {errors.course && <div className="text-red-500 text-sm mt-1">{errors.course}</div>}
                                     </div>
                                     <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='year'>Year Level</label>
+                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='year'>Year Level & Section</label>
                                         <input
                                             type='text'
                                             id='year'
@@ -207,14 +207,14 @@ export default function Register() {
                                         {errors.year && <div className="text-red-500 text-sm mt-1">{errors.year}</div>}
                                     </div>
                                     <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='section'>Section</label>
+                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='section'>Group</label>
                                         <select
                                             id='section'
                                             value={data.section}
                                             onChange={e => setData('section', e.target.value)}
                                             className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
                                         >
-                                            <option value="" className="text-gray-400">Select Sub-Section</option>
+                                            <option value="" className="text-gray-400">Select Group</option>
                                             <option value="G1" className="text-gray-700">G1</option>
                                             <option value="G2" className="text-gray-700">G2</option>
                                         </select>

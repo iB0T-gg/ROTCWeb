@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model
+class SecondSemesterExamScore extends Model
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'first_semester_attendance';
+    protected $table = 'second_semester_exam_scores';
 
     /**
      * The attributes that are mass assignable.
@@ -20,24 +20,23 @@ class Attendance extends Model
      */
     protected $fillable = [
         'user_id',
-        'semester',
-        'day_number',
-        'is_present',
-        'attendance_date'
+        'midterm_exam',
+        'final_exam',
+        'semester'
     ];
-    
+
     /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
      */
     protected $casts = [
-        'is_present' => 'boolean',
-        'attendance_date' => 'date',
+        'midterm_exam' => 'integer',
+        'final_exam' => 'integer',
     ];
 
     /**
-     * Get the user that owns the attendance record.
+     * Get the user that owns the exam score.
      */
     public function user()
     {

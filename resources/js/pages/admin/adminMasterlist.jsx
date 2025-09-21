@@ -65,12 +65,12 @@ export default function AdminMasterlist(){
         currentPage * cadetsPerPage
     );
 
-    // Get the final grade - use stored value or fallback to N/A
+    // Get the final grade - use stored value or fallback to -
     const getFinalGrade = (cadet) => {
-        if (cadet.final_grade !== null && cadet.final_grade !== undefined) {
+        if (cadet.final_grade !== null && cadet.final_grade !== undefined && cadet.final_grade !== '') {
             return parseFloat(cadet.final_grade).toFixed(0) + '%';
         }
-        return 'N/A';
+        return '-';
     };
 
     // Get remarks from database or calculate based on equivalent grade
@@ -81,7 +81,7 @@ export default function AdminMasterlist(){
         }
         
         // Fallback calculation
-        if (getFinalGrade(cadet) === 'N/A' || !cadet.equivalent_grade) {
+        if (getFinalGrade(cadet) === '-' || !cadet.equivalent_grade) {
             return 'No Grade';
         }
         
@@ -219,7 +219,7 @@ export default function AdminMasterlist(){
                             <td className='p-2 border-b text-left'>{cadet.gender || 'N/A'}</td>
                             <td className='p-2 border-b text-left'>{cadet.campus || 'N/A'}</td>
                             <td className='p-2 border-b text-left font-medium'>{finalGrade}</td>
-                            <td className='p-2 border-b text-left'>{cadet.equivalent_grade || 'N/A'}</td>
+                            <td className='p-2 border-b text-left'>{cadet.equivalent_grade || '-'}</td>
                             <td className='p-2 border-b text-left'>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 remarks === 'Passed' ? 'bg-green-100 text-green-800' :

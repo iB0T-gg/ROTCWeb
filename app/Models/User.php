@@ -58,6 +58,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     'status',
     'archived',
     'archived_at',
+    'semester',
     'birthday',
     'age',
     'platoon',
@@ -132,11 +133,35 @@ class User extends Authenticatable implements CanResetPasswordContract
     }
     
     /**
-     * Get the attendance records for the user.
+     * Get the first semester attendance records for the user.
      */
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    /**
+     * Get the second semester attendance records for the user.
+     */
+    public function secondSemesterAttendances()
+    {
+        return $this->hasMany(\App\Models\SecondSemesterAttendance::class);
+    }
+
+    /**
+     * Get the first semester exam scores for the user.
+     */
+    public function firstSemesterExamScores()
+    {
+        return $this->hasMany(\App\Models\ExamScore::class);
+    }
+
+    /**
+     * Get the second semester exam scores for the user.
+     */
+    public function secondSemesterExamScores()
+    {
+        return $this->hasMany(\App\Models\SecondSemesterExamScore::class);
     }
 
     /**

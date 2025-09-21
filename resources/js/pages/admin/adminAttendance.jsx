@@ -8,6 +8,17 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+const ChevronDownIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export default function AdminAttendance(){
     const { auth } = usePage().props;
     const [users, setUsers] = useState([]);
@@ -20,106 +31,50 @@ export default function AdminAttendance(){
     const [selectedPlatoon, setSelectedPlatoon] = useState('');
     const [selectedCompany, setSelectedCompany] = useState('');
     const [selectedBattalion, setSelectedBattalion] = useState('');
+    const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
     const [showFilterPicker, setShowFilterPicker] = useState(false);
     const cadetsPerPage = 8;
+
+    // Semester options
+    const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
     
     // Define the fetchData function outside useEffect so we can reuse it
-    const fetchData = async () => {
+    const fetchData = async (semester = selectedSemester) => {
         try {
             setLoading(true);
-            console.log('Fetching data...');
+            console.log('Fetching data for semester:', semester);
             
-            // Fetch cadets specifically
-            const cadetsResponse = await axios.get('/api/admin-cadets');
-            console.log('Cadets API response:', cadetsResponse);
+            const semesterParam = encodeURIComponent(semester);
             
-            const fetchedCadets = cadetsResponse.data;
-            console.log('Fetched cadets:', fetchedCadets);
-            setUsers(fetchedCadets);
-                
-                if (fetchedCadets && fetchedCadets.length > 0) {
-                    // Create initial attendance data directly from cadets
-                    // This ensures we always have data to display
-                    const initialAttendanceData = fetchedCadets.map(cadet => {
-                        // Create empty attendance records for all 15 days
-                        const emptyAttendances = {};
-                        for (let i = 1; i <= 15; i++) {
-                            emptyAttendances[i] = false;
-                        }
-                        
-                        return {
-                            user_id: cadet.id,
-                            first_name: cadet.first_name,
-                            last_name: cadet.last_name,
-                            company: cadet.company || '',
-                            battalion: cadet.battalion || '',
-                            platoon: cadet.platoon || '',
-                            attendances: emptyAttendances,
-                            percentage: '0.00'
-                        };
-                    });
-                    
-                    // Set initial attendance data
-                    setAttendanceData(initialAttendanceData);
-                    
-                    // Try to fetch actual attendance records
-                    try {
-                        const attendanceResponse = await axios.get('/api/attendance');
-                        console.log('Attendance API response:', attendanceResponse);
-                        
-                        let attendanceRecords = attendanceResponse.data;
-                        
-                        // If we have actual attendance records, update the data
-                        if (attendanceRecords && attendanceRecords.length > 0) {
-                            // Check if any cadet is missing in attendance records
-                            const cadetIds = new Set(fetchedCadets.map(cadet => cadet.id));
-                            const attendanceCadetIds = new Set(attendanceRecords.map(record => record.user_id));
-                            
-                            // Find cadets not in attendance records
-                            const missingCadets = fetchedCadets.filter(cadet => !attendanceCadetIds.has(cadet.id));
-                            
-                            // If there are missing cadets, add them with empty attendance records
-                            if (missingCadets.length > 0) {
-                                const missingRecords = missingCadets.map(cadet => {
-                                    const emptyAttendances = {};
-                                    for (let i = 1; i <= 15; i++) {
-                                        emptyAttendances[i] = false;
-                                    }
-                                    
-                                    return {
-                                        user_id: cadet.id,
-                                        first_name: cadet.first_name,
-                                        last_name: cadet.last_name,
-                                        company: cadet.company || '',
-                                        battalion: cadet.battalion || '',
-                                        platoon: cadet.platoon || '',
-                                        attendances: emptyAttendances,
-                                        percentage: '0.00'
-                                    };
-                                });
-                                
-                                attendanceRecords = [...attendanceRecords, ...missingRecords];
-                            }
-                            
-                            setAttendanceData(attendanceRecords);
-                        }
-                    } catch (attendanceError) {
-                        console.error('Error fetching attendance data:', attendanceError);
-                        // We already set initialAttendanceData, so no need to handle error further
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching cadets:', error);
-                toast.error('Failed to fetch cadets data');
-            } finally {
-                setLoading(false);
-            }
-        };
+            // Fetch attendance data using the admin attendance API
+            const attendanceResponse = await axios.get(`/api/attendance?semester=${semesterParam}`);
+            console.log('Attendance API response:', attendanceResponse);
+            
+            const attendanceData = attendanceResponse.data;
+            console.log('Fetched attendance data:', attendanceData);
+            
+            // The admin attendance API already returns the complete data we need
+            setUsers(attendanceData);
+            setAttendanceData(attendanceData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            toast.error('Failed to fetch data');
+        } finally {
+            setLoading(false);
+        }
+    };
     
     // Fetch users and attendance data on component mount
     useEffect(() => {
-        fetchData();
+        fetchData(selectedSemester);
     }, []);
+
+    // Fetch data when semester changes
+    useEffect(() => {
+        if (selectedSemester) {
+            fetchData(selectedSemester);
+        }
+    }, [selectedSemester]);
     
     // Handle attendance change
     const handleAttendanceChange = async (userId, dayNumber, isPresent) => {
@@ -152,7 +107,8 @@ export default function AdminAttendance(){
             await axios.post('/api/attendance/update', {
                 user_id: userId,
                 day_number: dayNumber,
-                is_present: isPresent
+                is_present: isPresent,
+                semester: selectedSemester
             });
             
         } catch (error) {
@@ -226,6 +182,22 @@ export default function AdminAttendance(){
                                 <h1 className='text-lg font-semibold text-black'>List of Cadets</h1>
 
                                 <div className='flex items-center gap-4'>
+                                    {/* Semester Selection */}
+                                    <div className="relative">
+                                        <select
+                                            className="bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            value={selectedSemester}
+                                            onChange={(e) => setSelectedSemester(e.target.value)}
+                                        >
+                                            {semesterOptions.map((semester) => (
+                                                <option key={semester} value={semester}>
+                                                    {semester}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    </div>
+                                    
                                     <div className="relative">
                                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                         <input

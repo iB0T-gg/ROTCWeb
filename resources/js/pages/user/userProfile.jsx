@@ -1,11 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { router } from '@inertiajs/react';
+import { router, Link } from '@inertiajs/react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import Header from "../../components/header";
 import UserSidebar from "../../components/userSidebar";
 
 const UserProfile = ({ auth, user }) => {
+  const ChevronDownIcon = ({ className }) => (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
   const [editing, setEditing] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [form, setForm] = useState({
@@ -213,9 +223,7 @@ const UserProfile = ({ auth, user }) => {
   ];
 
   // Helper for conditional focus outline
-  const focusClass = editing
-    ? 'focus:outline-primary-600 focus:outline-2'
-    : 'focus:outline-none';
+  const focusClass = 'focus:outline-none';
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -303,13 +311,17 @@ const UserProfile = ({ auth, user }) => {
         <UserSidebar />
         <div className="flex-1 p-6">
           <div className="font-regular">
-            <div className="bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer">
-              Home  {">"} Profile
+            <div className="bg-white p-3 text-[#6B6A6A] rounded-lg pl-5">
+              <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
+                Dashboard
+              </Link>
+              <span className="mx-2 font-semibold">{">"}</span>
+              <span className="cursor-default font-bold text-[#000000] ">Profile</span>
             </div>
             <div className="bg-primary text-white p-4 rounded-lg flex items-center justify-between mt-4 mb-6 pl-5 py-7">
               <h1 className="text-2xl font-semibold">Profile</h1>
             </div>
-            <form onSubmit={handleSubmit} className="bg-white w-full mx-auto h-[650px] p-6 rounded-lg shadow">
+            <form onSubmit={handleSubmit} className="bg-white w-full mx-auto p-6 rounded-lg shadow">
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center">
                   {editing ? (
@@ -369,7 +381,7 @@ const UserProfile = ({ auth, user }) => {
                     </div>
                   )}
                   <div>
-                    <h2 className="text-lg font-semibold text-black">{user?.first_name} {user?.last_name}</h2>
+                    <h2 className="text-lg font-semibold text-black">{user?.last_name}, {user?.first_name}</h2>
                     <p className="text-sm text-gray-600">{user?.email}</p>
                   </div>
                 </div>
@@ -392,7 +404,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.first_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 focus:outline-none`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3`}
                       name="first_name"
                     />
                   </div>
@@ -402,7 +414,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.middle_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 focus:outline-none`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3`}
                       name="middle_name"
                     />
                   </div>
@@ -412,7 +424,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.last_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 focus:outline-none`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3`}
                       name="last_name"
                     />
                   </div>
@@ -436,7 +448,8 @@ const UserProfile = ({ auth, user }) => {
                           type="text"
                           value={form.birthday}
                           readOnly={!editing}
-                          className={`bg-transparent w-full outline-none ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
+                          required={editing}
+                          className={`bg-transparent w-full ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
                           name="birthday"
                           onChange={handleChange}
                           placeholder="dd/mm/yy"
@@ -472,17 +485,21 @@ const UserProfile = ({ auth, user }) => {
                   <div className="flex-1">
                     <label className="block font-medium text-black">Gender</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="gender"
-                        value={form.gender}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {genderOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="gender"
+                          value={form.gender}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {genderOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -497,9 +514,11 @@ const UserProfile = ({ auth, user }) => {
                     <input
                       type="text"
                       value={form.age}
-                      readOnly
-                      className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                      readOnly={!editing}
+                      required={editing}
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
                       name="age"
+                      onChange={handleChange}
                       placeholder='-'
                     />
                   </div>
@@ -509,7 +528,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.phone_number}
                       readOnly={!editing}
-                      required
+                      required={editing}
                       className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
                       name="phone_number"
                       onChange={handleChange}
@@ -518,17 +537,21 @@ const UserProfile = ({ auth, user }) => {
                   <div className="flex-1">
                     <label className="block font-medium text-black">Campus</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="campus"
-                        value={form.campus}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {campusOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="campus"
+                          value={form.campus}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {campusOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -548,24 +571,28 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.student_number}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 focus:outline-none`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3`}
                       name="student_number"
                     />
                   </div>
                   <div className="flex-1">
                     <label className="block font-medium text-black">Platoon</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="platoon"
-                        value={form.platoon}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {platoonOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="platoon"
+                          value={form.platoon}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {platoonOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -579,17 +606,21 @@ const UserProfile = ({ auth, user }) => {
                   <div className="flex-1">
                     <label className="block font-medium text-black">Company</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="company"
-                        value={form.company}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {companyOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="company"
+                          value={form.company}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {companyOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -602,17 +633,21 @@ const UserProfile = ({ auth, user }) => {
                   <div className="flex-1">
                     <label className="block font-medium text-black">Battalion</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="battalion"
-                        value={form.battalion}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {battalionOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="battalion"
+                          value={form.battalion}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {battalionOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -629,7 +664,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.email}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 focus:outline-none`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3`}
                       name="email"
                     />
                   </div>
@@ -637,57 +672,61 @@ const UserProfile = ({ auth, user }) => {
 
                 {/* Row 4 */}
                 <div className="flex gap-x-4 mb-3">
-                  <div className="flex-1">
+                  <div className="basis-[10%] shrink-0">
                     <label className="block font-medium text-black">Course</label>
                     <input
                       type="text"
                       value={form.course}
                       readOnly={!editing}
-                      required
+                      required={editing}
                       className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
                       name="course"
                       onChange={handleChange}
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Year</label>
+                  <div className="basis-[10%] shrink-0">
+                    <label className="block font-medium text-black">Yr Level & Section</label>
                     <input
                       type="text"
                       value={form.year}
                       readOnly={!editing}
-                      required
+                      required={editing}
                       className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
                       name="year"
                       onChange={handleChange}
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Section</label>
+                  <div className="basis-[10%] shrink-0">
+                    <label className="block font-medium text-black">Group</label>
                     <input
                       type="text"
                       value={form.section}
                       readOnly={!editing}
-                      required
+                      required={editing}
                       className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
                       name="section"
                       onChange={handleChange}
                     />
                   </div>
                   
-                  <div className="flex-1">
+                  <div className="basis-[8.2%] shrink-0">
                     <label className="block font-medium text-black">Blood Type</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="blood_type"
-                        value={form.blood_type}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {bloodTypeOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="blood_type"
+                          value={form.blood_type}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {bloodTypeOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -697,20 +736,24 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="basis-[8.2%] shrink-0">
                     <label className="block font-medium text-black">Height</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="height"
-                        value={form.height}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {heightOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="height"
+                          value={form.height}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {heightOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -720,20 +763,24 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="basis-[8.2%] shrink-0">
                     <label className="block font-medium text-black">Region</label>
                     {editing ? (
-                      <select
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="region"
-                        value={form.region}
-                        onChange={handleChange}
-                      >
-                        <option value="">-</option>
-                        {regionOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="region"
+                          value={form.region}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {regionOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
                     ) : (
                       <input
                         type="text"
@@ -743,19 +790,22 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  
                   <div className="flex-1">
                     <label className="block font-medium text-black">Address</label>
                     {editing ? (
-                      <div style={{ position: "relative", maxWidth: 600 }}>
-                        <input
-                          type="text"
-                          value={form.address}
-                          readOnly
-                          className="w-full bg-gray-100 p-2 rounded py-3 cursor-pointer"
-                          placeholder="-"
-                          onClick={() => setShowPicker(true)}
-                        />
+                      <div style={{ position: "relative", maxWidth: 800 }}>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={form.address}
+                            readOnly
+                            required={editing}
+                            className="w-full bg-gray-100 p-2 rounded py-3 pr-9 cursor-pointer focus:outline-none"
+                            placeholder="-"
+                            onClick={() => setShowPicker(true)}
+                          />
+                          <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                        </div>
                         {showPicker && (
                           <div
                             ref={pickerRef}
@@ -765,7 +815,7 @@ const UserProfile = ({ auth, user }) => {
                               background: "white",
                               border: "1px solid #ccc",
                               borderRadius: 8,
-                              padding: 16,
+                              padding: "16px 16px 0 16px",
                               marginTop: 4,
                               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                               width: "100%",
@@ -774,50 +824,59 @@ const UserProfile = ({ auth, user }) => {
                             <div className="flex flex-col gap-2">
                               <div>
                                 <label className="block text-sm mb-1">Province</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded"
-                                  value={province}
-                                  onChange={(e) => setProvince(e.target.value)}
-                                >
-                                  <option value="">Select Province</option>
-                                  {provinces.map((prov) => (
-                                    <option key={prov.code} value={prov.code}>
-                                      {prov.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                <div className="relative">
+                                  <select
+                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                    value={province}
+                                    onChange={(e) => setProvince(e.target.value)}
+                                  >
+                                    <option value="">Select Province</option>
+                                    {provinces.map((prov) => (
+                                      <option key={prov.code} value={prov.code}>
+                                        {prov.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                                </div>
                               </div>
                               <div>
                                 <label className="block text-sm mb-1">Municipality/City</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded"
-                                  value={municipality}
-                                  onChange={(e) => setMunicipality(e.target.value)}
-                                  disabled={!province}
-                                >
-                                  <option value="">Select Municipality/City</option>
-                                  {municipalities.map((mun) => (
-                                    <option key={mun.code} value={mun.code}>
-                                      {mun.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                <div className="relative">
+                                  <select
+                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                    value={municipality}
+                                    onChange={(e) => setMunicipality(e.target.value)}
+                                    disabled={!province}
+                                  >
+                                    <option value="">Select Municipality/City</option>
+                                    {municipalities.map((mun) => (
+                                      <option key={mun.code} value={mun.code}>
+                                        {mun.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                                </div>
                               </div>
                               <div>
                                 <label className="block text-sm mb-1">Barangay</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded"
-                                  value={barangay}
-                                  onChange={(e) => setBarangay(e.target.value)}
-                                  disabled={!municipality}
-                                >
-                                  <option value="">Select Barangay</option>
-                                  {barangays.map((brgy) => (
-                                    <option key={brgy.code} value={brgy.name}>
-                                      {brgy.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                <div className="relative">
+                                  <select
+                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                    value={barangay}
+                                    onChange={(e) => setBarangay(e.target.value)}
+                                    disabled={!municipality}
+                                  >
+                                    <option value="">Select Barangay</option>
+                                    {barangays.map((brgy) => (
+                                      <option key={brgy.code} value={brgy.name}>
+                                        {brgy.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                                </div>
                               </div>
                               <button
                                 className="mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
@@ -835,13 +894,14 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.address}
                         readOnly
-                        className="w-full bg-gray-100 p-2 rounded py-3"
+                        className="w-full bg-gray-100 p-2 rounded py-3 focus:outline-none"
                       />
                     )}
                   </div>
-                </div>
+                </div>    
               </div>
-              {/* Save/Cancel buttons at the lower right */}
+              
+              {/* Save/Cancel buttons inside the white card */}
               {editing && (
                 <div className="flex justify-end mt-8">
                   <button
@@ -917,4 +977,4 @@ const UserProfile = ({ auth, user }) => {
   );
   };
   
-  export default UserProfile;
+  export default UserProfile; 

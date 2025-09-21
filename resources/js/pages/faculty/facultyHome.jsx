@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 
@@ -13,8 +14,10 @@ const FacultyHome = ({ auth }) => {
         <div className='flex-1 p-6'>
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer'>
-              Home
+            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5'>
+              <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-bold">
+                Dashboard
+              </Link>
             </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>

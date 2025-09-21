@@ -313,6 +313,13 @@ Route::middleware('auth')->prefix('api')->group(function () {
         });
         Route::get('/merits', [UserController::class, 'getMerits']);
         Route::post('/merits/save', [UserController::class, 'saveMerits']);
+        
+        // Semester-specific merits API endpoints
+        Route::get('/first_semester_aptitude', [UserController::class, 'getFirstSemesterMerits']);
+        Route::post('/first_semester_aptitude/save', [UserController::class, 'saveFirstSemesterMerits']);
+        Route::get('/second_semester_aptitude', [UserController::class, 'getSecondSemesterMerits']);
+        Route::post('/second_semester_aptitude/save', [UserController::class, 'saveSecondSemesterMerits']);
+        
         Route::post('/faculty/change-password', [App\Http\Controllers\PasswordController::class, 'facultyChangePassword']);
         
         // Attendance API endpoints for faculty
@@ -320,18 +327,10 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/faculty-attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
     });
     
-    // Faculty exam scores API endpoint
-    Route::middleware(FacultyMiddleware::class)->post('/exams/save', function (Request $request) {
-        $scores = $request->input('scores');
-        foreach ($scores as $score) {
-            $user = User::find($score['id']);
-            if ($user) {
-                $user->midterm_exam = $score['midterm_exam'];
-                $user->final_exam = $score['final_exam'];
-                $user->save();
-            }
-        }
-        return response()->json(['message' => 'Successfully saved exam scores.']);
+    // Faculty exam scores API endpoints
+    Route::middleware(FacultyMiddleware::class)->group(function () {
+        Route::get('/exams', [App\Http\Controllers\ExamController::class, 'getExamScores']);
+        Route::post('/exams/save', [App\Http\Controllers\ExamController::class, 'saveExamScores']);
     });
     
     // Equivalent Grades API endpoints - not in API group
