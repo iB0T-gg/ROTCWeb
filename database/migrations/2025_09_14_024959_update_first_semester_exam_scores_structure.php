@@ -12,10 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         // The table structure is already correct from previous migrations
-        // Just add the unique constraint if it doesn't exist
-        Schema::table('first_semester_exam_scores', function (Blueprint $table) {
-            $table->unique(['user_id', 'semester']);
-        });
+        // Just add the unique constraint if it doesn't exist and if the columns exist
+        if (Schema::hasColumn('first_semester_exam_scores', 'user_id') && Schema::hasColumn('first_semester_exam_scores', 'semester')) {
+            Schema::table('first_semester_exam_scores', function (Blueprint $table) {
+                $table->unique(['user_id', 'semester']);
+            });
+        }
     }
 
     /**

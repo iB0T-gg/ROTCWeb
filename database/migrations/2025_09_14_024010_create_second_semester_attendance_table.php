@@ -11,7 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('second_semester_attendance', function (Blueprint $table) {
+        if (!Schema::hasTable('second_semester_attendance')) {
+            Schema::create('second_semester_attendance', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('day_number');
@@ -21,8 +22,9 @@ return new class extends Migration
             $table->timestamps();
             
             // Add unique constraint to prevent duplicate entries
-            $table->unique(['user_id', 'day_number', 'attendance_date', 'semester']);
-        });
+            $table->unique(['user_id', 'day_number', 'attendance_date', 'semester'], 'ss_attendance_unique');
+            });
+        }
     }
 
     /**

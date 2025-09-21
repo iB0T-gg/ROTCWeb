@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,21 +13,36 @@ return new class extends Migration
     public function up(): void
     {
         // Add semester column to merits table
+        if (!Schema::hasColumn('merits', 'semester')) {
+            Schema::table('merits', function (Blueprint $table) {
+                $table->string('semester')->default('2025-2026 1st semester')->after('type');
+            });
+        }
+        
+        // Drop and recreate the unique constraint after adding the semester column
+        // First, check if the unique constraint exists and drop it using raw SQL
+        $indexExists = DB::select("SHOW INDEX FROM merits WHERE Key_name = 'merits_cadet_id_type_unique'");
+        if (!empty($indexExists)) {
+            DB::statement('ALTER TABLE merits DROP INDEX merits_cadet_id_type_unique');
+        }
+        
         Schema::table('merits', function (Blueprint $table) {
-            $table->string('semester')->default('2025-2026 1st semester')->after('type');
-            $table->dropUnique(['cadet_id', 'type']);
             $table->unique(['cadet_id', 'type', 'semester']);
         });
 
         // Add semester column to attendances table
-        Schema::table('attendances', function (Blueprint $table) {
-            $table->string('semester')->default('2025-2026 1st semester')->after('user_id');
-        });
+        if (!Schema::hasColumn('attendances', 'semester')) {
+            Schema::table('attendances', function (Blueprint $table) {
+                $table->string('semester')->default('2025-2026 1st semester')->after('user_id');
+            });
+        }
 
         // Add semester column to users table for exam scores
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('semester')->default('2025-2026 1st semester')->after('archived');
-        });
+        if (!Schema::hasColumn('users', 'semester')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('semester')->default('2025-2026 1st semester')->after('archived');
+            });
+        }
     }
 
     /**

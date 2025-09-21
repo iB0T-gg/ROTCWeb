@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop the new table if it exists from previous failed attempts
+        Schema::dropIfExists('first_semester_merits_new');
+        
         // Create a new table with the correct structure matching second_semester_merits
         Schema::create('first_semester_merits_new', function (Blueprint $table) {
             $table->id();

@@ -18,7 +18,10 @@ class DatabaseSeeder extends Seeder
     {
         // Clear existing users to prevent unique constraint violations
         // Comment this line if you want to keep existing users
+        // Disable foreign key checks temporarily to allow truncation
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
         DB::table('users')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
         
         // Create admin user
         User::firstOrCreate(
