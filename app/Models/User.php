@@ -169,16 +169,16 @@ class User extends Authenticatable implements CanResetPasswordContract
      *
      * @param float $meritPercentage
      * @param float $attendancePercentage
-     * @param float|null $midtermExam
      * @param float|null $finalExam
+     * @param float|null $average
      * @return float
      */
-    public function computeEquivalentGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam)
+    public function computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average)
     {
         $merit = $meritPercentage;
         $attendance = $attendancePercentage;
-        $exams = ($midtermExam !== null && $finalExam !== null)
-            ? ((floatval($midtermExam) + floatval($finalExam)) / 100) * 40
+        $exams = ($average !== null && $average > 0)
+            ? min(40, round(floatval($average) * 0.40))
             : 0;
         $totalPercentage = $merit + $attendance + $exams;
 
@@ -199,16 +199,16 @@ class User extends Authenticatable implements CanResetPasswordContract
      *
      * @param float $meritPercentage
      * @param float $attendancePercentage
-     * @param float|null $midtermExam
      * @param float|null $finalExam
+     * @param float|null $average
      * @return float
      */
-    public function calculateFinalGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam)
+    public function calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average)
     {
         $merit = $meritPercentage;
         $attendance = $attendancePercentage;
-        $exams = ($midtermExam !== null && $finalExam !== null)
-            ? ((floatval($midtermExam) + floatval($finalExam)) / 100) * 40
+        $exams = ($average !== null && $average > 0)
+            ? min(40, round(floatval($average) * 0.40))
             : 0;
         
         return $merit + $attendance + $exams;
@@ -243,14 +243,14 @@ class User extends Authenticatable implements CanResetPasswordContract
      *
      * @param float $meritPercentage
      * @param float $attendancePercentage
-     * @param float|null $midtermExam
      * @param float|null $finalExam
+     * @param float|null $average
      * @return bool
      */
-    public function updateGrades($meritPercentage, $attendancePercentage, $midtermExam, $finalExam)
+    public function updateGrades($meritPercentage, $attendancePercentage, $finalExam, $average)
     {
-        $finalGrade = $this->calculateFinalGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam);
-        $equivalentGrade = $this->computeEquivalentGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam);
+        $finalGrade = $this->calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
+        $equivalentGrade = $this->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
         $remarks = $this->getRemarks($equivalentGrade);
         
         return $this->update([
@@ -258,5 +258,23 @@ class User extends Authenticatable implements CanResetPasswordContract
             'equivalent_grade' => $equivalentGrade,
             'remarks' => $remarks
         ]);
+    }
+
+    /**
+     * Link to first semester aptitude row (table: first_semester_aptitude).
+     */
+    public function firstSemesterAptitude()
+    {
+        return $this->hasOne(\App\Models\Merit::class, 'cadet_id')
+            ->where('type', 'military_attitude');
+    }
+
+    /**
+     * Link to second semester aptitude row (table: second_semester_aptitude).
+     */
+    public function secondSemesterAptitude()
+    {
+        return $this->hasOne(\App\Models\SecondSemesterMerit::class, 'cadet_id')
+            ->where('type', 'military_attitude');
     }
 }

@@ -25,12 +25,16 @@ const FacultyMerits = ({ auth }) => {
   const [cadets, setCadets] = useState([]);
   const [merits, setMerits] = useState([]);
   const [demerits, setDemerits] = useState([]);
+    // Snapshots used to restore values on Cancel
+  const [originalMerits, setOriginalMerits] = useState([]);
+  const [originalDemerits, setOriginalDemerits] = useState([]);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('all');
   const [selectedPlatoon, setSelectedPlatoon] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedBattalion, setSelectedBattalion] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
+  const [renderKey, setRenderKey] = useState(0); // force remount after cancel
   const [showSortPicker, setShowSortPicker] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +59,7 @@ const FacultyMerits = ({ auth }) => {
     console.log('Semester:', semester);
     setIsLoading(true);
     const timestamp = Date.now(); // Cache busting
+    console.log('=== FORCE REFRESH - Cache busting timestamp:', timestamp);
     
     try {
       // Determine which API endpoint to use based on semester
@@ -99,8 +104,25 @@ const FacultyMerits = ({ auth }) => {
             const existingMerit = meritsData[cadet.id];
             if (existingMerit) {
               console.log(`Found existing merit for cadet ${cadet.id}:`, existingMerit);
+              const meritDays = existingMerit.days_array || Array(weekCount).fill(10);
+              const demeritDays = existingMerit.demerits_array || Array(weekCount).fill(0);
+              
+              // Recalculate merits based on demerits to ensure Merit = 10 - Demerit
+              console.log(`Recalculating merits for cadet ${cadet.id}:`);
+              console.log('Original merits:', meritDays);
+              console.log('Demerits:', demeritDays);
+              
+              const recalculatedMerits = meritDays.map((merit, index) => {
+                const demerit = demeritDays[index] || 0;
+                const newMerit = Math.max(0, 10 - demerit);
+                console.log(`Week ${index + 1}: Original Merit ${merit}, Demerit ${demerit} → New Merit ${newMerit} (${newMerit} + ${demerit} = ${newMerit + demerit})`);
+                return newMerit;
+              });
+              
+              console.log('Recalculated merits:', recalculatedMerits);
+              
               return {
-                days: existingMerit.days_array || Array(weekCount).fill(10), // Default to 10 for merits
+                days: recalculatedMerits,
                 percentage: existingMerit.percentage || 0
               };
             }
@@ -211,12 +233,7 @@ const FacultyMerits = ({ auth }) => {
         const newMeritValue = val === '' ? 10 : Math.max(0, 10 - val);
         const newDays = row.days.map((d, j) => (j === dayIdx ? newMeritValue : d));
         
-        // Recalculate percentage
-        const meritValues = newDays;
-        const demeritValues = updated[i].days;
-        const newPercentage = calculatePercentage(meritValues, demeritValues);
-        
-        return { ...row, days: newDays, percentage: newPercentage };
+        return { ...row, days: newDays };
       }
       return row;
     });
@@ -251,26 +268,33 @@ const FacultyMerits = ({ auth }) => {
       
       const weekCount = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
       
-      const meritsData = cadets.map((cadet, index) => ({
-        cadet_id: cadet.id,
-        days: merits[index]?.days.map(val => {
-          // Keep empty strings and hyphens as empty strings, only convert valid numbers
-          if (val === '' || val === '-' || val === null || val === undefined) {
-            return '';
-          }
-          const numVal = Number(val);
-          return isNaN(numVal) ? '' : numVal;
-        }) || Array(weekCount).fill(''),
-        demerits: demerits[index]?.days.map(val => {
-          // Keep empty strings and hyphens as empty strings, only convert valid numbers
-          if (val === '' || val === '-' || val === null || val === undefined) {
-            return '';
-          }
-          const numVal = Number(val);
-          return isNaN(numVal) ? '' : numVal;
-        }) || Array(weekCount).fill(''),
-        percentage: Number(merits[index]?.percentage) || 0
-      }));
+      const meritsData = cadets.map((cadet, index) => {
+        const daysMerit = merits[index]?.days || Array(weekCount).fill('');
+        const daysDemerit = demerits[index]?.days || Array(weekCount).fill('');
+        const numericMerits = daysMerit.map(val => {
+          if (val === '' || val === '-' || val === null || val === undefined) return '';
+          const n = Number(val);
+          return isNaN(n) ? '' : n;
+        });
+        const numericDemerits = daysDemerit.map(val => {
+          if (val === '' || val === '-' || val === null || val === undefined) return '';
+          const n = Number(val);
+          return isNaN(n) ? '' : n;
+        });
+        // Compute capped percentage (0-30)
+        const sumMerits = numericMerits.reduce((s, v) => s + (Number(v) || 0), 0);
+        const sumDemerits = numericDemerits.reduce((s, v) => s + (Number(v) || 0), 0);
+        const net = sumMerits - sumDemerits;
+        const maxPossible = weekCount * 10;
+        const computedPct = Math.min(30, Math.max(0, Math.round(((maxPossible === 0 ? 0 : net / maxPossible) * 30))));
+
+        return {
+          cadet_id: cadet.id,
+          days: numericMerits,
+          demerits: numericDemerits,
+          percentage: computedPct
+        };
+      });
 
       console.log('Merits data prepared:', meritsData);
 
@@ -378,7 +402,16 @@ const FacultyMerits = ({ auth }) => {
   };
 
   const handleCancel = () => {
+    // Restore from snapshots if available
+    if (originalMerits && originalMerits.length) {
+      setMerits(JSON.parse(JSON.stringify(originalMerits)));
+    }
+    if (originalDemerits && originalDemerits.length) {
+      setDemerits(JSON.parse(JSON.stringify(originalDemerits)));
+    }
     setIsEditing(false);
+    // Force a remount of the table so input values reflect restored state
+    setRenderKey(prev => prev + 1);
     toast.info('Editing cancelled. Changes discarded.');
   };
 
@@ -417,13 +450,22 @@ const FacultyMerits = ({ auth }) => {
     }
   };
 
-  // Calculate percentage based on merits and demerits
-  const calculatePercentage = (meritValues, demeritValues) => {
-    const totalMerits = meritValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
-    const totalDemerits = demeritValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
-    const netScore = totalMerits - totalDemerits;
-    const maxPossible = meritValues.length * 10; // Maximum possible score
-    return ((netScore / maxPossible) * 30).toFixed(2);
+  // Calculate total merit score displayed in the table
+  // For 1st semester (10 weeks): sum of M is already 0..100
+  // For 2nd semester (15 weeks): normalize sum of M (0..150) to a 0..100 scale
+  const calculateTotalMerits = (meritValues) => {
+    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+    const sumMerits = meritValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
+    if (weeks === 15) {
+      return Math.round((sumMerits / (weeks * 10)) * 100); // normalize to 0..100
+    }
+    return sumMerits; // already 0..100 for 10 weeks
+  };
+
+  // Calculate aptitude 30% as TotalMerits (0..100) × 0.3
+  const calculateAptitudeScore = (meritValues) => {
+    const totalMeritsScore = calculateTotalMerits(meritValues); // 0..100
+    return Math.round(totalMeritsScore * 0.3); // 0..30
   };
 
 
@@ -435,11 +477,11 @@ const FacultyMerits = ({ auth }) => {
         <div className="flex-1 p-6">
             {/* Breadcrumb */}
           <div className="bg-gray-100 p-3 text-gray-600 rounded-lg pl-5 cursor-pointer mb-4">
-                Home {">"} Merits
+                Home {">"} Aptitude
             </div>
           {/* Page Header and Controls */}
           <div className="flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg">
-            <h1 className="text-2xl font-semibold">Merits Management</h1>
+            <h1 className="text-2xl font-semibold">Aptitude Management</h1>
             
               </div>
              {/* Tab Navigation */}
@@ -476,7 +518,7 @@ const FacultyMerits = ({ auth }) => {
                    >
                      2026-2027 2nd semester
                    </button>
-                 </div>
+                </div>
                  <div className="flex items-center gap-4">
                    <div className="relative">
                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -574,7 +616,7 @@ const FacultyMerits = ({ auth }) => {
                {activeTab === 'current' && (
                  <>
                    <div className="overflow-x-auto">
-                   <table className="w-full border-collapse">
+                  <table key={renderKey} className="w-full border-collapse">
                 <thead className="text-gray-600">
                   <tr>
                     <th className="p-3 border-b font-medium text-left">Cadet Names</th>
@@ -590,15 +632,22 @@ const FacultyMerits = ({ auth }) => {
                         </div>
                       </th>
                     ))}
-                    <th className="p-3 border-b font-medium text-center">Percentage</th>
+                    <th className="p-3 border-b font-medium text-center">Total Merits</th>
+                    <th className="p-3 border-b font-medium text-center">Aptitude (30%)</th>
                   </tr>
                 </thead>
                   <tbody>
                   {paginatedCadets.map((cadet, i) => {
                     const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
-                    const meritValues = merits[cadetIndex]?.days ?? Array(10).fill(10);
-                    const demeritValues = demerits[cadetIndex]?.days ?? Array(10).fill(0);
-                    const percentage = calculatePercentage(meritValues, demeritValues);
+                    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                    let meritValues = merits[cadetIndex]?.days ?? [];
+                    let demeritValues = demerits[cadetIndex]?.days ?? [];
+                    // Pad missing weeks: merits should default to 10 (full merit) for weeks
+                    // with no data yet, so totals include weeks 11-15 by default in 2nd sem.
+                    if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
+                    if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
+                    const totalMerits = calculateTotalMerits(meritValues);
+                    const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                     
                     return (
                       <tr key={cadet.id} className="border-b border-gray-200">
@@ -614,10 +663,10 @@ const FacultyMerits = ({ auth }) => {
                                   min="0"
                                   max="10"
                                   value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
-                                  onChange={e => handleMeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
-                                  disabled={!isEditing}
+                                  disabled={true}
+                                  readOnly
                                 />
                                 {/* Demerits input (Red) */}
                                 <input
@@ -635,8 +684,12 @@ const FacultyMerits = ({ auth }) => {
                           );
                         })}
                         <td className="p-3 text-center">
-                          {/* Display calculated percentage, not an input */}
-                          {isNaN(Number(percentage)) ? '0.00' : percentage}%
+                          {/* Display total merit score */}
+                          {totalMerits}
+                        </td>
+                        <td className="p-3 text-center">
+                          {/* Display calculated aptitude score, not an input */}
+                          {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                         </td>
                       </tr>
                     );
@@ -680,8 +733,11 @@ const FacultyMerits = ({ auth }) => {
                 {!isEditing ? (
                   <button 
                     onClick={() => {
+                      // take snapshot for cancel restore
+                      setOriginalMerits(JSON.parse(JSON.stringify(merits)));
+                      setOriginalDemerits(JSON.parse(JSON.stringify(demerits)));
                       setIsEditing(true);
-                      toast.info('Edit mode enabled. You can now modify merits.');
+                      toast.info('Edit mode enabled. You can now modify demerits.');
                     }}
                     className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
                   >
@@ -730,15 +786,21 @@ const FacultyMerits = ({ auth }) => {
                          </div>
                        </th>
                      ))}
-                     <th className="p-3 border-b font-medium text-center">Percentage</th>
+                     <th className="p-3 border-b font-medium text-center">Total Merits</th>
+                     <th className="p-3 border-b font-medium text-center">Aptitude (30%)</th>
                    </tr>
                  </thead>
                 <tbody>
                   {paginatedCadets.map((cadet) => {
                     const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
-                    const meritValues = merits[cadetIndex]?.days ?? Array(15).fill(10);
-                    const demeritValues = demerits[cadetIndex]?.days ?? Array(15).fill(0);
-                    const percentage = calculatePercentage(meritValues, demeritValues);
+                    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                    let meritValues = merits[cadetIndex]?.days ?? [];
+                    let demeritValues = demerits[cadetIndex]?.days ?? [];
+                    // Ensure arrays cover all weeks; pad with defaults when shorter
+                    if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
+                    if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
+                    const totalMerits = calculateTotalMerits(meritValues);
+                    const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                      
                      return (
                        <tr key={cadet.id} className="hover:bg-gray-50 border-b border-gray-200">
@@ -758,10 +820,10 @@ const FacultyMerits = ({ auth }) => {
                                   min="0"
                                   max="10"
                                   value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
-                                  onChange={e => handleMeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
-                                  disabled={!isEditing}
+                                  disabled={true}
+                                  readOnly
                                 />
                                 {/* Demerits input (Red) */}
                                 <input
@@ -779,8 +841,12 @@ const FacultyMerits = ({ auth }) => {
                           );
                         })}
                          <td className="p-3 text-center">
-                           {/* Display calculated percentage, not an input */}
-                           {isNaN(Number(percentage)) ? '0.00' : percentage}%
+                           {/* Display total merit score */}
+                           {totalMerits}
+                         </td>
+                         <td className="p-3 text-center">
+                           {/* Display calculated aptitude score, not an input */}
+                           {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                          </td>
                        </tr>
                      );

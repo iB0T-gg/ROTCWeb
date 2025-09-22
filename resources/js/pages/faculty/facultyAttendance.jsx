@@ -240,7 +240,7 @@ const FacultyAttendance = ({ auth }) => {
                   <tr>
                     <th className='py-4 px-3 border-b font-medium text-left'>Cadet Name</th>
                     <th className='py-4 px-3 border-b font-medium text-center'>Weeks Present</th>
-                    <th className='py-4 px-3 border-b font-medium text-center'>Percentage</th>
+                    <th className='py-4 px-3 border-b font-medium text-center'>Attendance (30%)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -250,12 +250,12 @@ const FacultyAttendance = ({ auth }) => {
                     if (attendance && attendance.attendances) {
                       presentCount = Object.values(attendance.attendances).filter(Boolean).length;
                     }
-                    const percentage = ((presentCount / 15) * 30).toFixed(2);
+                    const percentage = Math.min(30, Math.round((presentCount / 15) * 30));
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
                         <td className='py-4 px-3 text-black'>{formatCadetName(cadet)}</td>
                         <td className='py-4 px-3 text-center text-black'>{presentCount}/15</td>
-                        <td className='py-4 px-3 text-center text-black'>{percentage}%</td>
+                        <td className='py-4 px-3 text-center text-black'>{percentage}</td>
                       </tr>
                     );
                   })}

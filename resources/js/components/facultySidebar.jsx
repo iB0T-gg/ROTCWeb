@@ -20,7 +20,7 @@ const FacultySidebar = () => {
     },
     {
       icons: <FaMedal />,
-      label: 'Merits',
+      label: 'Aptitude',
       link: '/faculty/facultyMerits',
     },
     {

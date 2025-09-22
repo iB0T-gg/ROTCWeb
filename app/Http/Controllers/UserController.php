@@ -307,9 +307,15 @@ class UserController extends Controller
                         // Get latest merit percentage (just saved), attendance percentage, and exam scores
                         $attendanceRecord = \DB::table('first_semester_attendance')->where('user_id', $user->id)->first();
                         $attendancePercentage = $attendanceRecord ? floatval($attendanceRecord->percentage) : 0;
-                        $midtermExam = $user->midterm_exam;
-                        $finalExam = $user->final_exam;
-                        $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $midtermExam, $finalExam);
+                        
+                        // Get exam scores from the exam scores table
+                        $examScore = \App\Models\ExamScore::where('user_id', $user->id)
+                            ->where('semester', $semester)
+                            ->first();
+                        $finalExam = $examScore ? $examScore->final_exam : null;
+                        $average = $examScore ? $examScore->average : null;
+                        
+                        $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $finalExam, $average);
                         $user->save();
                     }
                     $savedCount++;
@@ -443,9 +449,15 @@ class UserController extends Controller
                 $attendancePercentage = isset($record['percentage']) ? floatval($record['percentage']) : 0;
                 $merit = \App\Models\Merit::where('cadet_id', $user->id)->where('type', 'military_attitude')->first();
                 $meritPercentage = $merit ? floatval($merit->percentage) : 0;
-                $midtermExam = $user->midterm_exam;
-                $finalExam = $user->final_exam;
-                $user->equivalent_grade = $user->computeEquivalentGrade($meritPercentage, $attendancePercentage, $midtermExam, $finalExam);
+                
+                // Get exam scores from the exam scores table
+                $examScore = \App\Models\ExamScore::where('user_id', $user->id)
+                    ->where('semester', '2025-2026 1st semester')
+                    ->first();
+                $finalExam = $examScore ? $examScore->final_exam : null;
+                $average = $examScore ? $examScore->average : null;
+                
+                $user->equivalent_grade = $user->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
                 $user->save();
             }
             

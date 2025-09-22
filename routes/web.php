@@ -306,9 +306,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
                 'platoon',
                 'company',
                 'battalion',
-                'role',
-                'midterm_exam',
-                'final_exam'
+                'role'
             )->get();
         });
         Route::get('/merits', [UserController::class, 'getMerits']);
@@ -331,6 +329,9 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::middleware(FacultyMiddleware::class)->group(function () {
         Route::get('/exams', [App\Http\Controllers\ExamController::class, 'getExamScores']);
         Route::post('/exams/save', [App\Http\Controllers\ExamController::class, 'saveExamScores']);
+        // Common Module Grade (1st semester)
+        Route::get('/common-module', [App\Http\Controllers\CommonModuleController::class, 'get']);
+        Route::post('/common-module/save', [App\Http\Controllers\CommonModuleController::class, 'save']);
     });
     
     // Equivalent Grades API endpoints - not in API group

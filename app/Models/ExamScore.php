@@ -22,6 +22,7 @@ class ExamScore extends Model
         'user_id',
         'midterm_exam',
         'final_exam',
+        'average',
         'semester'
     ];
 
@@ -33,6 +34,7 @@ class ExamScore extends Model
     protected $casts = [
         'midterm_exam' => 'integer',
         'final_exam' => 'integer',
+        'average' => 'integer',
     ];
 
     /**

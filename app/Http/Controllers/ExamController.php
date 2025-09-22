@@ -52,6 +52,23 @@ class ExamController extends Controller
                 ->where('semester', $semester)
                 ->first();
             
+            $finalExam = $examScore ? $examScore->final_exam : '';
+            $midtermExam = $examScore ? $examScore->midterm_exam : '';
+            
+            // Calculate average based on semester
+            if ($semester === '2026-2027 2nd semester') {
+                // For 2nd semester: (Total / 123) * 100
+                $total = (($finalExam === '' || $finalExam === null) ? 0 : $finalExam) + (($midtermExam === '' || $midtermExam === null) ? 0 : $midtermExam);
+                $average = $total > 0 ? ($total / 123) * 100 : 0;
+                // Format to 2 decimal places for 2nd semester
+                $average = round($average, 2);
+            } else {
+                // For 1st semester: Final Exam * 2
+                $average = ($finalExam === '' || $finalExam === null) ? 0 : $finalExam * 2;
+                // Format to whole number for 1st semester
+                $average = round($average);
+            }
+            
             $examData[] = [
                 'id' => $user->id,
                 'first_name' => $user->first_name,
@@ -61,8 +78,8 @@ class ExamController extends Controller
                 'company' => $user->company ?? '',
                 'battalion' => $user->battalion ?? '',
                 // Return empty string when no score so UI shows blank inputs, not 0
-                'midterm_exam' => $examScore ? $examScore->midterm_exam : '',
-                'final_exam' => $examScore ? $examScore->final_exam : '',
+                'final_exam' => $finalExam,
+                'average' => $average,
             ];
         }
 
@@ -78,29 +95,50 @@ class ExamController extends Controller
     public function saveExamScores(Request $request)
     {
         try {
+            $semester = $request->input('semester');
+            
+            // Set different validation rules based on semester
+            $finalExamMax = ($semester === '2025-2026 1st semester') ? 50 : 62;
+            
             $request->validate([
                 'scores' => 'required|array',
                 'scores.*.id' => 'required|exists:users,id',
-                'scores.*.midterm_exam' => 'nullable|integer|min:0|max:50',
-                'scores.*.final_exam' => 'nullable|integer|min:0|max:50',
+                'scores.*.final_exam' => "nullable|integer|min:0|max:{$finalExamMax}",
+                'scores.*.midterm_exam' => 'nullable|integer|min:0|max:61',
                 'semester' => 'required|string',
             ]);
-
-            $semester = $request->input('semester');
             $examScoreModel = $this->getExamScoreModelForSemester($semester);
             $scores = $request->input('scores');
             
             // Use database transaction to ensure atomicity
             DB::transaction(function () use ($scores, $examScoreModel, $semester) {
                 foreach ($scores as $score) {
+                    $finalExam = $score['final_exam'];
+                    $midtermExam = $score['midterm_exam'] ?? null;
+                    
+                    // Calculate average based on semester
+                    if ($semester === '2026-2027 2nd semester') {
+                        // For 2nd semester: (Total / 123) * 100
+                        $total = (($finalExam === '' || $finalExam === null) ? 0 : $finalExam) + (($midtermExam === '' || $midtermExam === null) ? 0 : $midtermExam);
+                        $average = $total > 0 ? ($total / 123) * 100 : 0;
+                        // Format to 2 decimal places for 2nd semester
+                        $average = round($average, 2);
+                    } else {
+                        // For 1st semester: Final Exam * 2
+                        $average = ($finalExam === '' || $finalExam === null) ? 0 : $finalExam * 2;
+                        // Format to whole number for 1st semester
+                        $average = round($average);
+                    }
+                    
                     $examScore = $examScoreModel::updateOrCreate(
                         [
                             'user_id' => $score['id'],
                             'semester' => $semester
                         ],
                         [
-                            'midterm_exam' => $score['midterm_exam'],
-                            'final_exam' => $score['final_exam'],
+                            'final_exam' => $finalExam,
+                            'midterm_exam' => $midtermExam,
+                            'average' => $average,
                         ]
                     );
                 }
