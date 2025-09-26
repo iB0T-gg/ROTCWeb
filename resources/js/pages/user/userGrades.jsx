@@ -10,26 +10,28 @@ const userGrades = ({ auth, user }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch the current user's grades
-    axios.get('/api/user/grades')
+    // Fetch the current user's grades with cache busting
+    const timestamp = new Date().getTime();
+    axios.get(`/api/user/grades?_t=${timestamp}`)
       .then(res => {
         setUserGrades(res.data);
         setLoading(false);
       })
       .catch(err => {
         console.error('Failed to fetch user grades:', err);
-        setError('Failed to load grades');
+        // Don't set error state, just show empty grades with "-" values
+        setUserGrades(null);
         setLoading(false);
       });
   }, []);
 
-  // Helper function to format grade display (hidden for students)
-  const formatGrade = () => {
-    return '-';
+  // Helper function to format grade display
+  const formatGrade = (equivalentGrade) => {
+    if (equivalentGrade === null || equivalentGrade === undefined || equivalentGrade === '') {
+      return '-';
+    }
+    return equivalentGrade;
   };
-
-  // Final grade is faculty-facing; hide from student view
-  const formatFinalGrade = () => '-';
 
   // Helper function to get remarks with fallback
   const getRemarks = (remarks, equivalentGrade) => {
@@ -76,18 +78,6 @@ const userGrades = ({ auth, user }) => {
                     <p className="text-gray-600">Loading grades...</p>
                   </div>
                 </div>
-              ) : error ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <p className="text-red-600 mb-4">{error}</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="bg-primary text-white px-4 py-2 rounded hover:bg-olive-700"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </div>
               ) : (
                 <>
                   {/* Profile picture */}
@@ -128,16 +118,16 @@ const userGrades = ({ auth, user }) => {
                           <th className='py-2 px-4 font-medium text-center'>CODE</th>
                           <th className='py-2 px-4 font-medium text-center'>SUBJECT</th>
                           <th className='py-2 px-4 font-medium text-center'>GRADE</th>
-                          <th className='py-2 px-4 font-medium text-center'>REMARK</th>
+                          <th className='py-2 px-4 font-medium text-center'>REMARKS</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td className='py-2 px-4 text-center'>NSTP101</td>
                           <td className='py-2 px-4 text-center'>NSTP-ROTC</td>
-                          <td className='py-2 px-4 text-center'>{formatGrade(userGrades?.equivalent_grade)}</td>
+                          <td className='py-2 px-4 text-center'>{formatGrade(userGrades?.first_semester?.equivalent_grade)}</td>
                           <td className='py-2 px-4 text-center'>
-                            {getRemarks(userGrades?.remarks, userGrades?.equivalent_grade)}
+                            {getRemarks(userGrades?.first_semester?.remarks, userGrades?.first_semester?.equivalent_grade)}
                           </td>
                         </tr>
                       </tbody>
@@ -160,9 +150,9 @@ const userGrades = ({ auth, user }) => {
                         <tr>
                           <td className='py-2 px-4 text-center'>NSTP102</td>
                           <td className='py-2 px-4 text-center'>NSTP-ROTC</td>
-                          <td className='py-2 px-4 text-center'>{formatGrade(userGrades?.equivalent_grade)}</td>
+                          <td className='py-2 px-4 text-center'>{formatGrade(userGrades?.second_semester?.equivalent_grade)}</td>
                           <td className='py-2 px-4 text-center'>
-                            {getRemarks(userGrades?.remarks, userGrades?.equivalent_grade)}
+                            {getRemarks(userGrades?.second_semester?.remarks, userGrades?.second_semester?.equivalent_grade)}
                           </td>
                         </tr>
                       </tbody>

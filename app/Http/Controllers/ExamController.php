@@ -54,6 +54,30 @@ class ExamController extends Controller
             
             $finalExam = $examScore ? $examScore->final_exam : '';
             $midtermExam = $examScore ? $examScore->midterm_exam : '';
+            $subjectProf = $examScore ? $examScore->subject_prof : null;
+            
+            // Get aptitude and attendance data for Final Grade calculation
+            $aptitude30 = 0;
+            $attendance30 = 0;
+            $finalGrade = 0;
+            
+            if ($semester === '2026-2027 2nd semester') {
+                // Get aptitude_30 from second_semester_aptitude
+                $aptitude = DB::table('second_semester_aptitude')
+                    ->where('cadet_id', $user->id)
+                    ->first();
+                $aptitude30 = $aptitude ? (float) $aptitude->aptitude_30 : 0;
+                
+                // Get attendance_30 from second_semester_attendance
+                $attendance = DB::table('second_semester_attendance')
+                    ->where('user_id', $user->id)
+                    ->where('semester', $semester)
+                    ->first();
+                $attendance30 = $attendance ? (int) $attendance->attendance_30 : 0;
+                
+                // Calculate Final Grade: aptitude_30 + attendance_30 + subject_prof
+                $finalGrade = round($aptitude30 + $attendance30 + ($subjectProf ?? 0));
+            }
             
             // Calculate average based on semester
             if ($semester === '2026-2027 2nd semester') {
@@ -79,7 +103,12 @@ class ExamController extends Controller
                 'battalion' => $user->battalion ?? '',
                 // Return empty string when no score so UI shows blank inputs, not 0
                 'final_exam' => $finalExam,
+                'midterm_exam' => $midtermExam,
                 'average' => $average,
+                'subject_prof' => $subjectProf,
+                'aptitude_30' => $aptitude30,
+                'attendance_30' => $attendance30,
+                'final_grade' => $finalGrade,
             ];
         }
 
@@ -116,18 +145,25 @@ class ExamController extends Controller
                     $finalExam = $score['final_exam'];
                     $midtermExam = $score['midterm_exam'] ?? null;
                     
-                    // Calculate average based on semester
+                    // Calculate average and subject_prof based on semester
+                    $subjectProf = 0;
                     if ($semester === '2026-2027 2nd semester') {
                         // For 2nd semester: (Total / 123) * 100
                         $total = (($finalExam === '' || $finalExam === null) ? 0 : $finalExam) + (($midtermExam === '' || $midtermExam === null) ? 0 : $midtermExam);
                         $average = $total > 0 ? ($total / 123) * 100 : 0;
                         // Format to 2 decimal places for 2nd semester
                         $average = round($average, 2);
+                        
+                        // Calculate Subject Prof (40%) for 2nd semester (rounded to whole number)
+                        $subjectProf = min(40, round($average * 0.40));
                     } else {
                         // For 1st semester: Final Exam * 2
                         $average = ($finalExam === '' || $finalExam === null) ? 0 : $finalExam * 2;
                         // Format to whole number for 1st semester
                         $average = round($average);
+                        
+                        // Calculate Subject Prof (40%) for 1st semester
+                        $subjectProf = min(40, round($average * 0.40));
                     }
                     
                     $examScore = $examScoreModel::updateOrCreate(
@@ -139,10 +175,15 @@ class ExamController extends Controller
                             'final_exam' => $finalExam,
                             'midterm_exam' => $midtermExam,
                             'average' => $average,
+                            'subject_prof' => $subjectProf,
                         ]
                     );
                 }
             });
+
+            // Clear any relevant caches to ensure immediate data availability
+            \Cache::forget("exams_{$semester}");
+            \Cache::forget("final_grades_{$semester}");
 
             return response()->json(['message' => 'Successfully saved exam scores.']);
         } catch (\Illuminate\Validation\ValidationException $e) {

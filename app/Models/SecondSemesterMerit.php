@@ -20,14 +20,15 @@ class SecondSemesterMerit extends Model
         'merits_week_7', 'demerits_week_7', 'merits_week_8', 'demerits_week_8', 'merits_week_9', 'demerits_week_9',
         'merits_week_10', 'demerits_week_10', 'merits_week_11', 'demerits_week_11', 'merits_week_12', 'demerits_week_12',
         'merits_week_13', 'demerits_week_13', 'merits_week_14', 'demerits_week_14', 'merits_week_15', 'demerits_week_15',
-        'percentage',
+        'total_merits',
+        'aptitude_30',
         'updated_by',
-        'days_array',
+        'merits_array',
         'demerits_array'
     ];
 
     protected $casts = [
-        'days_array' => 'array',
+        'merits_array' => 'array',
         'demerits_array' => 'array',
     ];
 

@@ -29,6 +29,11 @@ class CommonModuleController extends Controller
                 ['common_module_grade' => $row['common_module_grade']]
             );
         }
+        
+        // Clear any relevant caches to ensure fresh data
+        \Cache::forget("final_grades_{$semester}");
+        \Cache::forget("common_module_{$semester}");
+        
         return response()->json(['status' => 'ok']);
     }
 }

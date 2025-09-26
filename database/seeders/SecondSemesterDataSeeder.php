@@ -47,13 +47,13 @@ class SecondSemesterDataSeeder extends Seeder
             ]);
             
             // Create attendance data for second semester with empty values
-            for ($day = 1; $day <= 15; $day++) {
-                DB::table('attendances')->insert([
+            for ($week = 1; $week <= 15; $week++) {
+                DB::table('second_semester_attendance')->insert([
                     'user_id' => $cadet->id,
                     'semester' => $secondSemester,
-                    'day_number' => $day,
+                    'week_number' => $week,
                     'is_present' => false, // Start with no attendance
-                    'attendance_date' => now()->addDays($day),
+                    'attendance_date' => now()->addWeeks($week),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

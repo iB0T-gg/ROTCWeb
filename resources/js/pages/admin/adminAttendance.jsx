@@ -33,6 +33,7 @@ export default function AdminAttendance(){
     const [selectedBattalion, setSelectedBattalion] = useState('');
     const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
     const [showFilterPicker, setShowFilterPicker] = useState(false);
+    const [maxWeeks, setMaxWeeks] = useState(10); // Default to 10 weeks for 1st semester
     const cadetsPerPage = 8;
 
     // Semester options
@@ -56,12 +57,23 @@ export default function AdminAttendance(){
             // The admin attendance API already returns the complete data we need
             setUsers(attendanceData);
             setAttendanceData(attendanceData);
+            
+            // Update max weeks based on the data returned
+            if (attendanceData.length > 0 && attendanceData[0].max_weeks) {
+                setMaxWeeks(attendanceData[0].max_weeks);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
             toast.error('Failed to fetch data');
         } finally {
             setLoading(false);
         }
+    };
+    
+    // Reset edit state when switching semesters
+    const resetEditState = () => {
+        setEditMode(false);
+        setSaving(false);
     };
     
     // Fetch users and attendance data on component mount
@@ -72,7 +84,10 @@ export default function AdminAttendance(){
     // Fetch data when semester changes
     useEffect(() => {
         if (selectedSemester) {
+            // Reset edit state when switching semesters
+            resetEditState();
             fetchData(selectedSemester);
+            toast.info(`Switched to ${selectedSemester}. Edit mode disabled.`);
         }
     }, [selectedSemester]);
     
@@ -89,9 +104,8 @@ export default function AdminAttendance(){
                         updatedAttendances[dayNumber] = isPresent;
                         
                         // Recalculate percentage
-                        const totalDays = Object.keys(updatedAttendances).length;
                         const presentDays = Object.values(updatedAttendances).filter(val => val).length;
-                        const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+                        const percentage = maxWeeks > 0 ? (presentDays / maxWeeks) * 100 : 0;
                         
                         return {
                             ...item,
@@ -106,7 +120,7 @@ export default function AdminAttendance(){
             // Send update to server
             await axios.post('/api/attendance/update', {
                 user_id: userId,
-                day_number: dayNumber,
+                week_number: dayNumber,
                 is_present: isPresent,
                 semester: selectedSemester
             });
@@ -132,7 +146,7 @@ export default function AdminAttendance(){
     
     // Cancel editing and restore original data
     const cancelEditing = () => {
-        setEditMode(false);
+        resetEditState();
         toast.info('Editing cancelled. Changes discarded.');
         fetchData(); // Refetch the data to discard changes
     };
@@ -288,50 +302,45 @@ export default function AdminAttendance(){
                                     <thead className='text-gray-600 sticky top-0 bg-white'>
                                         <tr>
                                             <th className='p-2 border-b font-medium text-left'>Cadet Name</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 1</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 2</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 3</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 4</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 5</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 6</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 7</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 8</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 9</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 10</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 11</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 12</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 13</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 14</th>
-                                            <th className='p-2 border-b font-medium text-left'>Week 15</th>
-                                            <th className='p-2 border-b font-medium text-left'>Attendance Percentage</th>
+                                            {Array.from({ length: maxWeeks }, (_, i) => (
+                                                <th key={i + 1} className='p-2 border-b font-medium text-left'>
+                                                    Week {i + 1}
+                                                </th>
+                                            ))}
+                                            <th className='p-2 border-b font-medium text-left'>Weeks Present</th>
+                                            <th className='p-2 border-b font-medium text-left'>Attendance (30%)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan="17" className="text-center py-4">Loading cadets...</td>
+                                                <td colSpan={maxWeeks + 3} className="text-center py-4">Loading cadets...</td>
                                             </tr>
                                         ) : paginatedAttendanceData.length > 0 ? (
                                             paginatedAttendanceData.map(data => (
                                                 <tr key={data.user_id} className='hover:bg-gray-50'>
                                                     <td className='p-2 border-b'>{data.last_name}, {data.first_name}</td>
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(dayNumber => (
-                                                        <td key={`${data.user_id}-${dayNumber}`} className='p-2 border-b'>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={data.attendances[dayNumber] || false}
-                                                                onChange={(e) => handleAttendanceChange(data.user_id, dayNumber, e.target.checked)}
-                                                                disabled={!editMode}
-                                                                className={!editMode ? 'cursor-not-allowed opacity-70' : ''}
-                                                            />
-                                                        </td>
-                                                    ))}
-                                                    <td className='p-2 border-b text-center'>{data.percentage}%</td>
+                                                    {Array.from({ length: maxWeeks }, (_, i) => {
+                                                        const weekNumber = i + 1;
+                                                        return (
+                                                            <td key={`${data.user_id}-${weekNumber}`} className='p-2 border-b'>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={data.attendances[weekNumber] || false}
+                                                                    onChange={(e) => handleAttendanceChange(data.user_id, weekNumber, e.target.checked)}
+                                                                    disabled={!editMode}
+                                                                    className={!editMode ? 'cursor-not-allowed opacity-70' : ''}
+                                                                />
+                                                            </td>
+                                                        );
+                                                    })}
+                                                    <td className='p-2 border-b text-center'>{data.weeks_present}/{maxWeeks}</td>
+                                                    <td className='p-2 border-b text-center'>{Math.round(data.attendance_30)}</td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan="17" className="text-center py-4">No cadets found</td>
+                                                <td colSpan={maxWeeks + 3} className="text-center py-4">No cadets found</td>
                                             </tr>
                                         )}
                                     </tbody>

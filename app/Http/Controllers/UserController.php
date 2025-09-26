@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -225,7 +226,6 @@ class UserController extends Controller
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
                 'merits.*.demerits' => "nullable|array|size:$weekCount",
                 'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
-                'merits.*.percentage' => 'required|numeric|min:0|max:30',
                 'semester' => 'required|string',
             ]);
 
@@ -248,17 +248,13 @@ class UserController extends Controller
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, $weekCount, &$savedCount) {
                 foreach ($request->merits as $meritData) {
                 try {
-                    // Calculate net scores (merits - demerits) for each week
-                    $netScores = [];
+                    // Compute totals using merits only, per requirement
+                    $meritValues = [];
                     for ($i = 0; $i < $weekCount; $i++) {
-                        $merit = $meritData['days'][$i] ?? 0;
-                        $demerit = $meritData['demerits'][$i] ?? 0;
-                        $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                        $meritValues[] = $meritData['days'][$i] ?? 0;
                     }
-                    
-                    $sum = array_sum($netScores);
-                    $totalPossible = $weekCount * 10; // 10 points per week
-                    $percentage = ($sum / $totalPossible) * 30;
+                    $sum = array_sum($meritValues); // total_merits
+                    $aptitude30 = round($sum * 0.30, 2); // aptitude_30
 
                     $merit = $meritModel::updateOrCreate(
                         [
@@ -267,9 +263,10 @@ class UserController extends Controller
                             'semester' => $semester
                         ],
                         [
-                            'percentage' => $percentage,
+                            'total_merits' => max(0, $sum),
+                            'aptitude_30' => $aptitude30,
                             'updated_by' => $faculty->id,
-                            'days_array' => $meritData['days'],
+                            'merits_array' => $meritData['days'],
                             'semester' => $semester
                         ]
                     );
@@ -289,7 +286,7 @@ class UserController extends Controller
                             $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
                         }
                     }
-                    // Also set days_array and demerits_array JSON fields - convert 0s to empty strings for consistency
+                    // Also set merits_array and demerits_array JSON fields - convert 0s to empty strings for consistency
                     $processedDays = array_map(function($day) {
                         return ($day === 0 || $day === '0') ? '' : $day;
                     }, $meritData['days']);
@@ -297,8 +294,10 @@ class UserController extends Controller
                         return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
                     }, $meritData['demerits'] ?? []);
                     
-                    $merit->days_array = $processedDays;
+                    $merit->merits_array = $processedDays;
                     $merit->demerits_array = $processedDemerits;
+                    $merit->total_merits = max(0, $sum);
+                    $merit->aptitude_30 = $aptitude30;
                     $merit->save();
 
                     // Recompute and save equivalent grade for the user
@@ -315,7 +314,7 @@ class UserController extends Controller
                         $finalExam = $examScore ? $examScore->final_exam : null;
                         $average = $examScore ? $examScore->average : null;
                         
-                        $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $finalExam, $average);
+                        $user->equivalent_grade = $user->computeEquivalentGrade($percentage, $attendancePercentage, $finalExam, $average, $semester);
                         $user->save();
                     }
                     $savedCount++;
@@ -334,6 +333,7 @@ class UserController extends Controller
             // Clear any relevant caches to ensure immediate data availability
             \Cache::forget("merits_{$semester}");
             \Cache::forget("cadets_{$semester}");
+            \Cache::forget("final_grades_{$semester}");
 
             return response()->json([
                 'success' => true,
@@ -401,7 +401,7 @@ class UserController extends Controller
                 'user_id' => $record->user_id,
                 'present_count' => $record->present_count ?? 0,
                 'percentage' => $record->percentage ?? 0,
-                'days_array' => json_decode($record->days_array ?? '[]')
+                'merits_array' => json_decode($record->merits_array ?? '[]')
             ];
         }
         
@@ -427,7 +427,7 @@ class UserController extends Controller
                 $data = [
                     'present_count' => $record['present_count'],
                     'percentage' => $record['percentage'],
-                    'days_array' => json_encode($record['days_array'] ?? []),
+                    'merits_array' => json_encode($record['merits_array'] ?? []),
                     'updated_at' => now()
                 ];
                 
@@ -457,9 +457,13 @@ class UserController extends Controller
                 $finalExam = $examScore ? $examScore->final_exam : null;
                 $average = $examScore ? $examScore->average : null;
                 
-                $user->equivalent_grade = $user->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
+                $user->equivalent_grade = $user->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average, '2025-2026 1st semester');
                 $user->save();
             }
+            
+            // Clear any relevant caches to ensure immediate data availability
+            \Cache::forget("attendance_{$semester}");
+            \Cache::forget("final_grades_{$semester}");
             
             return response()->json(['message' => 'Attendance records saved successfully']);
         } catch (\Exception $e) {
@@ -480,31 +484,60 @@ class UserController extends Controller
             return response()->json(['error' => 'User not authenticated'], 401);
         }
         
-        // Get the user's grades from the database
-        $userGrades = User::where('id', $user->id)
-                         ->select(
-                             'id',
-                             'first_name',
-                             'last_name',
-                             'middle_name',
-                             'email',
-                             'student_number',
-                             'year',
-                             'course',
-                             'section',
-                             'midterm_exam',
-                             'final_exam',
-                             'equivalent_grade',
-                             'final_grade',
-                             'remarks'
-                         )
-                         ->first();
+        // Get user basic info
+        $userInfo = User::where('id', $user->id)
+                       ->select(
+                           'id',
+                           'first_name',
+                           'last_name',
+                           'middle_name',
+                           'email',
+                           'student_number',
+                           'year',
+                           'course',
+                           'section'
+                       )
+                       ->first();
         
-        if (!$userGrades) {
+        if (!$userInfo) {
             return response()->json(['error' => 'User not found'], 404);
         }
         
-        return response()->json($userGrades);
+        // Get posted grades for both semesters
+        $firstSemesterGrades = DB::table('user_grades')
+            ->where('user_id', $user->id)
+            ->where('semester', '2025-2026 1st semester')
+            ->first();
+            
+        $secondSemesterGrades = DB::table('user_grades')
+            ->where('user_id', $user->id)
+            ->where('semester', '2026-2027 2nd semester')
+            ->first();
+        
+        // Prepare response with both semesters
+        $response = [
+            'id' => $userInfo->id,
+            'first_name' => $userInfo->first_name,
+            'last_name' => $userInfo->last_name,
+            'middle_name' => $userInfo->middle_name,
+            'email' => $userInfo->email,
+            'student_number' => $userInfo->student_number,
+            'year' => $userInfo->year,
+            'course' => $userInfo->course,
+            'section' => $userInfo->section,
+            'first_semester' => [
+                'equivalent_grade' => $firstSemesterGrades ? $firstSemesterGrades->equivalent_grade : null,
+                'remarks' => $firstSemesterGrades ? $firstSemesterGrades->remarks : null,
+                'final_grade' => $firstSemesterGrades ? $firstSemesterGrades->final_grade : null
+            ],
+            'second_semester' => [
+                'equivalent_grade' => $secondSemesterGrades ? $secondSemesterGrades->equivalent_grade : null,
+                'remarks' => $secondSemesterGrades ? $secondSemesterGrades->remarks : null,
+                'final_grade' => $secondSemesterGrades ? $secondSemesterGrades->final_grade : null
+            ]
+        ];
+        
+        return response()->json($response);
     }
 
     /**
@@ -551,7 +584,6 @@ class UserController extends Controller
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
                 'merits.*.demerits' => 'nullable|array|size:10',
                 'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
-                'merits.*.percentage' => 'required|numeric|min:0|max:30',
             ]);
 
             $faculty = auth()->user();
@@ -567,18 +599,14 @@ class UserController extends Controller
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
                 foreach ($request->merits as $meritData) {
                     try {
-                        // Calculate net scores (merits - demerits) for each week
+                        // Compute totals using merits only (10 weeks)
                         $weekCount = 10; // First semester has 10 weeks
-                        $netScores = [];
+                        $meritValues = [];
                         for ($i = 0; $i < $weekCount; $i++) {
-                            $merit = $meritData['days'][$i] ?? 0;
-                            $demerit = $meritData['demerits'][$i] ?? 0;
-                            $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                            $meritValues[] = $meritData['days'][$i] ?? 0;
                         }
-                        
-                        $sum = array_sum($netScores);
-                        $totalPossible = $weekCount * 10; // 10 points per week
-                        $percentage = ($sum / $totalPossible) * 30;
+                        $sum = array_sum($meritValues); // total_merits
+                        $aptitude30 = round($sum * 0.30, 2);
 
                         $merit = $meritModel::updateOrCreate(
                             [
@@ -587,8 +615,9 @@ class UserController extends Controller
                                 'semester' => $semester
                             ],
                             [
-                                'days_array' => $meritData['days'],
-                                'percentage' => $percentage,
+                                'merits_array' => $meritData['days'],
+                                'total_merits' => max(0, $sum),
+                                'aptitude_30' => $aptitude30,
                                 'faculty_id' => $faculty->id,
                                 'updated_at' => now()
                             ]
@@ -616,6 +645,8 @@ class UserController extends Controller
                             $merit->demerits_array = $processedDemerits;
                         }
 
+                        $merit->total_merits = max(0, $sum);
+                        $merit->aptitude_30 = $aptitude30;
                         $merit->save();
                         $savedCount++;
                     } catch (\Exception $e) {
@@ -678,7 +709,6 @@ class UserController extends Controller
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
                 'merits.*.demerits' => 'nullable|array|size:15',
                 'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
-                'merits.*.percentage' => 'required|numeric|min:0|max:30',
             ]);
 
             $faculty = auth()->user();
@@ -694,18 +724,22 @@ class UserController extends Controller
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
                 foreach ($request->merits as $meritData) {
                     try {
-                        // Calculate net scores (merits - demerits) for each week
-                        $weekCount = 15; // Second semester has 15 weeks
-                        $netScores = [];
+                        // Use 15 weeks for the second semester
+                        $weekCount = 15;
+                        // Sum demerits (treat missing as 0)
+                        $demeritValues = [];
                         for ($i = 0; $i < $weekCount; $i++) {
-                            $merit = $meritData['days'][$i] ?? 0;
-                            $demerit = $meritData['demerits'][$i] ?? 0;
-                            $netScores[] = max(0, $merit - $demerit); // Ensure non-negative
+                            $demeritValues[] = isset($meritData['demerits'][$i]) && $meritData['demerits'][$i] !== ''
+                                ? (float)$meritData['demerits'][$i]
+                                : 0.0;
                         }
-                        
-                        $sum = array_sum($netScores);
-                        $totalPossible = $weekCount * 10; // 10 points per week
-                        $percentage = ($sum / $totalPossible) * 30;
+                        $sumDemerits = array_sum($demeritValues);
+
+                        // Total merits = 150 - sum(demerits)
+                        $maxPossible = $weekCount * 10; // 150
+                        $totalMerits = max(0, $maxPossible - $sumDemerits);
+                        // Aptitude: clamp to 30 when total >= 100 else total * 0.30
+                        $aptitude30 = ($totalMerits >= 100) ? 30.0 : round($totalMerits * 0.30, 2);
 
                         $merit = $meritModel::updateOrCreate(
                             [
@@ -714,8 +748,10 @@ class UserController extends Controller
                                 'semester' => $semester
                             ],
                             [
-                                'days_array' => $meritData['days'],
-                                'percentage' => $percentage,
+                                // keep the merits days sent by UI (already derived), but demerits drive totals
+                                'merits_array' => $meritData['days'] ?? array_fill(0, $weekCount, 10),
+                                'total_merits' => $totalMerits,
+                                'aptitude_30' => $aptitude30,
                                 'faculty_id' => $faculty->id,
                                 'updated_at' => now()
                             ]
@@ -724,7 +760,6 @@ class UserController extends Controller
                         // Update week scores - preserve empty strings instead of converting to null
                         for ($i = 1; $i <= $weekCount; $i++) {
                             $weekValue = $meritData['days'][$i - 1] ?? '';
-                            // Keep empty strings as empty strings, convert 0 to empty string for consistency
                             $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
                         }
 
@@ -732,10 +767,9 @@ class UserController extends Controller
                         if (isset($meritData['demerits'])) {
                             for ($i = 1; $i <= $weekCount; $i++) {
                                 $demeritValue = $meritData['demerits'][$i - 1] ?? '';
-                                // Keep empty strings as empty strings, convert 0 to empty string for consistency
                                 $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
                             }
-                            
+
                             // Save demerits array
                             $processedDemerits = array_map(function($demerit) {
                                 return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
@@ -743,6 +777,8 @@ class UserController extends Controller
                             $merit->demerits_array = $processedDemerits;
                         }
 
+                        $merit->total_merits = $totalMerits;
+                        $merit->aptitude_30 = $aptitude30;
                         $merit->save();
                         $savedCount++;
                     } catch (\Exception $e) {
@@ -756,6 +792,11 @@ class UserController extends Controller
             });
 
             \Log::info('saveSecondSemesterMerits completed successfully', ['saved_count' => $savedCount]);
+
+            // Clear any relevant caches to ensure immediate data availability
+            \Cache::forget("merits_{$semester}");
+            \Cache::forget("cadets_{$semester}");
+            \Cache::forget("final_grades_{$semester}");
 
             return response()->json([
                 'success' => true,

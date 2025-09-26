@@ -19,14 +19,15 @@ class Merit extends Model
         'merits_week_4', 'demerits_week_4', 'merits_week_5', 'demerits_week_5', 'merits_week_6', 'demerits_week_6',
         'merits_week_7', 'demerits_week_7', 'merits_week_8', 'demerits_week_8', 'merits_week_9', 'demerits_week_9',
         'merits_week_10', 'demerits_week_10',
-        'percentage',
+        'total_merits',
+        'aptitude_30',
         'updated_by',
-        'days_array',
+        'merits_array',
         'demerits_array'
     ];
 
     protected $casts = [
-        'days_array' => 'array',
+        'merits_array' => 'array',
         'demerits_array' => 'array',
     ];
 

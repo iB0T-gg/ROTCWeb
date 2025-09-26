@@ -21,9 +21,9 @@ class SecondSemesterAttendance extends Model
     protected $fillable = [
         'user_id',
         'semester',
-        'day_number',
-        'is_present',
-        'attendance_date'
+        'attendance_date',
+        'weeks_present',
+        'attendance_30'
     ];
     
     /**
@@ -32,8 +32,9 @@ class SecondSemesterAttendance extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_present' => 'boolean',
         'attendance_date' => 'date',
+        'weeks_present' => 'integer',
+        'attendance_30' => 'integer',
     ];
 
     /**

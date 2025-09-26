@@ -287,6 +287,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
         Route::get('/attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
         Route::post('/attendance/update', [AttendanceController::class, 'updateAttendance']);
+        Route::post('/attendance/fingerprint-scan', [AttendanceController::class, 'fingerprintScan']);
         Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
         Route::post('/approve-user', [AdminController::class, 'approveUser']);
         Route::post('/reject-user', [AdminController::class, 'rejectUser']);
@@ -323,16 +324,21 @@ Route::middleware('auth')->prefix('api')->group(function () {
         // Attendance API endpoints for faculty
         Route::get('/faculty-attendance', [AttendanceController::class, 'getAllAttendance']);
         Route::get('/faculty-attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
+        
+        // Final Grades API endpoints for faculty
+        Route::get('/final-grades', [App\Http\Controllers\FinalGradesController::class, 'getFinalGrades']);
+        Route::post('/final-grades/post', [App\Http\Controllers\FinalGradesController::class, 'postGrades']);
+        Route::post('/final-grades/common-module', [App\Http\Controllers\FinalGradesController::class, 'updateCommonModuleGrade']);
     });
     
     // Faculty exam scores API endpoints
     Route::middleware(FacultyMiddleware::class)->group(function () {
         Route::get('/exams', [App\Http\Controllers\ExamController::class, 'getExamScores']);
         Route::post('/exams/save', [App\Http\Controllers\ExamController::class, 'saveExamScores']);
-        // Common Module Grade (1st semester)
         Route::get('/common-module', [App\Http\Controllers\CommonModuleController::class, 'get']);
         Route::post('/common-module/save', [App\Http\Controllers\CommonModuleController::class, 'save']);
     });
+    
     
     // Equivalent Grades API endpoints - not in API group
     Route::get('/grade-equivalents', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);

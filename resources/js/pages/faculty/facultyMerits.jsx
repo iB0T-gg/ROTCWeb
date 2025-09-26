@@ -104,7 +104,7 @@ const FacultyMerits = ({ auth }) => {
             const existingMerit = meritsData[cadet.id];
             if (existingMerit) {
               console.log(`Found existing merit for cadet ${cadet.id}:`, existingMerit);
-              const meritDays = existingMerit.days_array || Array(weekCount).fill(10);
+              const meritDays = existingMerit.merits_array || Array(weekCount).fill(10);
               const demeritDays = existingMerit.demerits_array || Array(weekCount).fill(0);
               
               // Recalculate merits based on demerits to ensure Merit = 10 - Demerit
@@ -218,26 +218,27 @@ const FacultyMerits = ({ auth }) => {
     if (isNaN(val) || value === '') val = '';
     else if (val > 10) val = 10;
     else if (val < 0) val = 0;
-    
-    const updated = demerits.map((row, i) =>
+
+    // Update demerits state
+    setDemerits(prev => prev.map((row, i) => (
       i === cadetIdx
         ? { ...row, days: row.days.map((d, j) => (j === dayIdx ? val : d)) }
         : row
-    );
-    setDemerits(updated);
+    )));
 
-    // Automatically adjust merits when demerits change
-    const updatedMerits = merits.map((row, i) => {
-      if (i === cadetIdx) {
-        // Calculate new merit value: 10 - demerit value
-        const newMeritValue = val === '' ? 10 : Math.max(0, 10 - val);
-        const newDays = row.days.map((d, j) => (j === dayIdx ? newMeritValue : d));
-        
-        return { ...row, days: newDays };
+    // Force merits to mirror 10 - D immediately in state so UI updates at once
+    setMerits(prev => prev.map((row, i) => {
+      if (i !== cadetIdx) return row;
+      const newMeritValue = val === '' ? 10 : Math.max(0, 10 - val);
+      const newDays = (row.days || []).map((d, j) => (j === dayIdx ? newMeritValue : d));
+      // Ensure array has at least dayIdx entries
+      if (dayIdx >= newDays.length) {
+        const fill = Array(dayIdx - newDays.length + 1).fill(10);
+        newDays.push(...fill);
+        newDays[dayIdx] = newMeritValue;
       }
-      return row;
-    });
-    setMerits(updatedMerits);
+      return { ...row, days: newDays };
+    }));
   };
 
   const handlePercentageChange = (cadetIdx, value) => {
@@ -271,11 +272,8 @@ const FacultyMerits = ({ auth }) => {
       const meritsData = cadets.map((cadet, index) => {
         const daysMerit = merits[index]?.days || Array(weekCount).fill('');
         const daysDemerit = demerits[index]?.days || Array(weekCount).fill('');
-        const numericMerits = daysMerit.map(val => {
-          if (val === '' || val === '-' || val === null || val === undefined) return '';
-          const n = Number(val);
-          return isNaN(n) ? '' : n;
-        });
+        // Always compute merits from demerits: merit = 10 - demerit
+        const numericMerits = daysDemerit.map(d => Math.max(0, 10 - (Number(d) || 0)));
         const numericDemerits = daysDemerit.map(val => {
           if (val === '' || val === '-' || val === null || val === undefined) return '';
           const n = Number(val);
@@ -450,22 +448,22 @@ const FacultyMerits = ({ auth }) => {
     }
   };
 
-  // Calculate total merit score displayed in the table
-  // For 1st semester (10 weeks): sum of M is already 0..100
-  // For 2nd semester (15 weeks): normalize sum of M (0..150) to a 0..100 scale
-  const calculateTotalMerits = (meritValues) => {
+  // Calculate total merits: start with max possible, deduct demerits
+  const calculateTotalMerits = (meritValues = [], demeritValues = []) => {
     const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-    const sumMerits = meritValues.reduce((sum, val) => sum + (Number(val) || 0), 0);
-    if (weeks === 15) {
-      return Math.round((sumMerits / (weeks * 10)) * 100); // normalize to 0..100
-    }
-    return sumMerits; // already 0..100 for 10 weeks
+    const maxPossible = weeks * 10; // 100 for 1st sem, 150 for 2nd sem
+    const totalDemerits = (demeritValues || []).reduce((sum, d) => sum + (Number(d) || 0), 0);
+    return Math.max(0, maxPossible - totalDemerits);
   };
 
-  // Calculate aptitude 30% as TotalMerits (0..100) × 0.3
-  const calculateAptitudeScore = (meritValues) => {
-    const totalMeritsScore = calculateTotalMerits(meritValues); // 0..100
-    return Math.round(totalMeritsScore * 0.3); // 0..30
+  // Calculate aptitude 30% as total_merits × 0.30 (no cap)
+  const calculateAptitudeScore = (meritValues, demeritValues = []) => {
+    const total = calculateTotalMerits(meritValues, demeritValues);
+    // If total merits >= 100, aptitude should be 30
+    if (total >= 100) {
+      return 30;
+    }
+    return Math.round(total * 0.30);
   };
 
 
@@ -646,7 +644,7 @@ const FacultyMerits = ({ auth }) => {
                     // with no data yet, so totals include weeks 11-15 by default in 2nd sem.
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateTotalMerits(meritValues);
+                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                     
                     return (
@@ -662,7 +660,9 @@ const FacultyMerits = ({ auth }) => {
                                   type="number"
                                   min="0"
                                   max="10"
-                                  value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
+                                  value={(meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-')
+                                    ? Math.max(0, 10 - (Number(demeritValues[weekIndex]) || 0))
+                                    : meritValues[weekIndex]}
                                   className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
@@ -799,7 +799,7 @@ const FacultyMerits = ({ auth }) => {
                     // Ensure arrays cover all weeks; pad with defaults when shorter
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateTotalMerits(meritValues);
+                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                      
                      return (

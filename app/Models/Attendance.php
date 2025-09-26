@@ -20,9 +20,9 @@ class Attendance extends Model
      */
     protected $fillable = [
         'user_id',
+        'weeks_present',
+        'attendance_30',
         'semester',
-        'day_number',
-        'is_present',
         'attendance_date'
     ];
     
@@ -32,8 +32,9 @@ class Attendance extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_present' => 'boolean',
         'attendance_date' => 'date',
+        'weeks_present' => 'integer',
+        'attendance_30' => 'integer',
     ];
 
     /**

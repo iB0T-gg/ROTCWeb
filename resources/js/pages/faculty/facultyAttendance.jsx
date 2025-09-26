@@ -246,16 +246,31 @@ const FacultyAttendance = ({ auth }) => {
                 <tbody>
                   {paginatedCadets.map((cadet) => {
                     const attendance = attendanceMap[cadet.id];
+                    
+                    // Get max weeks based on semester
+                    const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                    
+                    // For first semester, use the new aggregated data structure
                     let presentCount = 0;
-                    if (attendance && attendance.attendances) {
-                      presentCount = Object.values(attendance.attendances).filter(Boolean).length;
+                    let attendanceScore = 0;
+                    
+                    if (selectedSemester === '2025-2026 1st semester') {
+                      // Use aggregated data from the new structure
+                      presentCount = attendance ? attendance.weeks_present : 0;
+                      attendanceScore = attendance ? attendance.attendance_30 : 0;
+                    } else {
+                      // For second semester, use the old individual week logic
+                      if (attendance && attendance.attendances) {
+                        presentCount = Object.values(attendance.attendances).filter(Boolean).length;
+                      }
+                      attendanceScore = Math.min(30, Math.round((presentCount / maxWeeks) * 30));
                     }
-                    const percentage = Math.min(30, Math.round((presentCount / 15) * 30));
+                    
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
                         <td className='py-4 px-3 text-black'>{formatCadetName(cadet)}</td>
-                        <td className='py-4 px-3 text-center text-black'>{presentCount}/15</td>
-                        <td className='py-4 px-3 text-center text-black'>{percentage}</td>
+                        <td className='py-4 px-3 text-center text-black'>{presentCount}/{maxWeeks}</td>
+                        <td className='py-4 px-3 text-center text-black'>{Math.round(attendanceScore)}</td>
                       </tr>
                     );
                   })}

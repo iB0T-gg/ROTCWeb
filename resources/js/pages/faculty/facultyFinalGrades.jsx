@@ -34,6 +34,7 @@ const FacultyFinalGrades = ({ auth }) => {
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
   const cadetsPerPage = 8;
   const [semesterCache, setSemesterCache] = useState({});
   const [previousSemester, setPreviousSemester] = useState(null);
@@ -42,13 +43,17 @@ const FacultyFinalGrades = ({ auth }) => {
   const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
 
   // Function to fetch data based on selected semester
-  const fetchDataForSemester = async (semester) => {
+  const fetchDataForSemester = async (semester, forceRefresh = false) => {
     setIsLoading(true);
     const semesterParam = encodeURIComponent(semester);
     const ts = Date.now(); // cache-busting timestamp
+    const randomId = Math.random().toString(36).substring(7); // additional cache-busting
 
-    // Serve from local cache if available
-    if (semesterCache[semester]) {
+    // Only force refresh if explicitly requested
+    const shouldForceRefresh = forceRefresh;
+
+    // Serve from local cache if available and not forcing refresh
+    if (semesterCache[semester] && !shouldForceRefresh) {
       const cached = semesterCache[semester];
       setCadets(cached.cadets || []);
       setMerits(cached.merits || {});
@@ -61,106 +66,72 @@ const FacultyFinalGrades = ({ auth }) => {
     }
     
     try {
-      // Use semester-specific endpoints for aptitude to ensure correct data source
-      const meritsEndpoint = (semester === '2025-2026 1st semester')
-        ? `/api/first_semester_aptitude?_t=${ts}`
-        : `/api/second_semester_aptitude?_t=${ts}`;
+      // Use the new final grades API that calculates everything
+      const finalGradesUrl = shouldForceRefresh 
+        ? `/api/final-grades?semester=${semesterParam}&_t=${ts}&force_refresh=1&r=${randomId}`
+        : `/api/final-grades?semester=${semesterParam}&_t=${ts}&r=${randomId}`;
+      const finalGradesRes = await fetch(finalGradesUrl);
+      const finalGradesData = await finalGradesRes.json();
 
-      const [cadetsRes, meritsRes, attendanceRes, examsRes, gradesRes, commonRes] = await Promise.all([
-        fetch(`/api/cadets?semester=${semesterParam}&_t=${ts}`),
-        fetch(meritsEndpoint),
-        fetch(`/api/faculty-attendance?semester=${semesterParam}&_t=${ts}`),
-        fetch(`/api/exams?semester=${semesterParam}&_t=${ts}`),
-        fetch(`/direct-grades?semester=${semesterParam}&_t=${ts}`),
-        // common module only for 1st semester; backend will still respond if asked for 2nd
-        fetch(`/api/common-module?semester=${semesterParam}&_t=${ts}`)
-      ]);
+      // Also fetch common module data for editing
+      const commonRes = await fetch(`/api/common-module?semester=${semesterParam}&_t=${ts}&r=${randomId}`);
+      const commonData = await commonRes.json();
 
-      const [cadetsData, meritsData, attendanceData, examsData, gradesData, commonData] = await Promise.all([
-        cadetsRes.json(),
-        meritsRes.json(),
-        attendanceRes.json(),
-        examsRes.json(),
-        gradesRes.json(),
-        commonRes.json()
-      ]);
-
-      // Process the data without any random modifications; use live values
-      const processedCadets = cadetsData;
-      // Normalize merits into a robust map keyed by cadet_id (fallback user_id/id)
-      const meritsMap = {};
-      const addMerit = (item) => {
-        if (!item) return;
-        const uid = item.cadet_id ?? item.user_id ?? item.id;
-        if (uid === undefined) return;
-        meritsMap[uid] = item;
-        meritsMap[String(uid)] = item;
-        const n = Number(uid);
-        if (!Number.isNaN(n)) meritsMap[n] = item;
-      };
-      if (Array.isArray(meritsData)) {
-        meritsData.forEach(addMerit);
-      } else if (meritsData && typeof meritsData === 'object') {
-        Object.values(meritsData).forEach(addMerit);
-      }
-      const processedMerits = Object.keys(meritsMap).length ? meritsMap : (meritsData || {});
-      const processedAttendance = attendanceData;
-      const processedExams = examsData;
-      const processedGrades = {};
-      gradesData.forEach(user => {
-        if (user && user.id !== undefined && user.equivalent_grade !== null) {
-          processedGrades[user.id] = parseFloat(user.equivalent_grade);
-        }
+      // Process the final grades data
+      const processedCadets = finalGradesData;
+      
+      // Create maps for backward compatibility
+      const attendanceMap = {};
+      const examScoresMap = {};
+      const equivalentGradesMap = {};
+      const commonModuleMap = {};
+      
+      finalGradesData.forEach(cadet => {
+        // Create attendance map entry
+        attendanceMap[cadet.id] = {
+          user_id: cadet.id,
+          weeks_present: 0, // This will be calculated from ROTC grade components
+          attendance_30: 0  // This will be calculated from ROTC grade components
+        };
+        
+        // Create exam scores map entry
+        examScoresMap[cadet.id] = {
+          id: cadet.id,
+          average: 0 // This will be calculated from ROTC grade components
+        };
+        
+        // Create equivalent grades map
+        equivalentGradesMap[cadet.id] = cadet.equivalent_grade;
+        
+        // Create common module map
+        commonModuleMap[cadet.id] = cadet.common_module_grade;
       });
 
       setCadets(processedCadets);
-      setMerits(processedMerits);
-      
-      // Map attendance by user_id for quick lookup
-      const attendanceMap = {};
-      processedAttendance.forEach(record => {
-        attendanceMap[record.user_id] = record;
-      });
+      setMerits({}); // Not needed for final grades
       setAttendanceMap(attendanceMap);
-      
-      // Map exam scores by user_id for quick lookup
-      const examScoresMap = {};
-      processedExams.forEach(cadet => {
-        examScoresMap[cadet.id] = cadet;
-      });
       setExamScores(examScoresMap);
-      
-      // Map equivalent grades
-      setEquivalentGrades(processedGrades);
-
-      // Common Module map
-      setCommonModuleMap(commonData || {});
+      setEquivalentGrades(equivalentGradesMap);
+      setCommonModuleMap(commonModuleMap);
 
       // Update cache for this semester
       setSemesterCache(prev => ({
         ...prev,
         [semester]: {
           cadets: processedCadets,
-          merits: processedMerits,
+          merits: {},
           attendanceMap,
           examScores: examScoresMap,
-          equivalentGrades: processedGrades,
-          commonModuleMap: commonData || {}
+          equivalentGrades: equivalentGradesMap,
+          commonModuleMap: commonModuleMap
         }
       }));
       
-      // Log to verify different data is loaded
-      console.log(`Data loaded for ${semester}:`, {
+      // Log to verify data is loaded
+      console.log(`Final grades data loaded for ${semester}:`, {
         cadetsCount: processedCadets.length,
-        meritsCount: Object.keys(processedMerits).length,
-        attendanceCount: processedAttendance.length,
-        gradesCount: Object.keys(processedGrades).length,
-        sampleData: {
-          firstCadet: processedCadets[0],
-          firstMerit: Object.values(processedMerits)[0],
-          firstAttendance: processedAttendance[0],
-          firstGrade: Object.values(processedGrades)[0]
-        }
+        sampleData: processedCadets[0],
+        ankundingData: processedCadets.find(c => c.id === 3)
       });
       
     } catch (error) {
@@ -173,7 +144,7 @@ const FacultyFinalGrades = ({ auth }) => {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchDataForSemester(selectedSemester);
+    fetchDataForSemester(selectedSemester, true); // Force refresh on initial load
   }, []);
 
   // Fetch data when semester changes
@@ -195,8 +166,18 @@ const FacultyFinalGrades = ({ auth }) => {
           return n;
         });
       }
+      // Also clear cache for current semester to ensure fresh data
+      setSemesterCache(prev => {
+        const n = { ...prev };
+        delete n[selectedSemester];
+        // Extra clear for 2nd semester to ensure fresh data
+        if (selectedSemester === '2026-2027 2nd semester') {
+          delete n['2026-2027 2nd semester'];
+        }
+        return n;
+      });
       setPreviousSemester(selectedSemester);
-      fetchDataForSemester(selectedSemester);
+      fetchDataForSemester(selectedSemester, true); // Force refresh
     }
   }, [selectedSemester]);
 
@@ -231,9 +212,9 @@ const FacultyFinalGrades = ({ auth }) => {
   const getAttendancePercentage = (cadet) => {
     const attendance = attendanceMap[cadet.id];
     if (!attendance) return 0;
-    // Prefer computing from days_array to ensure consistency with UI (weeks present)
+    // Prefer computing from merits_array to ensure consistency with UI (weeks present)
     const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-    const days = Array.isArray(attendance.days_array) ? attendance.days_array : [];
+    const days = Array.isArray(attendance.merits_array) ? attendance.merits_array : [];
     if (days.length > 0) {
       const presentCount = days.filter(Boolean).length;
       const percentage = (presentCount / weekLimit) * 30;
@@ -258,8 +239,8 @@ const FacultyFinalGrades = ({ auth }) => {
     const record = merits[cadetId] || merits[String(cadetId)] || merits[Number(cadetId)];
     if (!record) { console.log('[Aptitude] No record for cadet', cadetId); return 0; }
     // Prefer computing from merit/demerit day arrays for consistency with the UI grid
-    const meritDays = record.days_array || record.days || record.merits_days || [];
-    const demDays = record.demerits_array || record.demerit_days || (record.demerits && (record.demerits.days_array || record.demerits.days)) || [];
+    const meritDays = record.merits_array || record.days || record.merits_days || [];
+    const demDays = record.demerits_array || record.demerit_days || (record.demerits && (record.demerits.merits_array || record.demerits.days)) || [];
     const weekCountGuess = (Array.isArray(meritDays) && meritDays.length) ? meritDays.length
                             : (Array.isArray(demDays) && demDays.length) ? demDays.length
                             : (selectedSemester === '2025-2026 1st semester' ? 10 : 15);
@@ -326,8 +307,13 @@ const FacultyFinalGrades = ({ auth }) => {
       average = final * 2;
     }
     
-    // Calculate exam score as average * 0.40, capped at 40
-    const examScore = Math.min(40, Math.round(average * 0.40));
+    // Calculate exam score with semester-specific weighting
+    // 2025-2026 1st semester: 40% weighting, capped at 40
+    // 2026-2027 2nd semester (current): retain 40% weighting, capped at 40
+    const isFirstSem = selectedSemester === '2025-2026 1st semester';
+    const weight = isFirstSem ? 0.40 : 0.40;
+    const cap = isFirstSem ? 40 : 40;
+    const examScore = Math.min(cap, Math.round(average * weight));
     console.log('[SubjectProf] calc', { cadetId: cadet.id, final, midterm, average, examScore });
     return examScore;
   };
@@ -369,6 +355,7 @@ const FacultyFinalGrades = ({ auth }) => {
         payload.push({ user_id: c.id, common_module_grade: Number(val).toFixed(2) });
       }
     });
+    
     try {
       const res = await fetch('/api/common-module/save', {
         method: 'POST',
@@ -380,22 +367,21 @@ const FacultyFinalGrades = ({ auth }) => {
       });
       if (res.ok) {
         setCommonModuleMap(prev => ({ ...prev, ...commonModuleEdited }));
-        setCommonModuleEdited({});
         setIsEditingCommon(false);
         toast.success('Common Module Grades saved.');
-        // update cache for current semester
-        setSemesterCache(prev => ({
-          ...prev,
-          [selectedSemester]: {
-            ...(prev[selectedSemester] || {}),
-            cadets,
-            merits,
-            attendanceMap,
-            examScores,
-            equivalentGrades,
-            commonModuleMap: { ...commonModuleMap, ...commonModuleEdited }
-          }
-        }));
+        
+        // Clear the cache for this semester to force fresh data
+        setSemesterCache(prev => {
+          const newCache = { ...prev };
+          delete newCache[selectedSemester];
+          return newCache;
+        });
+        
+        // Refresh data from server to get updated final grades (force refresh)
+        await fetchDataForSemester(selectedSemester, true);
+        
+        // Clear edited state after successful refresh
+        setCommonModuleEdited({});
       } else {
         toast.error('Failed to save Common Module Grades');
       }
@@ -417,6 +403,65 @@ const FacultyFinalGrades = ({ auth }) => {
     setCommonModuleMap(commonSnapshot);
     setIsEditingCommon(false);
     toast.info('Editing cancelled. Changes discarded.');
+  };
+
+  const handlePostGrades = async () => {
+    if (isPosting) return;
+    
+    setIsPosting(true);
+    
+    try {
+      // Prepare the grades data for posting
+      const gradesData = filteredCadets.map(cadet => ({
+        user_id: cadet.id,
+        equivalent_grade: cadet.equivalent_grade,
+        remarks: cadet.remarks,
+        final_grade: cadet.final_grade,
+        semester: selectedSemester
+      }));
+
+      // Get CSRF token
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      console.log('CSRF Token:', csrfToken);
+      console.log('Posting grades:', { semester: selectedSemester, grades: gradesData });
+
+      const response = await fetch('/api/final-grades/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({ 
+          semester: selectedSemester, 
+          grades: gradesData 
+        })
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Success response:', result);
+        toast.success('Grades posted successfully!');
+      } else {
+        const responseText = await response.text();
+        console.error('Error response:', responseText);
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          toast.error(`Failed to post grades: ${errorData.message || 'Unknown error'}`);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          toast.error(`Failed to post grades: Server returned ${response.status} status`);
+        }
+      }
+    } catch (error) {
+      console.error('Error posting grades:', error);
+      toast.error('Error posting grades. Please try again.');
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   // Compute equivalent grade (same as before)
@@ -525,7 +570,15 @@ const FacultyFinalGrades = ({ auth }) => {
                   {semesterOptions.map((semester) => (
                     <button
                       key={semester}
-                      onClick={() => setSelectedSemester(semester)}
+                      onClick={() => {
+                        setSelectedSemester(semester);
+                        // Clear cache for the new semester to ensure fresh data
+                        setSemesterCache(prev => {
+                          const newCache = { ...prev };
+                          delete newCache[semester];
+                          return newCache;
+                        });
+                      }}
                       disabled={isLoading}
                       className={`py-2 px-4 rounded-lg transition-colors duration-150 ${
                         selectedSemester === semester
@@ -625,6 +678,26 @@ const FacultyFinalGrades = ({ auth }) => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Post Button */}
+                  <button
+                    onClick={handlePostGrades}
+                    disabled={isLoading || isPosting}
+                    className={`px-6 py-2 rounded-lg font-medium transition-colors duration-150 ${
+                      isPosting
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-primary text-white hover:bg-[#3d4422] transition-colors duration-150'
+                    }`}
+                  >
+                    {isPosting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Posting...
+                      </div>
+                    ) : (
+                      'Post'
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -660,26 +733,24 @@ const FacultyFinalGrades = ({ auth }) => {
                   </thead>
                   <tbody>
                     {paginatedCadets.map(cadet => {
-                      const merit = getAptitudePercentage(cadet.id);
-                      const attendance = getAttendancePercentage(cadet);
-                      const exams = getExamPercentage(cadet);
+                      // Use the pre-calculated values from the final grades API
+                      const commonModuleGrade = cadet.common_module_grade || 0;
+                      const rotcGrade = cadet.rotc_grade || 0;
+                      const finalGrade = cadet.final_grade || 0;
+                      const equivalentGrade = cadet.equivalent_grade || 0;
+                      // Prefer backend-provided remarks if present
+                      const remark = cadet.remarks
+                        ? cadet.remarks
+                        : (equivalentGrade === 5.0)
+                          ? 'Failed'
+                          : (equivalentGrade === 4.0)
+                            ? 'INC'
+                            : (equivalentGrade === 3.0 && Math.round(finalGrade) === 75)
+                              ? '75 (PASSED)'
+                              : 'Passed';
                       
-                      // Ensure all values are numbers
-                      const safeMerit = typeof merit === 'number' ? merit : 0;
-                      const safeAttendance = typeof attendance === 'number' ? attendance : 0;
-                      const safeExams = typeof exams === 'number' ? exams : 0;
-                      const computedEquivalentGrade = computeEquivalentGrade(safeMerit, safeAttendance, safeExams);
-                      const savedEquivalentGrade = equivalentGrades[cadet.id];
                       if (selectedSemester === '2025-2026 1st semester') {
-                        const apt = getAptitudePercentage(cadet.id);
-                        const att = getAttendancePercentage(cadet);
-                        const ex = getExamPercentage(cadet);
-                        const rotc = Math.round((apt || 0) + (att || 0) + (ex || 0));
-                        const breakdown = `Aptitude: ${apt} + Attendance: ${att} + Subject Prof.: ${ex} = ${rotc}`;
-                        console.log('[ROTC Breakdown]', { cadetId: cadet.id, apt, att, ex, rotc });
-                        const cm = getCommonModule(cadet.id);
-                        const finalGrade = (Number(cm || 0) + rotc) / 2;
-                        const remark = (computedEquivalentGrade <= 3.0) ? 'Passed' : 'Failed';
+                        // 1st semester: Show Common Module Grade, ROTC Grade, Final Grade, Equivalent Grade, Remarks
                         return (
                           <tr className="border-b border-gray-200" key={cadet.id}>
                             <td className="py-4 px-3 text-black">{formatCadetName(cadet)}</td>
@@ -693,7 +764,7 @@ const FacultyFinalGrades = ({ auth }) => {
                                 className={`no-spin w-16 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditingCommon ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                 value={(isEditingCommon && commonModuleEdited[cadet.id] !== undefined)
                                   ? String(commonModuleEdited[cadet.id])
-                                  : (cm === '' ? '' : Number(cm).toFixed(2))}
+                                  : (commonModuleGrade === 0 ? '' : Number(commonModuleGrade).toFixed(2))}
                                 onChange={e => setCommonModule(cadet.id, e.target.value)}
                                 onBlur={e => {
                                   const v = e.target.value;
@@ -708,24 +779,23 @@ const FacultyFinalGrades = ({ auth }) => {
                                 disabled={!isEditingCommon}
                               />
                             </td>
-                            <td className="py-4 px-3 text-center text-black" title={breakdown}>{rotc}</td>
-                            <td className="py-4 px-3 text-center text-black">{finalGrade.toFixed(2)}</td>
-                            <td className="py-4 px-3 text-center text-black">{computedEquivalentGrade.toFixed(2)}</td>
+                            <td className="py-4 px-3 text-center text-black">{rotcGrade}</td>
+                            <td className="py-4 px-3 text-center text-black">{Math.round(finalGrade)}</td>
+                            <td className="py-4 px-3 text-center text-black">{Number(equivalentGrade).toFixed(2)}</td>
+                            <td className="py-4 px-3 text-center text-black">{remark}</td>
+                          </tr>
+                        );
+                      } else {
+                        // 2nd semester: Show only Final Grade (ROTC Grade), Equivalent Grade, Remarks
+                        return (
+                          <tr className="border-b border-gray-200" key={cadet.id}>
+                            <td className="py-4 px-3 text-black">{formatCadetName(cadet)}</td>
+                            <td className="py-4 px-3 text-center text-black">{rotcGrade}</td>
+                            <td className="py-4 px-3 text-center text-black">{equivalentGrade.toFixed(2)}</td>
                             <td className="py-4 px-3 text-center text-black">{remark}</td>
                           </tr>
                         );
                       }
-                      // 2nd semester: Final Grade is whole number
-                      const finalSum = Math.round(safeMerit + safeAttendance + safeExams);
-                      const remark2 = (computedEquivalentGrade <= 3.0) ? 'Passed' : 'Failed';
-                      return (
-                        <tr className="border-b border-gray-200" key={cadet.id}>
-                          <td className="py-4 px-3 text-black">{formatCadetName(cadet)}</td>
-                          <td className="py-4 px-3 text-center text-black">{finalSum}</td>
-                          <td className="py-4 px-3 text-center text-black">{savedEquivalentGrade !== undefined ? (typeof savedEquivalentGrade === 'number' ? savedEquivalentGrade.toFixed(2) : parseFloat(savedEquivalentGrade || 0).toFixed(2)) : computedEquivalentGrade.toFixed(2)}</td>
-                          <td className="py-4 px-3 text-center text-black">{remark2}</td>
-                        </tr>
-                      );
                     })}
                   </tbody>
                 </table>

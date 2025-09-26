@@ -90,7 +90,7 @@ class UserDataSeeder extends Seeder
             for ($day = 1; $day <= 5; $day++) {
                 DB::table('first_semester_attendance')->insert([
                     'user_id' => $cadet->id,
-                    'day_number' => ($week - 1) * 5 + $day,
+                    'week_number' => $week,
                     'is_present' => rand(0, 1), // Random attendance
                     'attendance_date' => now()->subWeeks(10 - $week)->addDays($day - 1),
                     'semester' => '2025-2026 1st semester',
@@ -175,7 +175,7 @@ class UserDataSeeder extends Seeder
             for ($day = 1; $day <= 5; $day++) {
                 DB::table('second_semester_attendance')->insert([
                     'user_id' => $cadet->id,
-                    'day_number' => ($week - 1) * 5 + $day,
+                    'week_number' => $week,
                     'is_present' => rand(0, 1), // Random attendance
                     'attendance_date' => now()->addWeeks($week)->addDays($day - 1),
                     'semester' => '2025-2026 2nd semester',

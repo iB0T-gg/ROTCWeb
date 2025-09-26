@@ -69,8 +69,6 @@ class User extends Authenticatable implements CanResetPasswordContract
     'height',
     'address',
     'profile_pic',
-    'equivalent_grade',
-    'final_grade',
     'remarks',
 ];
 
@@ -173,12 +171,16 @@ class User extends Authenticatable implements CanResetPasswordContract
      * @param float|null $average
      * @return float
      */
-    public function computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average)
+    public function computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average, $semester = null)
     {
         $merit = $meritPercentage;
         $attendance = $attendancePercentage;
+        // Determine exam weighting and cap based on semester
+        $isFirstSem = is_string($semester) && strpos($semester, '1st semester') !== false;
+        $weight = $isFirstSem ? 0.40 : 0.40; // 2025-2026 1st semester: 40% weighting
+        $cap = $isFirstSem ? 40 : 40;
         $exams = ($average !== null && $average > 0)
-            ? min(40, round(floatval($average) * 0.40))
+            ? min($cap, round(floatval($average) * $weight))
             : 0;
         $totalPercentage = $merit + $attendance + $exams;
 
@@ -203,12 +205,16 @@ class User extends Authenticatable implements CanResetPasswordContract
      * @param float|null $average
      * @return float
      */
-    public function calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average)
+    public function calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average, $semester = null)
     {
         $merit = $meritPercentage;
         $attendance = $attendancePercentage;
+        // Determine exam weighting and cap based on semester
+        $isFirstSem = is_string($semester) && strpos($semester, '1st semester') !== false;
+        $weight = $isFirstSem ? 0.40 : 0.40; // 2025-2026 1st semester: 40% weighting
+        $cap = $isFirstSem ? 40 : 40;
         $exams = ($average !== null && $average > 0)
-            ? min(40, round(floatval($average) * 0.40))
+            ? min($cap, round(floatval($average) * $weight))
             : 0;
         
         return $merit + $attendance + $exams;
@@ -247,10 +253,10 @@ class User extends Authenticatable implements CanResetPasswordContract
      * @param float|null $average
      * @return bool
      */
-    public function updateGrades($meritPercentage, $attendancePercentage, $finalExam, $average)
+    public function updateGrades($meritPercentage, $attendancePercentage, $finalExam, $average, $semester = null)
     {
-        $finalGrade = $this->calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
-        $equivalentGrade = $this->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average);
+        $finalGrade = $this->calculateFinalGrade($meritPercentage, $attendancePercentage, $finalExam, $average, $semester);
+        $equivalentGrade = $this->computeEquivalentGrade($meritPercentage, $attendancePercentage, $finalExam, $average, $semester);
         $remarks = $this->getRemarks($equivalentGrade);
         
         return $this->update([

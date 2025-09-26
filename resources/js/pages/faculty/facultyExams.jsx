@@ -49,6 +49,15 @@ const FacultyExams = ({ auth }) => {
   // Semester options
   const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
 
+  // Reset edit state when switching semesters
+  const resetEditState = () => {
+    setIsEditing(false);
+    // Reset cadets to original state to prevent stale data
+    if (originalCadets.length > 0) {
+      setCadets([...originalCadets]);
+    }
+  };
+
   // Function to fetch data based on selected semester
   const fetchDataForSemester = async (semester) => {
     setLoading(true);
@@ -125,8 +134,19 @@ const FacultyExams = ({ auth }) => {
     if (selectedSemester) {
       // If currently editing, cancel editing and discard changes
       if (isEditing) {
-        setIsEditing(false);
+        resetEditState();
         toast.info('Switching semesters. Unsaved changes discarded.');
+      }
+
+      // Clear any local edits by resetting cadets to original state
+      // This prevents stale edited values from showing when switching back
+      if (previousSemester && previousSemester !== selectedSemester) {
+        // Clear the cache for the previous semester to ensure fresh data
+        setSemesterData(prev => {
+          const newData = { ...prev };
+          delete newData[previousSemester];
+          return newData;
+        });
       }
 
       // Update previous semester
@@ -166,11 +186,15 @@ const FacultyExams = ({ auth }) => {
           ? parseFloat(average.toFixed(2))  // 2nd semester: 2 decimal places
           : Math.round(average);  // 1st semester: whole number
         
+        // Calculate subject_prof (40%)
+        const subjectProf = Math.min(40, Math.round(average * 0.40));
+        
         return {
           id: cadet.id,
           final_exam: cadet.final_exam,
           midterm_exam: cadet.midterm_exam,
           average: average,
+          subject_prof: subjectProf,
         };
       });
       const response = await axios.post('/api/exams/save', { 
@@ -313,9 +337,11 @@ const FacultyExams = ({ auth }) => {
                     <button
                       key={semester}
                       onClick={() => {
-                        setIsEditing(false);
+                        // Reset edit state when switching semesters
+                        resetEditState();
                         setCurrentPage(1);
                         setSelectedSemester(semester);
+                        toast.info(`Switched to ${semester}. Edit mode disabled.`);
                       }}
                       disabled={loading}
                       className={`py-2 px-4 rounded-lg transition-colors duration-150 ${
@@ -463,9 +489,11 @@ const FacultyExams = ({ auth }) => {
                       ? average.toFixed(2)  // 2nd semester: 2 decimal places
                       : Math.round(average).toString();  // 1st semester: whole number
                     
-                    const equivalent = (average === 0)
-                      ? '0'
-                      : Math.min(40, Math.round(average * 0.40)).toString();
+                    const equivalent = (cadet.subject_prof !== null && cadet.subject_prof !== undefined)
+                      ? cadet.subject_prof.toString()
+                      : (average === 0)
+                        ? '0'
+                        : Math.min(40, Math.round(average * 0.40)).toString();
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
                         <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
@@ -708,9 +736,11 @@ const FacultyExams = ({ auth }) => {
                         ? average.toFixed(2)  // 2nd semester: 2 decimal places
                         : Math.round(average).toString();  // 1st semester: whole number
                       
-                      const equivalent = (average === 0)
-                        ? '0'
-                        : Math.round(average * 0.40).toString();
+                      const equivalent = (cadet.subject_prof !== null && cadet.subject_prof !== undefined)
+                        ? cadet.subject_prof.toString()
+                        : (average === 0)
+                          ? '0'
+                          : Math.round(average * 0.40).toString();
                       return (
                         <tr className='border-b border-gray-200' key={cadet.id}>
                           <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
