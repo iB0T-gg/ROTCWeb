@@ -176,7 +176,10 @@ Route::middleware(['auth', AdminMiddleware::class])->group(function () {
     });
 
     Route::get('/admin/add-users', function () {
-        return Inertia::render('admin/adminAddUsers');
+        return Inertia::render('admin/adminAddUsers', [
+            'success' => session('success'),
+            'error' => session('error')
+        ]);
     });
 
     Route::get('/admin/user-list', function () {
@@ -187,9 +190,7 @@ Route::middleware(['auth', AdminMiddleware::class])->group(function () {
         return Inertia::render('admin/adminChangePassword');
     });
 
-    Route::get('/Issue', function () {
-        return Inertia::render('admin/Issue');
-    });
+    Route::get('/Issue', [App\Http\Controllers\IssueController::class, 'index']);
 });
 
 // User Routes - Only accessible to users
@@ -222,11 +223,7 @@ Route::middleware(['auth', UserMiddleware::class])->group(function () {
         ]);
     });
 
-    Route::get('/user/userReportAnIssue', function () {
-        return Inertia::render('user/userReportAnIssue', [
-            'user' => auth()->user()
-        ]);
-    });
+    Route::get('/user/userReportAnIssue', [App\Http\Controllers\IssueController::class, 'userReportForm']);
 });
 
 // Faculty routes - Only accessible to faculty
@@ -251,9 +248,7 @@ Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
         return Inertia::render('faculty/facultyFinalGrades');
     });
 
-    Route::get('/faculty/facultyReportAnIssue', function () {
-        return Inertia::render('faculty/facultyReportAnIssue');
-    });
+    Route::get('/faculty/facultyReportAnIssue', [App\Http\Controllers\IssueController::class, 'facultyReportForm']);
     
     Route::get('/faculty/change-password', function () {
         return Inertia::render('faculty/facultyChangePassword');
@@ -276,12 +271,21 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::get('/user/grades', [UserController::class, 'getUserGrades']);
     Route::post('/change-password', [App\Http\Controllers\PasswordController::class, 'changePassword']);
     
+    // Issue reporting endpoints
+    Route::post('/issues', [App\Http\Controllers\IssueController::class, 'store']);
+    Route::get('/user-issues', [App\Http\Controllers\IssueController::class, 'userIssues']);
+    
     // Admin-only API endpoints
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/admin-cadets', [App\Http\Controllers\GradeController::class, 'getAdminMasterlistGrades']);
         Route::get('/top-cadet', [App\Http\Controllers\GradeController::class, 'getTopCadet']);
         Route::post('/admin/change-password', [App\Http\Controllers\PasswordController::class, 'adminChangePassword']);
+        Route::post('/admin/add-user', [AdminController::class, 'addUser']);
+        
+        // Issue management endpoints for admins
+        Route::get('/all-issues', [App\Http\Controllers\IssueController::class, 'getAllIssues']);
+        Route::put('/issues/{id}', [App\Http\Controllers\IssueController::class, 'update']);
         
         // Attendance API endpoints for admin
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);

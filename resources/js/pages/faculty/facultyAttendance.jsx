@@ -104,29 +104,29 @@ const FacultyAttendance = ({ auth }) => {
   return (
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
-      <div className='flex'>
+      <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
-        <div className='flex-1 p-6'>
+        <div className='flex-1 p-3 md:p-6'>
           <div className='font-regular'>
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer'>
+            <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base'>
               Home {">"} Attendance
             </div>
-            <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
+            <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
               <div>
-                <h1 className='text-2xl font-semibold'>Attendance Management</h1>
+                <h1 className='text-xl md:text-2xl font-semibold'>Attendance Management</h1>
               </div>
             </div>
             {/* Tab Navigation */}
-            <div className="bg-white p-6 rounded-lg shadow mb-6">
-              <div className="flex items-center justify-between gap-6">
+            <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-6">
                 {/* Semester Selection Tabs */}
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto">
                   {semesterOptions.map((semester) => (
                     <button
                       key={semester}
                       onClick={() => setSelectedSemester(semester)}
                       disabled={isLoading}
-                      className={`py-2 px-4 rounded-lg transition-colors duration-150 ${
+                      className={`py-1.5 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
                         selectedSemester === semester
                           ? 'bg-primary text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -142,43 +142,43 @@ const FacultyAttendance = ({ auth }) => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                  <div className="relative flex-grow sm:flex-grow-0">
+                    <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
                     <input
                       type="search"
                       placeholder="Search"
-                      className="w-48 p-2 pl-10 border border-gray-300 rounded-lg"
+                      className="w-full sm:w-36 md:w-48 p-1.5 md:p-2 pl-7 md:pl-10 border border-gray-300 rounded-lg text-xs md:text-sm"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                     />
                   </div>
-                  <div className="relative">
+                  <div className="relative flex-grow sm:flex-grow-0">
                     <div
-                      className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer"
-                      onClick={() => setShowFilterPicker(!showFilterPicker)}
-                    >
-                      <span className="text-gray-600">
-                        {selectedPlatoon || selectedCompany || selectedBattalion
-                          ? `Filters: ${[
-                              selectedPlatoon || '',
-                              selectedCompany || '',
-                              selectedBattalion || ''
-                            ].filter(Boolean).join(', ')}`
-                          : 'Sort by : All'}
-                      </span>
-                      <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        className="relative flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2 cursor-pointer text-sm w-full hover:border-gray-400"
+                        onClick={() => setShowFilterPicker(!showFilterPicker)}
+                      >
+                        <span className="text-gray-600 truncate">
+                          {selectedPlatoon || selectedCompany || selectedBattalion
+                            ? `Filters: ${[
+                                selectedPlatoon || '',
+                                selectedCompany || '',
+                                selectedBattalion || ''
+                              ].filter(Boolean).join(', ')}`
+                            : 'Sort by: All'}
+                        </span>
+                        <FaSort className="text-gray-400 flex-shrink-0 ml-2" />
                     </div>
+
                     {showFilterPicker && (
                       <div
-                        className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-64"
-                        style={{ top: '100%', right: 0 }}
+                        className="absolute z-10 bg-white border border-gray-300 rounded-lg p-3 md:p-4 mt-1 shadow-lg w-full sm:w-64 right-0"
                       >
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Platoon (Select Platoon)</label>
+                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Platoon</label>
                             <select
-                              className="w-full bg-gray-100 p-2 rounded border"
+                              className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
                               value={selectedPlatoon}
                               onChange={e => setSelectedPlatoon(e.target.value)}
                             >
@@ -189,9 +189,9 @@ const FacultyAttendance = ({ auth }) => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Company (Select Company)</label>
+                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Company</label>
                             <select
-                              className="w-full bg-gray-100 p-2 rounded border"
+                              className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
                               value={selectedCompany}
                               onChange={e => setSelectedCompany(e.target.value)}
                             >
@@ -203,9 +203,9 @@ const FacultyAttendance = ({ auth }) => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Battalion (Select Battalion)</label>
+                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Battalion</label>
                             <select
-                              className="w-full bg-gray-100 p-2 rounded border"
+                              className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
                               value={selectedBattalion}
                               onChange={e => setSelectedBattalion(e.target.value)}
                             >
@@ -215,7 +215,7 @@ const FacultyAttendance = ({ auth }) => {
                             </select>
                           </div>
                           <button
-                            className="w-full mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700"
+                            className="w-full mt-2 px-4 py-1.5 md:py-2 bg-gray-300 rounded text-xs md:text-sm hover:bg-gray-400 text-gray-700"
                             onClick={() => setShowFilterPicker(false)}
                           >
                             Cancel
@@ -229,18 +229,18 @@ const FacultyAttendance = ({ auth }) => {
             </div>
 
             {/* Main Content */}
-            <div className="bg-white p-6 rounded-lg shadow w-full mx-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-lg font-semibold text-black">Attendance Records</h1>
+            <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto">
+              <div className="flex justify-between items-center mb-3 md:mb-6">
+                <h1 className="text-base md:text-lg font-semibold text-black">Attendance Records</h1>
               </div>
               
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                 <thead className='text-gray-600'>
                   <tr>
-                    <th className='py-4 px-3 border-b font-medium text-left'>Cadet Name</th>
-                    <th className='py-4 px-3 border-b font-medium text-center'>Weeks Present</th>
-                    <th className='py-4 px-3 border-b font-medium text-center'>Attendance (30%)</th>
+                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
+                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Weeks Present</th>
+                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Attendance (30%)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -268,26 +268,34 @@ const FacultyAttendance = ({ auth }) => {
                     
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
-                        <td className='py-4 px-3 text-black'>{formatCadetName(cadet)}</td>
-                        <td className='py-4 px-3 text-center text-black'>{presentCount}/{maxWeeks}</td>
-                        <td className='py-4 px-3 text-center text-black'>{Math.round(attendanceScore)}</td>
+                        <td className='py-2 md:py-4 px-2 md:px-3 text-black text-xs md:text-sm'>{formatCadetName(cadet)}</td>
+                        <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{presentCount}/{maxWeeks}</td>
+                        <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{Math.round(attendanceScore)}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between mt-4 w-full">
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 w-full gap-3 md:gap-4">
                 {/* Left: Showing data */}
-                <div className="text-gray-600">
+                <div className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
                   Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                 </div>
                 {/* Center: Pagination */}
-                <div className="flex-1 flex justify-center">
+                <div className="flex justify-center my-2 sm:my-0">
+                  {currentPage > 1 && (
+                    <button
+                      className="mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      {'<'}
+                    </button>
+                  )}
                   {Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i}
-                      className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
+                      className={`mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded text-xs md:text-sm ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
                       onClick={() => setCurrentPage(i + 1)}
                     >
                       {i + 1}
@@ -295,23 +303,15 @@ const FacultyAttendance = ({ auth }) => {
                   ))}
                   {currentPage < totalPages && (
                     <button
-                      className="mx-1 px-3 py-1 rounded bg-white border"
+                      className="mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
                     >
                       &gt;
                     </button>
                   )}
-                  {currentPage > 1 && (
-                    <button
-                      className="mx-1 px-3 py-1 rounded bg-white border"
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      {'<'}
-                    </button>
-                  )}
                 </div>
                 {/* Right: (empty for now) */}
-                <div className="flex justify-end gap-2"></div>
+                <div className="flex justify-center sm:justify-end gap-2"></div>
               </div>
             </div>
           </div>

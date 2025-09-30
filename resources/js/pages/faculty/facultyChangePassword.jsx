@@ -93,37 +93,42 @@ export default function ChangePassword({ auth }) {
         <div className="w-full min-h-screen bg-backgroundColor">
             <ToastContainer />
             <Header auth={auth} />
-            <div className="flex">
+            <div className="flex flex-col md:flex-row">
                 <FacultySidebar />
-                <div className="flex-1 p-6">
+                <div className="flex-1 p-3 md:p-6">
                     <div className="font-regular">
-                        <div className="bg-white p-3 text-[#6B6A6A] rounded-lg pl-5 cursor-pointer">
+                        {/* Breadcrumb */}
+                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base">
                             Home {">"} Change Password
                         </div>
-                        <div className="bg-primary text-white p-4 rounded-lg flex items-center justify-between mt-4 mb-6 pl-5 py-7">
-                            <h1 className="text-2xl font-semibold">Change Password</h1>
+                        
+                        {/* Page Header */}
+                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7">
+                            <h1 className="text-xl md:text-2xl font-semibold">Change Password</h1>
                         </div>
-                        <div className="bg-white p-6 rounded-lg shadow">
-                            <div className="pl-4">
-                                <h2 className="text-lg font-semibold text-gray-700 mb-6">Update Your Password</h2>
-                                <form onSubmit={handleSubmit} className="max-w-lg">
-                                    <div className="mb-5">
-                                        <label className="block text-gray-700 font-medium mb-2">Current Password</label>
+                        
+                        {/* Main Content */}
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow">
+                            <div className="pl-2 md:pl-4">
+                                <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-6">Update Your Password</h2>
+                                <form onSubmit={handleSubmit} className="w-full max-w-lg">
+                                    <div className="mb-4 md:mb-5">
+                                        <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Current Password</label>
                                         <input 
                                             type="password"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary"
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
                                             value={data.current_password}
                                             onChange={e => setData('current_password', e.target.value)}
                                             required
                                         />
-                                        {errors.current_password && <div className="text-red-500 text-sm mt-1">{errors.current_password}</div>}
+                                        {errors.current_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.current_password}</div>}
                                     </div>
                                     
-                                    <div className="mb-5">
-                                        <label className="block text-gray-700 font-medium mb-2">New Password</label>
+                                    <div className="mb-4 md:mb-5">
+                                        <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">New Password</label>
                                         <input 
                                             type="password"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary"
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
                                             value={data.new_password}
                                             onChange={e => {
                                                 setData('new_password', e.target.value);
@@ -135,14 +140,14 @@ export default function ChangePassword({ auth }) {
                                             }}
                                             required
                                         />
-                                        {errors.new_password && <div className="text-red-500 text-sm mt-1">{errors.new_password}</div>}
+                                        {errors.new_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.new_password}</div>}
                                     </div>
                                     
-                                    <div className="mb-6">
-                                        <label className="block text-gray-700 font-medium mb-2">Confirm New Password</label>
+                                    <div className="mb-4 md:mb-6">
+                                        <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Confirm New Password</label>
                                         <input 
                                             type="password"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary"
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
                                             value={data.confirm_password}
                                             onChange={e => {
                                                 setData('confirm_password', e.target.value);
@@ -154,14 +159,14 @@ export default function ChangePassword({ auth }) {
                                             }}
                                             required
                                         />
-                                        {errors.confirm_password && <div className="text-red-500 text-sm mt-1">{errors.confirm_password}</div>}
-                                        {passwordError && <div className="text-red-500 text-sm mt-1">{passwordError}</div>}
+                                        {errors.confirm_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.confirm_password}</div>}
+                                        {passwordError && <div className="text-red-500 text-xs md:text-sm mt-1">{passwordError}</div>}
                                     </div>
                                     
                                     <div className="flex justify-start">
                                         <button 
                                             type="submit"
-                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                                            className="px-3 md:px-4 py-1.5 md:py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors text-sm md:text-base"
                                             disabled={processing}
                                         >
                                             {processing ? 'Changing Password...' : 'Change Password'}

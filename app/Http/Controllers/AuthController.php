@@ -73,6 +73,7 @@ class AuthController extends Controller
             'phone_number' => $request->phone_number,
             'cor_file_path' => $corFilePath,
             'status' => 'pending',
+            'creation_method' => 'self_registered',
         ]);
 
         return redirect('/')->with('success', 'Registration submitted! Please wait for admin approval.');
@@ -124,6 +125,7 @@ class AuthController extends Controller
             'cor_file_path' => $credentialsFilePath, // Using cor_file_path field for credentials_file
             'role' => 'faculty',
             'status' => 'pending',
+            'creation_method' => 'self_registered',
         ]);
 
         return redirect('/')->with('success', 'Faculty registration submitted! Please wait for admin approval.');

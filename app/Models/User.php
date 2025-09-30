@@ -52,10 +52,12 @@ class User extends Authenticatable implements CanResetPasswordContract
     'course',
     'section',
     'password',
+    'temp_password',
     'phone_number',
     'cor_file_path',
     'role',
     'status',
+    'creation_method',
     'archived',
     'archived_at',
     'semester',
@@ -79,6 +81,7 @@ class User extends Authenticatable implements CanResetPasswordContract
      */
     protected $hidden = [
         'password',
+        'temp_password',
         'remember_token',
     ];
 

@@ -4,12 +4,82 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\UserApprovalNotification;
+use App\Notifications\LoginCredentialsNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
+    /**
+     * Add a new user (admin function)
+     */
+    public function addUser(Request $request)
+    {
+        // Define validation rules
+        $rules = [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|in:user,faculty,admin',
+            'password' => 'required|string|min:6|confirmed',
+        ];
+
+        // Add student number validation only for users (cadets)
+        if ($request->role === 'user') {
+            $rules['student_number'] = 'required|string|unique:users,student_number';
+        } else {
+            $rules['student_number'] = 'nullable|string|unique:users,student_number';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            // Create the user with pending status (except for admin role)
+            $userData = [
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name,
+                'last_name' => $request->last_name,
+                'email' => $request->email,
+                'student_number' => $request->student_number,
+                'role' => $request->role,
+                'password' => Hash::make($request->password),
+                'temp_password' => Crypt::encryptString($request->password), // Store encrypted temp password
+                'status' => $request->role === 'admin' ? 'approved' : 'pending', // Admins are auto-approved
+                'creation_method' => 'admin_created',
+            ];
+
+            $user = User::create($userData);
+
+            // If admin, send credentials immediately
+            if ($request->role === 'admin') {
+                try {
+                    $user->notify(new LoginCredentialsNotification($user, $request->password));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send login credentials email: ' . $e->getMessage());
+                }
+            }
+
+            $message = $request->role === 'admin' 
+                ? 'Admin user created and approved successfully! Login credentials sent via email.' 
+                : 'User created successfully and is pending approval!';
+
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to create user: ' . $e->getMessage())->withInput();
+        }
+    }
+
     /**
      * Get pending users for approval
      */
@@ -45,15 +115,34 @@ class AdminController extends Controller
 
         $user->update(['status' => 'approved']);
 
-        // Send approval notification email
+        // Send different emails based on creation method
         try {
-            $user->notify(new UserApprovalNotification('approved', $user));
+            if ($user->creation_method === 'admin_created') {
+                // For admin-created users, send login credentials
+                if ($user->temp_password) {
+                    $plainPassword = Crypt::decryptString($user->temp_password);
+                    $user->notify(new LoginCredentialsNotification($user, $plainPassword));
+                    
+                    // Clear the temp password after sending
+                    $user->update(['temp_password' => null]);
+                } else {
+                    // Fallback: send regular approval notification if no temp password found
+                    $user->notify(new UserApprovalNotification('approved', $user));
+                }
+            } else {
+                // For self-registered users, send approval notification (no credentials)
+                $user->notify(new UserApprovalNotification('approved', $user));
+            }
         } catch (\Exception $e) {
             // Log the error but don't fail the approval
-            \Log::error('Failed to send approval email: ' . $e->getMessage());
+            \Log::error('Failed to send approval/credentials email: ' . $e->getMessage());
         }
 
-        return response()->json(['message' => 'User approved successfully', 'user' => $user]);
+        $message = $user->creation_method === 'admin_created' 
+            ? 'User approved successfully and login credentials sent!'
+            : 'User approved successfully and approval notification sent!';
+
+        return response()->json(['message' => $message, 'user' => $user]);
     }
 
     /**

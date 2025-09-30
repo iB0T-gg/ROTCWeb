@@ -11,10 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('first_semester_aptitude', function (Blueprint $table) {
-            $table->integer('total_merits')->default(0)->after('percentage');
-            $table->decimal('aptitude_30', 5, 2)->default(0.00)->after('total_merits');
-        });
+        // Check if columns already exist (they might have been added by another migration)
+        $totalMeritsExists = Schema::hasColumn('first_semester_aptitude', 'total_merits');
+        $aptitude30Exists = Schema::hasColumn('first_semester_aptitude', 'aptitude_30');
+        
+        // Only proceed if columns don't already exist
+        if (!$totalMeritsExists || !$aptitude30Exists) {
+            Schema::table('first_semester_aptitude', function (Blueprint $table) use ($totalMeritsExists, $aptitude30Exists) {
+                // Add after demerits_week_10 since percentage column doesn't exist
+                if (!$totalMeritsExists) {
+                    $table->integer('total_merits')->default(0)->after('demerits_week_10');
+                }
+                
+                if (!$aptitude30Exists) {
+                    // If total_merits exists, add after it; otherwise add after demerits_week_10
+                    $afterColumn = $totalMeritsExists ? 'total_merits' : 'demerits_week_10';
+                    $table->decimal('aptitude_30', 5, 2)->default(0.00)->after($afterColumn);
+                }
+            });
+        }
     }
 
     /**
@@ -23,7 +38,20 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('first_semester_aptitude', function (Blueprint $table) {
-            $table->dropColumn(['total_merits', 'aptitude_30']);
+            // Check if columns exist before trying to drop them
+            $columnsToDrop = [];
+            
+            if (Schema::hasColumn('first_semester_aptitude', 'total_merits')) {
+                $columnsToDrop[] = 'total_merits';
+            }
+            
+            if (Schema::hasColumn('first_semester_aptitude', 'aptitude_30')) {
+                $columnsToDrop[] = 'aptitude_30';
+            }
+            
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 };

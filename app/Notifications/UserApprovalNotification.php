@@ -52,20 +52,21 @@ class UserApprovalNotification extends Notification
     {
         if ($this->status === 'approved') {
             return (new MailMessage)
-                ->subject('Account Approved - ROTC Webpage')
+                ->subject('Account Approved - ROTC Portal')
                 ->greeting('Hello ' . $this->user->first_name . '!')
                 ->line('Your account has been approved by the administrator.')
-                ->line('You can now log in to your account using your email and password.')
+                ->line('You can now log in to your account using your email and the password you created during registration.')
                 ->action('Login Now', url('/'))
-                ->line('Thank you for registering with ROTC Webpage!');
+                ->line('Welcome to the ROTC Portal!')
+                ->line('If you have any questions or need assistance, please contact the administrator.');
         } else {
             return (new MailMessage)
-                ->subject('Account Status Update - ROTC Webpage')
+                ->subject('Account Status Update - ROTC Portal')
                 ->greeting('Hello ' . $this->user->first_name . '!')
                 ->line('Your account registration has been reviewed.')
                 ->line('Unfortunately, your account has not been approved at this time.')
                 ->line('If you believe this is an error, please contact the administrator.')
-                ->line('Thank you for your interest in ROTC Webpage.');
+                ->line('Thank you for your interest in ROTC Portal.');
         }
     }
 

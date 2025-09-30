@@ -50,7 +50,7 @@ export default function Register() {
     };
 
     return (
-        <div className='registration-page relative mx-auto flex flex-col items-center justify-center h-screen font-poppins'>
+        <div className='registration-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
             <div 
                 className='absolute inset-0 z-0'
                 style={{
@@ -63,99 +63,99 @@ export default function Register() {
                 }}
             ></div>
 
-            <div className='mx-auto flex flex-col items-center justify-center h-full z-10 relative'>
-                <div className="w-[46rem] relative">
+            <div className='mx-auto flex flex-col items-center justify-center h-full z-10 relative w-full'>
+                <div className="w-full max-w-[46rem] relative">
                     <div 
                         ref={containerRef}
                         onScroll={handleScroll}
-                        className={`w-full bg-black bg-opacity-80 text-textColor p-8 rounded-2xl shadow-lg max-h-[80vh] overflow-y-auto overflow-x-hidden ${isScrolling ? 'scrollbar-visible' : 'scrollbar-hidden'}`}
+                        className={`w-full bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg max-h-[85vh] overflow-y-auto overflow-x-hidden ${isScrolling ? 'scrollbar-visible' : 'scrollbar-hidden'}`}
                         style={{
                             scrollbarWidth: 'none',
                             msOverflowStyle: 'none',  
                         }}
                     >
-                        <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-24 h-24 mx-auto mb-4' />
-                        <h1 className='text-lg font-semibold mb-6 text-center'>Registration</h1>
+                        <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
+                        <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>Registration</h1>
                         
-                        <form onSubmit={handleSubmit} className='space-y-4 font-regular'>
+                        <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular'>
                             <div>
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='email'>Your email</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='email'>Your email</label>
                                     <input
                                         type='email'
                                         id='email'
                                         value={data.email}
                                         onChange={e => setData('email', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                         placeholder='Enter your email address'
                                         required
                                     />
-                                    {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email}</div>}
+                                    {errors.email && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.email}</div>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='student_number'>Student Number</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='student_number'>Student Number</label>
                                     <input
                                         type='text'
                                         id='student_number'
                                         value={data.student_number}
                                         onChange={e => setData('student_number', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                         placeholder='Enter your student number'
                                         required
                                     />
-                                    {errors.student_number && <div className="text-red-500 text-sm mt-1">{errors.student_number}</div>}
+                                    {errors.student_number && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.student_number}</div>}
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='first_name'>First Name</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                    <div className="mb-2 sm:mb-0">
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='first_name'>First Name</label>
                                         <input
                                             type='text'
                                             id='first_name'
                                             value={data.first_name}
                                             onChange={e => setData('first_name', e.target.value)}
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             placeholder='Enter your first name'
                                             required
                                         />
-                                        {errors.first_name && <div className="text-red-500 text-sm mt-1">{errors.first_name}</div>}
+                                        {errors.first_name && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.first_name}</div>}
                                     </div>
-                                    <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='middle_name'>Middle Name</label>
+                                    <div className="mb-2 sm:mb-0">
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='middle_name'>Middle Name</label>
                                         <input
                                             type='text'
                                             id='middle_name'
                                             value={data.middle_name}
                                             onChange={e => setData('middle_name', e.target.value)}
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             placeholder='Enter your middle name'
                                             required
                                         />
-                                        {errors.middle_name && <div className="text-red-500 text-sm mt-1">{errors.middle_name}</div>}
+                                        {errors.middle_name && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.middle_name}</div>}
                                     </div>
                                     <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='last_name'>Last Name</label>
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='last_name'>Last Name</label>
                                         <input
                                             type='text'
                                             id='last_name'
                                             value={data.last_name}
                                             onChange={e => setData('last_name', e.target.value)}
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             placeholder='Enter your last name'
                                             required
                                         />
-                                        {errors.last_name && <div className="text-red-500 text-sm mt-1">{errors.last_name}</div>}
+                                        {errors.last_name && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.last_name}</div>}
                                     </div>
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='campus'>Campus</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='campus'>Campus</label>
                                     <select
                                         id='campus'
                                         value={data.campus}
                                         onChange={e => setData('campus', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
                                         required
                                     >
                                         <option value="" className="text-gray-400">Select Campus</option>
@@ -166,17 +166,17 @@ export default function Register() {
                                         <option value="San Rafael Campus" className="text-gray-700">San Rafael Campus</option>
                                         <option value="Main Campus" className="text-gray-700">Main Campus</option>
                                     </select>
-                                    {errors.campus && <div className="text-red-500 text-sm mt-1">{errors.campus}</div>}
+                                    {errors.campus && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.campus}</div>}
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='course'>Course</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                    <div className="mb-2 sm:mb-0">
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='course'>Course</label>
                                         <select
                                             id='course'
                                             value={data.course}
                                             onChange={e => setData('course', e.target.value)}
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
                                             required
                                         >
                                             <option value="" className="text-gray-400">Select Course</option>
@@ -191,81 +191,81 @@ export default function Register() {
                                             <option value="BSHM" className="text-gray-700">BSHM</option>
                                             <option value="BSTM" className="text-gray-700">BSTM</option>
                                         </select>
-                                        {errors.course && <div className="text-red-500 text-sm mt-1">{errors.course}</div>}
+                                        {errors.course && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.course}</div>}
                                     </div>
-                                    <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='year'>Year Level & Section</label>
+                                    <div className="mb-2 sm:mb-0">
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='year'>Year Level & Section</label>
                                         <input
                                             type='text'
                                             id='year'
                                             value={data.year}
                                             onChange={e => setData('year', e.target.value)}
                                             placeholder='e.g., 2nd Year - G'
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             required
                                         />
-                                        {errors.year && <div className="text-red-500 text-sm mt-1">{errors.year}</div>}
+                                        {errors.year && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.year}</div>}
                                     </div>
                                     <div>
-                                        <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='section'>Group</label>
+                                        <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='section'>Group</label>
                                         <select
                                             id='section'
                                             value={data.section}
                                             onChange={e => setData('section', e.target.value)}
-                                            className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
                                         >
                                             <option value="" className="text-gray-400">Select Group</option>
                                             <option value="G1" className="text-gray-700">G1</option>
                                             <option value="G2" className="text-gray-700">G2</option>
                                         </select>
-                                        {errors.section && <div className="text-red-500 text-sm mt-1">{errors.section}</div>}
+                                        {errors.section && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.section}</div>}
                                     </div>
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='password'>Enter password</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password'>Enter password</label>
                                     <input
                                         type='password'
                                         id='password'
                                         value={data.password}
                                         onChange={e => setData('password', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                         placeholder='Enter your password (min. 6 characters)'
                                         required
                                     />
-                                    {errors.password && <div className="text-red-500 text-sm mt-1">{errors.password}</div>}
+                                    {errors.password && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password}</div>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='password_confirmation'>Confirm password</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password_confirmation'>Confirm password</label>
                                     <input
                                         type='password'
                                         id='password_confirmation'
                                         value={data.password_confirmation}
                                         onChange={e => setData('password_confirmation', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                         placeholder='Confirm your password'
                                         required
                                     />
-                                    {errors.password_confirmation && <div className="text-red-500 text-sm mt-1">{errors.password_confirmation}</div>}
+                                    {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password_confirmation}</div>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='phone_number'>Phone Number</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='phone_number'>Phone Number</label>
                                     <input
                                         type='text'
                                         id='phone_number'
                                         value={data.phone_number}
                                         onChange={e => setData('phone_number', e.target.value)}
-                                        className='w-full p-3 rounded-lg bg-white text-gray-700 text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                         placeholder='Enter your phone number'
                                         required
                                     />
-                                    {errors.phone_number && <div className="text-red-500 text-sm mt-1">{errors.phone_number}</div>}
+                                    {errors.phone_number && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.phone_number}</div>}
                                 </div>
                                 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular'>Gender</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular'>Gender</label>
                                     <div className="flex gap-4">
                                         <label className="flex items-center">
                                             <input
@@ -277,7 +277,7 @@ export default function Register() {
                                                 className="mr-2"
                                                 required
                                             />
-                                            <span className="text-textColor">Male</span>
+                                            <span className="text-textColor text-xs sm:text-sm">Male</span>
                                         </label>
                                         <label className="flex items-center">
                                             <input
@@ -289,14 +289,14 @@ export default function Register() {
                                                 className="mr-2"
                                                 required
                                             />
-                                            <span className="text-textColor">Female</span>
+                                            <span className="text-textColor text-xs sm:text-sm">Female</span>
                                         </label>
                                     </div>
-                                    {errors.gender && <div className="text-red-500 text-sm mt-1">{errors.gender}</div>}
+                                    {errors.gender && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.gender}</div>}
                                 </div>
                                 
-                                <div className="mb-4">
-                                    <label className='block text-sm mb-2 text-textColor font-regular' htmlFor='cor_file'>Upload Certificate of Registration</label>
+                                <div className="mb-3 sm:mb-4">
+                                    <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='cor_file'>Upload Certificate of Registration</label>
                                     <div className="flex w-full">
                                         <input
                                             type='file'
@@ -308,24 +308,24 @@ export default function Register() {
                                         />
                                         <label 
                                             htmlFor='cor_file' 
-                                            className='w-full bg-primary text-textColor p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-2 cursor-pointer flex items-center justify-center'
+                                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-1 sm:mt-2 cursor-pointer flex items-center justify-center text-xs sm:text-sm'
                                         >
                                             <span className="truncate">{fileName}</span>
                                         </label>
                                     </div>
-                                    {errors.cor_file && <div className="text-red-500 text-sm mt-1">{errors.cor_file}</div>}
+                                    {errors.cor_file && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.cor_file}</div>}
                                 </div>
                             </div>
 
                             <button 
                                 type="submit"
                                 disabled={processing}
-                                className='w-full bg-primary text-textColor p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-2 disabled:opacity-50'
+                                className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-1 sm:mt-2 disabled:opacity-50 text-xs sm:text-base'
                             >
                                 {processing ? 'Registering...' : 'Register'}
                             </button>
                             
-                            <Link href='/' className='block text-center text-sm mt-4 text-textColor hover:underline'>
+                            <Link href='/' className='block text-center text-xs sm:text-sm mt-3 sm:mt-4 text-textColor hover:underline'>
                                 Already have an account? Login
                             </Link>
                         </form>

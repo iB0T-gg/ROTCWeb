@@ -14,6 +14,7 @@ export default function AdminPermission(){
     const [sortBy, setSortBy] = useState('');
     const [showFilterPicker, setShowFilterPicker] = useState(false);
     const [processingUser, setProcessingUser] = useState(null);
+    const [processingBulk, setProcessingBulk] = useState(false);
 
     // Fetch pending users
     useEffect(() => {
@@ -40,7 +41,7 @@ export default function AdminPermission(){
         if (searchTerm) {
             filtered = filtered.filter(user => 
                 `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.student_number.toLowerCase().includes(searchTerm.toLowerCase())
+                user.student_number?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
         
@@ -100,8 +101,6 @@ export default function AdminPermission(){
     };
     
     // Handle approve all users
-    const [processingBulk, setProcessingBulk] = useState(false);
-    
     const handleApproveAll = async () => {
         const filteredUsers = filteredAndSortedUsers();
         if (filteredUsers.length === 0) {
@@ -199,41 +198,45 @@ export default function AdminPermission(){
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
-      <div className='flex'>
+      <div className='flex flex-col md:flex-row'>
         <AdminSidebar />
         
-        <div className='flex-1 p-6'>
+        <div className='flex-1 p-3 md:p-6'>
           <div className='font-regular'>
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5'>
+            {/* Breadcrumb */}
+            <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
                 <span className='cursor-pointer'>Home</span>
                     {">"}
                     <span className='cursor-pointer'>Permission</span>
             </div>
-            <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
-                <h1 className='text-2xl font-semibold'>Permission</h1>
+            
+            {/* Page Header */}
+            <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+                <h1 className='text-xl md:text-2xl font-semibold'>Permission</h1>
             </div>
 
-            <div className='bg-white p-6 rounded-lg shadow w-full mx-auto h-full'>
-              <div className='flex justify-between items-center mb-6'>
-                <h1 className='text-lg font-semibold text-black'>Permission Requests</h1>
+            {/* Main Content */}
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto'>
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-6 gap-3 md:gap-4'>
+                <h1 className='text-base md:text-lg font-semibold text-black'>Permission Requests</h1>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-auto">
+                    <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
                     <input
                       type="search"
                       placeholder="Search Cadets"
-                      className="w-64 p-2 pl-10 border border-gray-300 rounded-lg"
+                      className="w-full sm:w-48 md:w-64 p-1.5 md:p-2 pl-7 md:pl-10 border border-gray-300 rounded-lg text-xs md:text-sm"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
                     <div
-                      className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer flex items-center"
+                      className="bg-white border border-gray-300 rounded-lg p-1.5 md:p-2 pl-3 md:pl-4 pr-8 cursor-pointer flex items-center w-full text-xs md:text-sm"
                       onClick={() => setShowFilterPicker(!showFilterPicker)}
                     >
-                      <span className="text-gray-600">
+                      <span className="text-gray-600 truncate">
                         {sortBy ? 
                           sortBy === 'date-newest' ? 'Date (Newest)' : 
                           sortBy === 'date-oldest' ? 'Date (Oldest)' : 
@@ -241,99 +244,116 @@ export default function AdminPermission(){
                           sortBy === 'name-za' ? 'Name (Z-A)' : 'Sort by'
                         : 'Sort by'}
                       </span>
-                      <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <FaSort className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
+                    
                     {showFilterPicker && (
-                      <div
-                        className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg"
-                        style={{ top: '100%', right: 0, width: '240px' }}
-                      >
-                        <div className="space-y-3">
-                          <p className="font-medium text-gray-700 border-b pb-2">Sort Options</p>
-                          <div className="space-y-2">
-                            <div 
-                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === '' ? 'bg-gray-100' : ''}`}
-                              onClick={() => {
-                                setSortBy('');
-                                setShowFilterPicker(false);
-                              }}
-                            >
-                              No sorting
-                            </div>
-                            <div 
-                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-newest' ? 'bg-gray-100' : ''}`}
-                              onClick={() => {
-                                setSortBy('date-newest');
-                                setShowFilterPicker(false);
-                              }}
-                            >
-                              Date (Newest)
-                            </div>
-                            <div 
-                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-oldest' ? 'bg-gray-100' : ''}`}
-                              onClick={() => {
-                                setSortBy('date-oldest');
-                                setShowFilterPicker(false);
-                              }}
-                            >
-                              Date (Oldest)
-                            </div>
-                            <div 
-                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-az' ? 'bg-gray-100' : ''}`}
-                              onClick={() => {
-                                setSortBy('name-az');
-                                setShowFilterPicker(false);
-                              }}
-                            >
-                              Name (A-Z)
-                            </div>
-                            <div 
-                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-za' ? 'bg-gray-100' : ''}`}
-                              onClick={() => {
-                                setSortBy('name-za');
-                                setShowFilterPicker(false);
-                              }}
-                            >
-                              Name (Z-A)
+                      <>
+                        <div 
+                          className="fixed inset-0 bg-black bg-opacity-30 z-40"
+                          onClick={() => setShowFilterPicker(false)}
+                        ></div>
+                        <div
+                          className="fixed sm:absolute inset-x-0 sm:inset-auto z-50 bg-white border border-gray-300 rounded-lg p-3 md:p-4 mt-1 shadow-lg w-[90%] sm:w-auto left-1/2 sm:left-auto right-0 sm:right-0 -translate-x-1/2 sm:translate-x-0 mx-auto sm:mx-0"
+                          style={{ maxWidth: "300px" }}
+                        >
+                          <div className="space-y-2 md:space-y-3">
+                            <p className="font-medium text-gray-700 border-b pb-2 text-sm md:text-base">Sort Options</p>
+                            <div className="space-y-1 md:space-y-2">
+                              <div 
+                                className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === '' ? 'bg-gray-100' : ''} text-xs md:text-sm`}
+                                onClick={() => {
+                                  setSortBy('');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                No sorting
+                              </div>
+                              <div 
+                                className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-newest' ? 'bg-gray-100' : ''} text-xs md:text-sm`}
+                                onClick={() => {
+                                  setSortBy('date-newest');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                Date (Newest)
+                              </div>
+                              <div 
+                                className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'date-oldest' ? 'bg-gray-100' : ''} text-xs md:text-sm`}
+                                onClick={() => {
+                                  setSortBy('date-oldest');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                Date (Oldest)
+                              </div>
+                              <div 
+                                className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-az' ? 'bg-gray-100' : ''} text-xs md:text-sm`}
+                                onClick={() => {
+                                  setSortBy('name-az');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                Name (A-Z)
+                              </div>
+                              <div 
+                                className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${sortBy === 'name-za' ? 'bg-gray-100' : ''} text-xs md:text-sm`}
+                                onClick={() => {
+                                  setSortBy('name-za');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                Name (Z-A)
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
               
-              <div className='overflow-y-auto max-h-[500px]'>
+              <div className='overflow-x-auto max-h-[400px] md:max-h-[500px]'>
                 <table className='w-full border-collapse'>
                   <thead className='text-gray-600 sticky top-0 bg-white'>
                     <tr>
-                      <th className='p-2 border-b font-medium text-left'>Cadet Name</th>
-                      <th className='p-2 border-b font-medium text-center'>Actions</th>
+                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
+                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Registration Type</th>
+                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="5" className="text-center py-4">Loading pending users...</td>
+                        <td colSpan="3" className="text-center py-3 md:py-4 text-xs md:text-sm">Loading pending users...</td>
                       </tr>
                     ) : filteredAndSortedUsers().length > 0 ? (
                       filteredAndSortedUsers().map(user => (
                         <tr key={user.id} className='hover:bg-gray-50'>
-                          <td className='p-2 border-b'>{user.last_name}, {user.first_name}</td>
-                          <td className='p-2 border-b text-center'>
-                            <div className='flex justify-center gap-4'>
+                          <td className='py-2 md:py-3 px-2 md:px-3 border-b text-xs md:text-sm'>{user.last_name}, {user.first_name}</td>
+                          <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center text-xs md:text-sm'>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              user.creation_method === 'admin_created' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'text-black'
+                            }`}>
+                              {user.creation_method === 'admin_created' ? 'Admin Created' : 'Self Registered'}
+                            </span>
+                          </td>
+                          <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center'>
+                            <div className='flex justify-center gap-2 md:gap-4'>
                               <button 
                                 onClick={() => handleReject(user.id)}
                                 disabled={processingUser === user.id}
-                                className='text-primary hover:underline disabled:opacity-50'
+                                className='text-primary hover:underline disabled:opacity-50 text-xs md:text-sm'
                               >
                                 {processingUser === user.id ? 'Processing...' : 'Reject'}
                               </button>
                               <button 
                                 onClick={() => handleApprove(user.id)}
                                 disabled={processingUser === user.id}
-                                className='text-white bg-primary rounded px-3 py-1 hover:bg-opacity-80 disabled:opacity-50'
+                                className='text-white bg-primary rounded px-3 py-1 hover:bg-opacity-80 disabled:opacity-50 text-xs md:text-sm'
                               >
                                 {processingUser === user.id ? 'Processing...' : 'Approve'}
                               </button>
@@ -343,7 +363,7 @@ export default function AdminPermission(){
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="5" className="text-center py-4">
+                        <td colSpan="3" className="text-center py-4">
                           {searchTerm ? 'No pending users found matching your search.' : 'No pending users to approve.'}
                       </td>
                     </tr>
@@ -354,14 +374,14 @@ export default function AdminPermission(){
                   <button 
                     onClick={handleRejectAll}
                     disabled={processingBulk || loading || filteredAndSortedUsers().length === 0}
-                    className='text-primary px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed'
+                    className='text-primary px-4 py-2 rounded hover:bg-gray-100 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm'
                   >
                     {processingBulk ? 'Processing...' : 'Reject All'}
                   </button>
                   <button 
                     onClick={handleApproveAll}
                     disabled={processingBulk || loading || filteredAndSortedUsers().length === 0}
-                    className='bg-primary text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed'
+                    className='bg-primary text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm'
                   >
                     {processingBulk ? 'Processing...' : 'Approve All'}
                   </button>

@@ -12,10 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop percentage column from first_semester_aptitude
-        Schema::table('first_semester_aptitude', function (Blueprint $table) {
-            $table->dropColumn('percentage');
-        });
+        // Drop percentage column from first_semester_aptitude if it exists
+        if (Schema::hasColumn('first_semester_aptitude', 'percentage')) {
+            Schema::table('first_semester_aptitude', function (Blueprint $table) {
+                $table->dropColumn('percentage');
+            });
+        }
 
         // Reorder columns in second_semester_aptitude to match first semester structure
         // We need to recreate the table to reorder columns properly
@@ -132,10 +134,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Add percentage column back to first_semester_aptitude
-        Schema::table('first_semester_aptitude', function (Blueprint $table) {
-            $table->decimal('percentage', 5, 2)->default(0)->after('merits_week_10');
-        });
+        // Add percentage column back to first_semester_aptitude if it doesn't already exist
+        if (!Schema::hasColumn('first_semester_aptitude', 'percentage')) {
+            Schema::table('first_semester_aptitude', function (Blueprint $table) {
+                $table->decimal('percentage', 5, 2)->default(0)->after('merits_week_10');
+            });
+        }
 
         // Revert second_semester_aptitude to original structure
         Schema::rename('second_semester_aptitude', 'second_semester_aptitude_new');

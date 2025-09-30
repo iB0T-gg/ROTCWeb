@@ -21,30 +21,36 @@ class SecondSemesterDataSeeder extends Seeder
         
         foreach ($cadets as $cadet) {
             // Create merits data for second semester with empty values
-            DB::table('merits')->insert([
-                'cadet_id' => $cadet->id,
-                'type' => 'military_attitude',
-                'semester' => $secondSemester,
-                'day_1' => '',
-                'day_2' => '',
-                'day_3' => '',
-                'day_4' => '',
-                'day_5' => '',
-                'day_6' => '',
-                'day_7' => '',
-                'day_8' => '',
-                'day_9' => '',
-                'day_10' => '',
-                'day_11' => '',
-                'day_12' => '',
-                'day_13' => '',
-                'day_14' => '',
-                'day_15' => '',
-                'percentage' => 0,
-                'updated_by' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Note: The merits table might have been renamed or changed structure
+            // Check if this table still exists and has correct structure
+            if (Schema::hasTable('merits')) {
+                $data = [
+                    'cadet_id' => $cadet->id,
+                    'type' => 'military_attitude',
+                    'semester' => $secondSemester,
+                    'updated_by' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                
+                // Add day columns if they exist
+                for ($i = 1; $i <= 15; $i++) {
+                    if (Schema::hasColumn('merits', "day_{$i}")) {
+                        $data["day_{$i}"] = '';
+                    }
+                }
+                
+                // Add total_merits and aptitude_30 instead of percentage
+                if (Schema::hasColumn('merits', 'total_merits')) {
+                    $data['total_merits'] = 0;
+                }
+                
+                if (Schema::hasColumn('merits', 'aptitude_30')) {
+                    $data['aptitude_30'] = 0;
+                }
+                
+                DB::table('merits')->insert($data);
+            }
             
             // Create attendance data for second semester with empty values
             for ($week = 1; $week <= 15; $week++) {
