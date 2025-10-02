@@ -51,10 +51,8 @@ export default function AdminHome(){
 
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 shadow-sm text-sm md:text-base'>
-              <Link href="/admin/adminHome" className="hover:underline cursor-pointer font-bold">
-                Home
-              </Link>
+            <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
+              <span className="cursor-default font-bold">Dashboard</span>  
             </div>
             
             {/* Page Header */}

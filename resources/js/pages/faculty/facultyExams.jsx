@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+const toast = { info: () => {}, success: () => {}, error: () => {} };
 import axios from 'axios';
+import { Link } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
@@ -33,6 +34,20 @@ const FacultyExams = ({ auth }) => {
   const cadetsPerPage = 8;
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('current'); // 'current' or 'previous'
+  const [maxFinal, setMaxFinal] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem('facultyExamsMaxFinal_v1');
+      const map = raw ? JSON.parse(raw) : {};
+      return map['2025-2026 1st semester'] ?? 100;
+    } catch (e) { return 100; }
+  });
+  const [maxMidterm, setMaxMidterm] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem('facultyExamsMaxMidterm_v1');
+      const map = raw ? JSON.parse(raw) : {};
+      return map['2025-2026 1st semester'] ?? 100;
+    } catch (e) { return 100; }
+  });
 
   // Persist cache across pages (sidebar navigation) using sessionStorage
   const storageKey = 'facultyExamsCache_v1';
@@ -44,6 +59,35 @@ const FacultyExams = ({ auth }) => {
   };
   const setStoredCache = (cache) => {
     try { sessionStorage.setItem(storageKey, JSON.stringify(cache)); } catch (e) {}
+  };
+
+  const maxFinalStorageKey = 'facultyExamsMaxFinal_v1';
+  const maxMidtermStorageKey = 'facultyExamsMaxMidterm_v1';
+  const getStoredMaxFinalMap = () => {
+    try {
+      const raw = sessionStorage.getItem(maxFinalStorageKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  };
+  const getStoredMaxMidtermMap = () => {
+    try {
+      const raw = sessionStorage.getItem(maxMidtermStorageKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {}
+  };
+  const setStoredMaxFinalForSemester = (semester, value) => {
+    try {
+      const map = getStoredMaxFinalMap();
+      map[semester] = value;
+      sessionStorage.setItem(maxFinalStorageKey, JSON.stringify(map));
+    } catch (e) {}
+  };
+  const setStoredMaxMidtermForSemester = (semester, value) => {
+    try {
+      const map = getStoredMaxMidtermMap();
+      map[semester] = value;
+      sessionStorage.setItem(maxMidtermStorageKey, JSON.stringify(map));
+    } catch (e) {}
   };
 
   // Semester options
@@ -93,10 +137,11 @@ const FacultyExams = ({ auth }) => {
     }
     
     const semesterParam = encodeURIComponent(semester);
+    const root = `${window.location.protocol}//${window.location.host}`;
     const ts = Date.now(); // cache busting to avoid stale responses when returning from other tabs
     
     try {
-      const response = await axios.get(`/api/exams?semester=${semesterParam}&_t=${ts}`);
+      const response = await axios.get(`${root}/api/exams?semester=${semesterParam}&_t=${ts}`);
       const data = response.data;
       
       // Ensure proper empty value handling for input fields
@@ -151,7 +196,12 @@ const FacultyExams = ({ auth }) => {
 
       // Update previous semester
       setPreviousSemester(selectedSemester);
-      
+      // Load stored max values for this semester
+      const mapF = getStoredMaxFinalMap();
+      const mapM = getStoredMaxMidtermMap();
+      setMaxFinal(mapF[selectedSemester] !== undefined && mapF[selectedSemester] !== null ? Number(mapF[selectedSemester]) || 100 : 100);
+      setMaxMidterm(mapM[selectedSemester] !== undefined && mapM[selectedSemester] !== null ? Number(mapM[selectedSemester]) || 100 : 100);
+
       fetchDataForSemester(selectedSemester);
     }
   }, [selectedSemester]);
@@ -174,12 +224,14 @@ const FacultyExams = ({ auth }) => {
         
         let average = 0;
         if (selectedSemester === '2026-2027 2nd semester') {
-          // For 2nd semester: (Total / 123) * 100
-          const total = (final === '' ? 0 : final) + (midterm === '' ? 0 : midterm);
-          average = total > 0 ? (total / 123) * 100 : 0;
+          // 2nd semester: mean of normalized FE and ME
+          const finalNorm = (Number(maxFinal) || 0) > 0 ? ((final === '' ? 0 : final) / Number(maxFinal)) : 0;
+          const midNorm = (Number(maxMidterm) || 0) > 0 ? ((midterm === '' ? 0 : midterm) / Number(maxMidterm)) : 0;
+          average = ((finalNorm + midNorm) / 2) * 100;
         } else {
-          // For 1st semester: Final Exam * 2
-          average = final === '' ? 0 : final * 2;
+          // 1st semester: (Final / Max FE) * 100
+          const denominator = Math.max(1, (Number(maxFinal) || 0));
+          average = final === '' ? 0 : (final / denominator) * 100;
         }
         // Format average based on semester
         average = selectedSemester === '2026-2027 2nd semester' 
@@ -197,10 +249,21 @@ const FacultyExams = ({ auth }) => {
           subject_prof: subjectProf,
         };
       });
-      const response = await axios.post('/api/exams/save', { 
+      // CSRF: try meta tag first, then fall back to XSRF-TOKEN cookie
+      const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const cookieToken = (() => {
+        try {
+          const raw = document.cookie.split('; ').find(r => r.startsWith('XSRF-TOKEN='));
+          return raw ? decodeURIComponent(raw.split('=')[1]) : undefined;
+        } catch { return undefined; }
+      })();
+      const csrfToken = metaToken || cookieToken;
+      const response = await axios.post(`/api/exams/save`, { 
         scores,
-        semester: selectedSemester 
-      });
+        semester: selectedSemester,
+        max_final: Number(maxFinal) || 100,
+        max_midterm: Number(maxMidterm) || 100,
+      }, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, withCredentials: true });
       if (response.status === 200) {
         toast.success('Successfully saved exam scores.');
         setIsEditing(false);
@@ -267,12 +330,9 @@ const FacultyExams = ({ auth }) => {
       return;
     }
     let num = Number(value);
-    // Set different limits for midterm and final exam based on semester
-    if (field === 'midterm_exam' && num > 61) num = 61;
-    if (field === 'final_exam') {
-      if (selectedSemester === '2025-2026 1st semester' && num > 50) num = 50;
-      if (selectedSemester === '2026-2027 2nd semester' && num > 62) num = 62;
-    }
+    // Apply dynamic max based on field
+    const cap = field === 'midterm_exam' ? (Number(maxMidterm) || 100) : (Number(maxFinal) || 100);
+    if (num > cap) num = cap;
     if (num < 0) num = 0;
     const updatedCadets = cadets.map(cadet =>
       cadet.id === id ? { ...cadet, [field]: num } : cadet
@@ -319,8 +379,12 @@ const FacultyExams = ({ auth }) => {
         <FacultySidebar />
         <div className='flex-1 p-6'>
           {/* Breadcrumb - separated, light background */}
-          <div className='bg-gray-100 p-3 text-[#6B6A6A] rounded-lg pl-5'>
-            Home {">"} Exams
+          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
+                <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
+                  Dashboard
+                </Link>
+                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="cursor-default font-bold">Exams</span>
           </div>
           {/* Page Header */}
           <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
@@ -360,6 +424,50 @@ const FacultyExams = ({ auth }) => {
                   )}
                 </div>
                 <div className='flex items-center gap-4'>
+                  <div className="flex items-center gap-2">
+                    {selectedSemester === '2026-2027 2nd semester' && (
+                      <>
+                        <label className="text-gray-600">Max ME</label>
+                        <input
+                          type="number"
+                          min="1"
+                          className={`w-24 p-2 border border-gray-300 rounded-lg text-center ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          value={maxMidterm}
+                          disabled={!isEditing}
+                          onChange={e => {
+                            if (!isEditing) return;
+                            const val = Math.max(1, Number(e.target.value) || 0);
+                            setMaxMidterm(val);
+                            setStoredMaxMidtermForSemester(selectedSemester, val);
+                            // Also normalize any current inputs above the new cap (midterms)
+                            setCadets(prev => prev.map(c => ({
+                              ...c,
+                              midterm_exam: c.midterm_exam === '' || c.midterm_exam === null ? '' : Math.min(val, Number(c.midterm_exam) || 0),
+                            })));
+                          }}
+                        />
+                      </>
+                    )}
+                    <label className="text-gray-600">Max FE</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className={`w-24 p-2 border border-gray-300 rounded-lg text-center ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      value={maxFinal}
+                      disabled={!isEditing}
+                      onChange={e => {
+                        if (!isEditing) return;
+                        const val = Math.max(1, Number(e.target.value) || 0);
+                        setMaxFinal(val);
+                        setStoredMaxFinalForSemester(selectedSemester, val);
+                        // Also normalize any current inputs above the new cap (finals)
+                        setCadets(prev => prev.map(c => ({
+                          ...c,
+                          final_exam: c.final_exam === '' || c.final_exam === null ? '' : Math.min(val, Number(c.final_exam) || 0),
+                        })));
+                      }}
+                    />
+                  </div>
                   <div className="relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
@@ -478,22 +586,23 @@ const FacultyExams = ({ auth }) => {
                     const total = final + midterm;
                     let average = 0;
                     if (selectedSemester === '2026-2027 2nd semester') {
-                      // For 2nd semester: (Total / 123) * 100
-                      average = total > 0 ? (total / 123) * 100 : 0;
+                      // 2nd sem: mean of normalized scores
+                      const finalNorm = (Number(maxFinal) || 0) > 0 ? (final / Number(maxFinal)) : 0;
+                      const midNorm = (Number(maxMidterm) || 0) > 0 ? (midterm / Number(maxMidterm)) : 0;
+                      average = ((finalNorm + midNorm) / 2) * 100;
                     } else {
-                      // For 1st semester: Final Exam * 2
-                      average = final === '' ? 0 : final * 2;
+                      // 1st sem: final over Max FE
+                      const denominator = Math.max(1, (Number(maxFinal) || 0));
+                      average = final === '' ? 0 : (final / denominator) * 100;
                     }
                     // Format average based on semester
                     const formattedAverage = selectedSemester === '2026-2027 2nd semester' 
                       ? average.toFixed(2)  // 2nd semester: 2 decimal places
                       : Math.round(average).toString();  // 1st semester: whole number
                     
-                    const equivalent = (cadet.subject_prof !== null && cadet.subject_prof !== undefined)
-                      ? cadet.subject_prof.toString()
-                      : (average === 0)
-                        ? '0'
-                        : Math.min(40, Math.round(average * 0.40)).toString();
+                    const equivalent = (average === 0)
+                      ? '0'
+                      : Math.min(40, Math.round(average * 0.40)).toString();
                     return (
                       <tr className='border-b border-gray-200' key={cadet.id}>
                         <td className='p-3 text-black'>{formatCadetName(cadet)}</td>
@@ -503,7 +612,7 @@ const FacultyExams = ({ auth }) => {
                               <input
                                 type="number"
                                 min="0"
-                                max="61"
+                                max={Number(maxMidterm) || undefined}
                                 className={`w-16 text-center border border-gray-300 rounded p-1 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                 value={cadet.midterm_exam === '' || cadet.midterm_exam === null ? '' : cadet.midterm_exam}
                                 disabled={!isEditing}
@@ -514,7 +623,7 @@ const FacultyExams = ({ auth }) => {
                               <input
                                 type="number"
                                 min="0"
-                                max="62"
+                                max={Number(maxFinal) || undefined}
                                 className={`w-16 text-center border border-gray-300 rounded p-1 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                 value={cadet.final_exam === '' || cadet.final_exam === null ? '' : cadet.final_exam}
                                 disabled={!isEditing}
@@ -530,7 +639,7 @@ const FacultyExams = ({ auth }) => {
                             <input
                               type="number"
                               min="0"
-                              max="50"
+                              max={Number(maxFinal) || undefined}
                               className={`w-16 text-center border border-gray-300 rounded p-1 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                               value={cadet.final_exam === '' || cadet.final_exam === null ? '' : cadet.final_exam}
                               disabled={!isEditing}
@@ -725,22 +834,22 @@ const FacultyExams = ({ auth }) => {
                       const total = final + midterm;
                       let average = 0;
                       if (selectedSemester === '2026-2027 2nd semester') {
-                        // For 2nd semester: (Total / 123) * 100
-                        average = total > 0 ? (total / 123) * 100 : 0;
+                        // For 2nd semester: (Total / (2 * maxScore)) * 100
+                        const denominator = Math.max(1, (Number(maxScore) || 0) * 2);
+                        average = total > 0 ? (total / denominator) * 100 : 0;
                       } else {
-                        // For 1st semester: Final Exam * 2
-                        average = final === '' ? 0 : final * 2;
+                        // For 1st semester: (Final / maxScore) * 100
+                        const denominator = Math.max(1, (Number(maxScore) || 0));
+                        average = final === '' ? 0 : (final / denominator) * 100;
                       }
                       // Format average based on semester
                       const formattedAverage = selectedSemester === '2026-2027 2nd semester' 
                         ? average.toFixed(2)  // 2nd semester: 2 decimal places
                         : Math.round(average).toString();  // 1st semester: whole number
                       
-                      const equivalent = (cadet.subject_prof !== null && cadet.subject_prof !== undefined)
-                        ? cadet.subject_prof.toString()
-                        : (average === 0)
-                          ? '0'
-                          : Math.round(average * 0.40).toString();
+                      const equivalent = (average === 0)
+                        ? '0'
+                        : Math.min(40, Math.round(average * 0.40)).toString();
                       return (
                         <tr className='border-b border-gray-200' key={cadet.id}>
                           <td className='p-3 text-black'>{formatCadetName(cadet)}</td>

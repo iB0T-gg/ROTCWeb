@@ -6,6 +6,8 @@ import { FaFileExcel } from 'react-icons/fa'
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from '@inertiajs/react';
+
 
 export default function AdminCadetsProfile(){
     const { auth } = usePage().props;
@@ -158,11 +160,13 @@ export default function AdminCadetsProfile(){
         
         <div className='flex-1 p-6'>
           <div className='font-regular'>
-            <div className='bg-white p-3 text-[#6B6A6A] rounded-lg pl-5'>
-                <span className='cursor-pointer'>Home</span>
-                {">"}
-                <span className='cursor-pointer'>Master Lists</span>
-            </div>
+            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
+                  Dashboard
+                </Link>
+                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="cursor-default font-bold">Cadets Profile Record</span>  
+          </div>
             <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
                 <h1 className='text-2xl font-semibold'>Master Lists</h1>
             </div>

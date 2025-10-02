@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { Link } from '@inertiajs/react';
+const toast = { info: () => {}, success: () => {}, error: () => {} };
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
@@ -474,18 +475,22 @@ const FacultyMerits = ({ auth }) => {
         <FacultySidebar />
         <div className="flex-1 p-6">
             {/* Breadcrumb */}
-          <div className="bg-gray-100 p-3 text-gray-600 rounded-lg pl-5 cursor-pointer mb-4">
-                Home {">"} Aptitude
-            </div>
+          <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
+                  Dashboard
+                </Link>
+                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="cursor-default font-bold">Aptitude</span>  
+          </div>
           {/* Page Header and Controls */}
           <div className="flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg">
             <h1 className="text-2xl font-semibold">Aptitude Management</h1>
             
               </div>
              {/* Tab Navigation */}
-             <div className="bg-white p-6 rounded-lg shadow mb-6">
-               <div className="flex items-center justify-between gap-4">
-                 <div className="flex items-center gap-4">
+              <div className="bg-white p-6 rounded-lg shadow mb-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
                    <button 
                      onClick={() => {
                        console.log('Switching to current semester');
@@ -495,7 +500,7 @@ const FacultyMerits = ({ auth }) => {
                        setSelectedSemester('2025-2026 1st semester');
                        // Fetch will be triggered by useEffect on selectedSemester
                      }}
-                     className={`py-2 px-4 rounded-lg ${activeTab === 'current' 
+                      className={`py-2 px-4 rounded-lg ${activeTab === 'current' 
                        ? 'bg-primary text-white' 
                        : 'bg-gray-100 text-gray-700'}`}
                    >
@@ -510,95 +515,115 @@ const FacultyMerits = ({ auth }) => {
                        setSelectedSemester('2026-2027 2nd semester');
                        // Fetch will be triggered by useEffect on selectedSemester
                      }}
-                     className={`py-2 px-4 rounded-lg ${activeTab === 'previous' 
+                      className={`py-2 px-4 rounded-lg ${activeTab === 'previous' 
                        ? 'bg-primary text-white' 
                        : 'bg-gray-100 text-gray-700'}`}
                    >
                      2026-2027 2nd semester
                    </button>
                 </div>
-                 <div className="flex items-center gap-4">
-                   <div className="relative">
-                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                     <input
-                       type="search"
-                       placeholder="Search"
-                       value={search}
-                       onChange={e => setSearch(e.target.value)}
-                       className="w-48 p-2 pl-10 border border-gray-300 rounded-lg"
-                     />
-                   </div>
-                   <div className="relative">
-                     <div
-                       className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer"
-                       onClick={() => setShowSortPicker(!showSortPicker)}
-                     >
-                       <span className="text-gray-600">
-                         {selectedPlatoon || selectedCompany || selectedBattalion
-                           ? `Filters: ${[
-                               selectedPlatoon || '',
-                               selectedCompany || '',
-                               selectedBattalion || ''
-                             ].filter(Boolean).join(', ')}`
-                           : 'Sort by : All'}
-                       </span>
-                       <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-                     </div>
-                     {showSortPicker && (
-                       <div
-                         className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-64"
-                         style={{ top: '100%', right: 0 }}
-                       >
-                         <div className="space-y-4">
-                           <div>
-                             <label className="block text-sm font-medium text-gray-700 mb-2">Platoon (Select Platoon)</label>
-                             <select
-                               className="w-full bg-gray-100 p-2 rounded border"
-                               value={selectedPlatoon}
-                               onChange={e => setSelectedPlatoon(e.target.value)}
-                             >
-                               <option value="">Select Platoon</option>
-                               <option value="1st Platoon">1st Platoon</option>
-                               <option value="2nd Platoon">2nd Platoon</option>
-                               <option value="3rd Platoon">3rd Platoon</option>
-                             </select>
-                           </div>
-                           <div>
-                             <label className="block text-sm font-medium text-gray-700 mb-2">Company (Select Company)</label>
-                             <select
-                               className="w-full bg-gray-100 p-2 rounded border"
-                               value={selectedCompany}
-                               onChange={e => setSelectedCompany(e.target.value)}
-                             >
-                               <option value="">Select Company</option>
-                               <option value="Alpha">Alpha</option>
-                               <option value="Beta">Beta</option>
-                               <option value="Charlie">Charlie</option>
-                               <option value="Delta">Delta</option>
-                             </select>
-                           </div>
-                           <div>
-                             <label className="block text-sm font-medium text-gray-700 mb-2">Battalion (Select Battalion)</label>
-                             <select
-                               className="w-full bg-gray-100 p-2 rounded border"
-                               value={selectedBattalion}
-                               onChange={e => setSelectedBattalion(e.target.value)}
-                             >
-                               <option value="">Select Battalion</option>
-                               <option value="1st Battalion">1st Battalion</option>
-                               <option value="2nd Battalion">2nd Battalion</option>
-                             </select>
-                           </div>
-                           <button
-                             className="w-full mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700"
-                             onClick={() => setShowSortPicker(false)}
-                           >
-                             Cancel
-                           </button>
-                         </div>
-                       </div>
-                     )}
-                   </div>
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="search"
+                          placeholder="Search"
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          className="w-48 p-2 pl-10 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="relative">
+                        <div
+                          className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer"
+                          onClick={() => setShowSortPicker(!showSortPicker)}
+                        >
+                          <span className="text-gray-600">
+                            {selectedPlatoon || selectedCompany || selectedBattalion
+                              ? `Filters: ${[
+                                  selectedPlatoon || '',
+                                  selectedCompany || '',
+                                  selectedBattalion || ''
+                                ].filter(Boolean).join(', ')}`
+                              : 'Sort by : All'}
+                          </span>
+                          <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        </div>
+                        {showSortPicker && (
+                        <div
+                          className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-64"
+                          style={{ top: '100%', right: 0 }}
+                        >
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Platoon (Select Platoon)</label>
+                              <select
+                                className="w-full bg-gray-100 p-2 rounded border"
+                                value={selectedPlatoon}
+                                onChange={e => setSelectedPlatoon(e.target.value)}
+                              >
+                                <option value="">Select Platoon</option>
+                                <option value="1st Platoon">1st Platoon</option>
+                                <option value="2nd Platoon">2nd Platoon</option>
+                                <option value="3rd Platoon">3rd Platoon</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Company (Select Company)</label>
+                              <select
+                                className="w-full bg-gray-100 p-2 rounded border"
+                                value={selectedCompany}
+                                onChange={e => setSelectedCompany(e.target.value)}
+                              >
+                                <option value="">Select Company</option>
+                                <option value="Alpha">Alpha</option>
+                                <option value="Beta">Beta</option>
+                                <option value="Charlie">Charlie</option>
+                                <option value="Delta">Delta</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Battalion (Select Battalion)</label>
+                              <select
+                                className="w-full bg-gray-100 p-2 rounded border"
+                                value={selectedBattalion}
+                                onChange={e => setSelectedBattalion(e.target.value)}
+                              >
+                                <option value="">Select Battalion</option>
+                                <option value="1st Battalion">1st Battalion</option>
+                                <option value="2nd Battalion">2nd Battalion</option>
+                              </select>
+                            </div>
+                            <button
+                              className="w-full mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700"
+                              onClick={() => setShowSortPicker(false)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Mobile-only quick action below Sort by */}
+                    <div className="flex md:hidden items-center">
+                      <button
+                        onClick={() => {
+                          if (!isEditing) {
+                            setOriginalMerits(JSON.parse(JSON.stringify(merits)));
+                            setOriginalDemerits(JSON.parse(JSON.stringify(demerits)));
+                            setIsEditing(true);
+                            toast.info('Edit mode enabled. You can now modify demerits.');
+                          } else {
+                            handleSave();
+                          }
+                        }}
+                        className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                      >
+                        {isEditing ? 'Save' : 'Edit Merits'}
+                      </button>
+                    </div>
                  </div>
                </div>
              </div>
@@ -613,8 +638,8 @@ const FacultyMerits = ({ auth }) => {
                {/* Current Semester Content */}
                {activeTab === 'current' && (
                  <>
-                   <div className="overflow-x-auto">
-                  <table key={renderKey} className="w-full border-collapse">
+                    <div className="overflow-x-auto">
+                   <table key={renderKey} className="w-full border-collapse">
                 <thead className="text-gray-600">
                   <tr>
                     <th className="p-3 border-b font-medium text-left">Cadet Names</th>
@@ -624,8 +649,8 @@ const FacultyMerits = ({ auth }) => {
                         <div className="flex flex-col items-center">
                           <span className="text-sm font-medium text-gray-700 mb-2">{week}</span>
                           <div className="flex justify-center gap-2">
-                            <span className="bg-green-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">M</span>
-                            <span className="bg-red-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">D</span>
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">D</span>
                           </div>
                         </div>
                       </th>
@@ -663,7 +688,7 @@ const FacultyMerits = ({ auth }) => {
                                   value={(meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-')
                                     ? Math.max(0, 10 - (Number(demeritValues[weekIndex]) || 0))
                                     : meritValues[weekIndex]}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -675,7 +700,7 @@ const FacultyMerits = ({ auth }) => {
                                   max="10"
                                   value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />
@@ -769,8 +794,8 @@ const FacultyMerits = ({ auth }) => {
                {/* Previous Semester Content */}
                {activeTab === 'previous' && (
                  <>
-                   <div className="overflow-x-auto">
-                   <table className="w-full border-collapse">
+                    <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
                  <thead className="text-gray-600">
                    <tr>
                      <th className="p-3 border-b font-medium text-left">Cadet Names</th>
@@ -779,9 +804,9 @@ const FacultyMerits = ({ auth }) => {
                        <th key={week} className="p-3 border-b font-medium text-center">
                          <div className="flex flex-col items-center">
                            <span className="text-sm font-medium text-gray-700 mb-2">{week}</span>
-                           <div className="flex justify-center gap-2">
-                             <span className="bg-green-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">M</span>
-                             <span className="bg-red-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">D</span>
+                          <div className="flex justify-center gap-2">
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">D</span>
                            </div>
                          </div>
                        </th>
@@ -820,7 +845,7 @@ const FacultyMerits = ({ auth }) => {
                                   min="0"
                                   max="10"
                                   value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -832,7 +857,7 @@ const FacultyMerits = ({ auth }) => {
                                   max="10"
                                   value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />

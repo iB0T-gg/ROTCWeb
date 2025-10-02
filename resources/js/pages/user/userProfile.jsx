@@ -51,6 +51,11 @@ const UserProfile = ({ auth, user }) => {
   const [barangays, setBarangays] = useState([]);
   const pickerRef = useRef(null);
 
+  // Avatar modal state (must be declared before effects that reference it)
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   // Fetch provinces on mount
   useEffect(() => {
     fetch("https://psgc.gitlab.io/api/provinces/")
@@ -98,6 +103,21 @@ const UserProfile = ({ auth, user }) => {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPicker]);
+
+  // Avatar modal state (declare before effects that reference it)
+  // moved above (placeholder removed)
+
+  // Lock page scroll only for avatar modal (address picker should not gray out/lock)
+  useEffect(() => {
+    const shouldLock = showAvatarModal;
+    if (shouldLock) {
+      const previous = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = previous;
+      };
+    }
+  }, [showAvatarModal]);
 
   // When all selected, set address and close picker
   useEffect(() => {
@@ -161,7 +181,21 @@ const UserProfile = ({ auth, user }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    router.post('/api/user/profile/update', form, {
+    const payload = { ...form };
+    // Normalize birthday (expected dd/mm/yyyy or dd/mm/yy) to YYYY-MM-DD for SQL
+    if (payload.birthday && typeof payload.birthday === 'string') {
+      const parts = payload.birthday.split('/');
+      if (parts.length === 3) {
+        const [d, m, y] = parts;
+        const year = y?.length === 2 ? `20${y}` : y;
+        const mm = m?.padStart(2, '0');
+        const dd = d?.padStart(2, '0');
+        if (year && mm && dd) {
+          payload.birthday = `${year}-${mm}-${dd}`;
+        }
+      }
+    }
+    router.post('/api/user/profile/update', payload, {
       onSuccess: () => {
         setEditing(false);
         setShowDatePicker(false);
@@ -225,9 +259,7 @@ const UserProfile = ({ auth, user }) => {
   // Helper for conditional focus outline
   const focusClass = 'focus:outline-none';
 
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  
 
   // Handle file input change
   const handleFileChange = (e) => {
@@ -305,7 +337,8 @@ const UserProfile = ({ auth, user }) => {
   const profilePic = user?.profile_pic_url ? user.profile_pic_url : null;
 
   return (
-    <div className="w-full min-h-screen bg-backgroundColor">
+    <div className="relative w-full min-h-screen">
+      <div className="fixed inset-0 bg-backgroundColor -z-10" />
       <Header auth={auth} />
       <div className="flex">
         <UserSidebar />
@@ -316,95 +349,58 @@ const UserProfile = ({ auth, user }) => {
                 Dashboard
               </Link>
               <span className="mx-2 font-semibold">{">"}</span>
-              <span className="cursor-default font-bold text-[#000000] ">Profile</span>
+              <span className="cursor-default font-bold">Profile</span>
             </div>
             <div className="bg-primary text-white p-4 rounded-lg flex items-center justify-between mt-4 mb-6 pl-5 py-7">
               <h1 className="text-2xl font-semibold">Profile</h1>
             </div>
-            <form onSubmit={handleSubmit} className="bg-white w-full mx-auto p-6 rounded-lg shadow">
-              <div className="flex justify-between items-start mb-8">
-                <div className="flex items-center">
-                  {editing ? (
-                    // Editing mode: show image with hover overlay and click-to-edit
-                    <div
-                      className="relative w-24 h-24 rounded-full mr-4 bg-gray-200 flex items-center justify-center overflow-hidden group cursor-pointer"
-                      onClick={() => setShowAvatarModal(true)}
-                      style={{ minWidth: 96, minHeight: 96 }}
-                    >
-                      {profilePic ? (
-                        <>
-                          <img
-                            src={profilePic}
-                            alt="Profile"
-                            className="w-full h-full object-cover rounded-full"
-                            onError={(e) => {
-                              console.error("Image failed to load:", profilePic);
-                              e.target.onerror = null;
-                              e.target.src = "/images/default-profile.png";
-                            }}
-                          />
-                          {/* Overlay on hover */}
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white font-semibold text-lg select-none">Edit</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-white font-semibold text-lg select-none">No Image</span>
-                          {/* Overlay on hover */}
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white font-semibold text-lg select-none">Edit</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    // Not editing: show image or "No Image"
-                    <div
-                      className="w-24 h-24 rounded-full mr-4 bg-gray-200 flex items-center justify-center text-gray-400 text-lg font-semibold overflow-hidden"
-                      style={{ minWidth: 96, minHeight: 96 }}
-                    >
-                      {profilePic ? (
-                        <img
-                          src={profilePic}
-                          alt="Profile"
-                          className="w-full h-full object-cover rounded-full"
-                          onError={(e) => {
-                            console.error("Image failed to load:", profilePic);
-                            e.target.onerror = null;
-                            e.target.src = "/images/default-profile.png";
-                          }}
-                        />
-                      ) : (
-                        <span>No Image</span>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <h2 className="text-lg font-semibold text-black">{user?.last_name}, {user?.first_name}</h2>
-                    <p className="text-sm text-gray-600">{user?.email}</p>
-                  </div>
-                </div>
-                {!editing && (
-                  <button
-                    type="button"
-                    className="bg-primary text-white px-4 py-2 rounded"
-                    onClick={handleEdit}
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+              {/* LEFT CARD HIDDEN (merged into header) */}
+              <div className="hidden" />
+
+              {/* SINGLE MAIN CARD */}
+              <form onSubmit={handleSubmit} className="md:col-span-3 bg-white w-full mx-auto p-6 rounded-lg shadow">
+                <div className="flex flex-col gap-4">
+                   {/* Header with avatar/name/email and edit button */}
+                   <div className="flex items-center justify-between mb-4">
+                     <div className="flex items-center gap-4">
+                       <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
+                         <img
+                           src={profilePic || "/images/default-profile.png"}
+                           alt="Profile"
+                           className="w-full h-full object-cover"
+                           onError={(e) => {
+                             if (e.target.src !== "/images/default-profile.png") {
+                               e.target.onerror = null;
+                               e.target.src = "/images/default-profile.png";
+                             }
+                           }}
+                         />
+                       </div>
+                       <div>
+                         <div className="text-lg font-semibold text-black">{user?.last_name}, {user?.first_name}</div>
+                         <div className="text-sm text-gray-600">{user?.email}</div>
+                       </div>
+                     </div>
+                     {!editing && (
+                       <button
+                         type="button"
+                         className="bg-primary text-white px-4 py-2 rounded"
+                         onClick={handleEdit}
+                       >
+                         Edit Info
+                       </button>
+                     )}
+                   </div>
                 {/* Row 1 */}
                 <div className="flex gap-x-4 mb-3">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <label className="block font-medium text-black">First Name</label>
                     <input
                       type="text"
                       value={form.first_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="first_name"
                     />
                   </div>
@@ -414,7 +410,7 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.middle_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="middle_name"
                     />
                   </div>
@@ -424,14 +420,14 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.last_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="last_name"
                     />
                   </div>
                 </div>
 
-                {/* Row 2 */}
-                <div className="flex gap-x-4 mb-3">
+                {/* Row 2: Birthday, Gender, Age, Phone Number, Campus */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
                   <div className="flex-1">
                     <label className="block font-medium text-black">Birthday</label>
                     <div className="relative">
@@ -449,7 +445,7 @@ const UserProfile = ({ auth, user }) => {
                           value={form.birthday}
                           readOnly={!editing}
                           required={editing}
-                          className={`bg-transparent w-full ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
+                        className={`bg-transparent w-full ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
                           name="birthday"
                           onChange={handleChange}
                           placeholder="dd/mm/yy"
@@ -483,6 +479,19 @@ const UserProfile = ({ auth, user }) => {
                     </div>
                   </div>
                   <div className="flex-1">
+                    <label className="block font-medium text-black">Age</label>
+                    <input
+                      type="text"
+                      value={form.age}
+                      readOnly={!editing}
+                      required={editing}
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
+                      name="age"
+                      onChange={handleChange}
+                      placeholder='-'
+                    />
+                  </div>
+                  <div className="flex-1">
                     <label className="block font-medium text-black">Gender</label>
                     {editing ? (
                       <div className="relative">
@@ -508,19 +517,6 @@ const UserProfile = ({ auth, user }) => {
                         className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
                       />
                     )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Age</label>
-                    <input
-                      type="text"
-                      value={form.age}
-                      readOnly={!editing}
-                      required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
-                      name="age"
-                      onChange={handleChange}
-                      placeholder='-'
-                    />
                   </div>
                   <div className="flex-1">
                     <label className="block font-medium text-black">Phone Number</label>
@@ -563,15 +559,15 @@ const UserProfile = ({ auth, user }) => {
                   </div>
                 </div>
 
-                {/* Row 3 */}
-                <div className="flex gap-x-4 mb-3">
+                {/* Row 3: Student Number, Platoon, Company, Battalion, Email */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
                   <div className="flex-1">
                     <label className="block font-medium text-black">Student Number</label>
                     <input
                       type="text"
                       value={form.student_number}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="student_number"
                     />
                   </div>
@@ -654,7 +650,6 @@ const UserProfile = ({ auth, user }) => {
                         value={form.battalion || '-'}
                         readOnly
                         className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                        name="battalion"
                       />
                     )}
                   </div>
@@ -664,27 +659,42 @@ const UserProfile = ({ auth, user }) => {
                       type="text"
                       value={form.email}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3`}
+                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="email"
                     />
                   </div>
                 </div>
 
-                {/* Row 4 */}
-                <div className="flex gap-x-4 mb-3">
-                  <div className="basis-[10%] shrink-0">
+                {/* Row 4: Course, Yr Level & Section, Group, Blood, Height, Region, Address (wide) */}
+                <div className="flex flex-wrap gap-4 mb-3">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Course</label>
-                    <input
-                      type="text"
-                      value={form.course}
-                      readOnly={!editing}
-                      required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
-                      name="course"
-                      onChange={handleChange}
-                    />
+                    {editing ? (
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          name="course"
+                          value={form.course}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {['BSIT','BSCS','BSCpE','BSEE','BSME','BSED','BEED','BSA','BSBA','BSHM'].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.course}
+                        readOnly
+                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                      />
+                    )}
                   </div>
-                  <div className="basis-[10%] shrink-0">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Yr Level & Section</label>
                     <input
                       type="text"
@@ -696,7 +706,7 @@ const UserProfile = ({ auth, user }) => {
                       onChange={handleChange}
                     />
                   </div>
-                  <div className="basis-[10%] shrink-0">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Group</label>
                     <input
                       type="text"
@@ -708,8 +718,7 @@ const UserProfile = ({ auth, user }) => {
                       onChange={handleChange}
                     />
                   </div>
-                  
-                  <div className="basis-[8.2%] shrink-0">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Blood Type</label>
                     {editing ? (
                       <div className="relative">
@@ -736,7 +745,7 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="basis-[8.2%] shrink-0">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Height</label>
                     {editing ? (
                       <div className="relative">
@@ -763,7 +772,7 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="basis-[8.2%] shrink-0">
+                  <div className="basis-[10%] min-w-[60px]">
                     <label className="block font-medium text-black">Region</label>
                     {editing ? (
                       <div className="relative">
@@ -790,28 +799,29 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[320px]">
                     <label className="block font-medium text-black">Address</label>
                     {editing ? (
-                      <div style={{ position: "relative", maxWidth: 800 }}>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={form.address}
-                            readOnly
-                            required={editing}
-                            className="w-full bg-gray-100 p-2 rounded py-3 pr-9 cursor-pointer focus:outline-none"
-                            placeholder="-"
-                            onClick={() => setShowPicker(true)}
-                          />
-                          <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                        </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={form.address}
+                          readOnly
+                          required={editing}
+                          className="w-full bg-gray-100 p-2 rounded py-3 pr-9 cursor-pointer focus:outline-none"
+                          placeholder="-"
+                          onClick={() => setShowPicker(true)}
+                        />
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
                         {showPicker && (
                           <div
                             ref={pickerRef}
                             style={{
                               position: "absolute",
-                              zIndex: 10,
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              zIndex: 20,
                               background: "white",
                               border: "1px solid #ccc",
                               borderRadius: 8,
@@ -819,6 +829,8 @@ const UserProfile = ({ auth, user }) => {
                               marginTop: 4,
                               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                               width: "100%",
+                              maxHeight: 360,
+                              overflowY: "auto"
                             }}
                           >
                             <div className="flex flex-col gap-2">
@@ -879,11 +891,11 @@ const UserProfile = ({ auth, user }) => {
                                 </div>
                               </div>
                               <button
-                                className="mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                className="mt-2 mb-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
                                 onClick={() => setShowPicker(false)}
                                 type="button"
                               >
-                                Cancel
+                                Close
                               </button>
                             </div>
                           </div>
@@ -898,31 +910,34 @@ const UserProfile = ({ auth, user }) => {
                       />
                     )}
                   </div>
-                </div>    
-              </div>
-              
-              {/* Save/Cancel buttons inside the white card */}
-              {editing && (
-                <div className="flex justify-end mt-8">
-                  <button
-                    type="button"
-                    className="bg-gray-400 text-white px-4 py-2 rounded mr-2"
-                    onClick={handleCancel}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-primary text-white px-4 py-2 rounded"
-                  >
-                    Save Changes
-                  </button>
                 </div>
-              )}
-            </form>
+
+                {/* Bottom-right controls */}
+                {editing && (
+                  <div className="flex justify-end mt-8">
+                    <button
+                      type="button"
+                      className="bg-gray-400 text-white px-4 py-2 rounded mr-2"
+                      onClick={handleCancel}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-primary text-white px-4 py-2 rounded"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                )}
+                </div>
+              </form>
+            </div>
+          </div>    
           </div>
         </div>
-      </div>
+
+      {/* Remove backdrop for address picker (no gray background) */}
 
       {/* Avatar Modal */}
       {showAvatarModal && (

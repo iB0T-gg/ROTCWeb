@@ -141,38 +141,32 @@ class FinalGradesController extends Controller
     }
     
     /**
-     * Map percent to equivalent per figure 2.
-     * 1.00: 97-100
-     * 1.25: 94-96
-     * 1.50: 91-93
-     * 1.75: 88-90
-     * 2.00: 85-87
-     * 2.25: 82-84
-     * 2.50: 79-81
-     * 2.75: 76-78
-     * 3.00: 73-75
-     * 3.25: 70-72
-     * 3.50: 67-69
-     * 3.75: 64-66
-     * 4.00: 60-63
-     * 5.00: <60
+     * Map percent to equivalent per official table.
+     *
+     * 1.00 — 96.50–100
+     * 1.25 — 93.50–96.49
+     * 1.50 — 90.50–93.49
+     * 1.75 — 87.50–90.49
+     * 2.00 — 84.50–87.49
+     * 2.25 — 81.50–84.49
+     * 2.50 — 78.50–81.49
+     * 2.75 — 75.50–78.49
+     * 3.00 — 75.00–75.49
+     * 5.00 — < 75.00
+     * (4.00, INC, D, UD, FDA are statuses, not derived from percent.)
      */
     private function computeEquivalentFromPercent($percent)
     {
         $p = (float) $percent;
-        if ($p >= 97) return 1.00;
-        if ($p >= 94) return 1.25;
-        if ($p >= 91) return 1.50;
-        if ($p >= 88) return 1.75;
-        if ($p >= 85) return 2.00;
-        if ($p >= 82) return 2.25;
-        if ($p >= 79) return 2.50;
-        if ($p >= 76) return 2.75;
-        if ($p >= 73) return 3.00;
-        if ($p >= 70) return 3.25;
-        if ($p >= 67) return 3.50;
-        if ($p >= 64) return 3.75;
-        if ($p >= 60) return 4.00;
+        if ($p >= 96.5) return 1.00;
+        if ($p >= 93.5) return 1.25;
+        if ($p >= 90.5) return 1.50;
+        if ($p >= 87.5) return 1.75;
+        if ($p >= 84.5) return 2.00;
+        if ($p >= 81.5) return 2.25;
+        if ($p >= 78.5) return 2.50;
+        if ($p >= 75.5) return 2.75;
+        if ($p >= 75.0) return 3.00;
         return 5.00;
     }
 
@@ -182,19 +176,8 @@ class FinalGradesController extends Controller
     private function computeRemarks($finalPercent, $equivalent)
     {
         $eq = (float) $equivalent;
-        // 5.00 => Failed
-        if ($eq === 5.00) {
-            return 'Failed';
-        }
-        // 4.00 => INC
-        if ($eq === 4.00) {
-            return 'INC';
-        }
-        // 3.00 for exactly 75% => "75 (PASSED)"
-        if ($eq === 3.00 && (int) $finalPercent === 75) {
-            return '75 (PASSED)';
-        }
-        // 2.75 - 3.00 and all better grades are Passed
+        if ($eq === 5.00) return 'Failed';
+        if ($eq === 4.00) return 'Conditional Passed';
         return 'Passed';
     }
 
@@ -233,16 +216,16 @@ class FinalGradesController extends Controller
                 ->first();
             $attendance30 = $attendance ? (int) $attendance->attendance_30 : 0;
             
-            // Get exam scores from first_semester_exam_scores
+            // Get exam scores from first_semester_exam_scores for the requested semester
             $exam = DB::table('first_semester_exam_scores')
                 ->where('user_id', $userId)
+                ->where('semester', $semester)
                 ->first();
             
-            // Calculate Subject Prof score with 40% weighting for 2025-2026 1st semester
+            // Calculate Subject Prof score using stored average (respects dynamic Max)
             $subjectProfScore = 0;
             if ($exam) {
-                $finalExam = $exam->final_exam ? (int) $exam->final_exam : 0;
-                $average = $finalExam * 2; // Final Exam * 2 for 1st semester
+                $average = $exam->average ? (float) $exam->average : 0.0;
                 $subjectProfScore = min(40, round($average * 0.40)); // 40% weighting, capped at 40
             }
             

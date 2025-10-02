@@ -84,31 +84,25 @@ const userGrades = ({ auth, user }) => {
                 </div>
               ) : (
                 <>
-                  {/* Profile section - made responsive */}
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                    <div className="flex flex-col items-center sm:flex-row sm:items-center mb-4 sm:mb-0">
-                      {user?.profile_pic_url ? (
-                        <img 
-                          src={user.profile_pic_url} 
-                          alt="Profile Picture" 
-                          className="w-16 h-16 md:w-24 md:h-24 rounded-full mb-2 sm:mb-0 sm:mr-4 object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-16 h-16 md:w-24 md:h-24 rounded-full mb-2 sm:mb-0 sm:mr-4 bg-gray-200 flex items-center justify-center text-gray-400 text-lg font-semibold ${user?.profile_pic_url ? 'hidden' : ''}`}>
-                        No Image
-                      </div>
+                  {/* Profile picture - match userAttendance layout */}
+                  <div className="flex items-center mb-4">
+                    {user?.profile_pic_url ? (
+                      <img 
+                        src={user.profile_pic_url} 
+                        alt="Profile Picture" 
+                        className="w-24 h-24 rounded-full mr-4 object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-24 h-24 rounded-full mr-4 bg-gray-200 flex items-center justify-center text-gray-400 text-lg font-semibold ${user?.profile_pic_url ? 'hidden' : ''}`}>
+                      No Image
                     </div>
-                    <div className="text-center sm:text-left">
-                      <h2 className="text-base md:text-lg font-semibold text-black">
-                        {userGrades ? `${userGrades.last_name || 'Name'}, ${userGrades.first_name || 'User'}` : `${user?.last_name || 'Name'}, ${user?.first_name || 'User'}`}
-                      </h2>
-                      <p className="text-xs md:text-sm text-gray-600">
-                        {userGrades ? userGrades.email : (user?.email || 'user@example.com')}
-                      </p>
+                    <div>
+                      <h2 className="text-lg font-semibold text-black">{userGrades ? `${userGrades.last_name || 'Name'}, ${userGrades.first_name || 'User'}` : `${user?.last_name || 'Name'}, ${user?.first_name || 'User'}`}</h2>
+                      <p className="text-sm text-gray-600">{userGrades ? userGrades.email : (user?.email || 'user@example.com')}</p>
                     </div>
                   </div>
                   
@@ -119,21 +113,21 @@ const userGrades = ({ auth, user }) => {
                   <div className='mt-4 mb-4'>
                     <div className='bg-blue-50 py-2 px-2 md:px-4 font-medium mb-2 rounded text-center text-sm md:text-base'>Military Science 1</div>
                     <div className='overflow-x-auto'>
-                      <table className='w-full text-left border-collapse mb-4 text-xs md:text-base'>
+                      <table className='w-full table-fixed border-collapse mb-4 text-xs md:text-base'>
                         <thead>
                           <tr>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>CODE</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>SUBJECT</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>GRADE</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>REMARKS</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>CODE</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>SUBJECT</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>GRADE</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>REMARKS</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td className='py-2 px-2 md:px-4 text-center'>NSTP101</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>NSTP-ROTC</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>{formatGrade(userGrades?.first_semester?.equivalent_grade)}</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>NSTP101</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>NSTP-ROTC</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>{formatGrade(userGrades?.first_semester?.equivalent_grade)}</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>
                               {getRemarks(userGrades?.first_semester?.remarks, userGrades?.first_semester?.equivalent_grade)}
                             </td>
                           </tr>
@@ -146,21 +140,21 @@ const userGrades = ({ auth, user }) => {
                   <div>
                     <div className='bg-blue-50 py-2 px-2 md:px-4 font-medium mb-2 rounded text-center mt-8 md:mt-16 text-sm md:text-base'>Military Science 2</div>
                     <div className='overflow-x-auto'>
-                      <table className='w-full text-left border-collapse text-xs md:text-base'>
+                      <table className='w-full table-fixed border-collapse text-xs md:text-base'>
                         <thead>
                           <tr>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>CODE</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>SUBJECT</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>GRADE</th>
-                            <th className='py-2 px-2 md:px-4 font-medium text-center'>REMARK</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>CODE</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>SUBJECT</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>GRADE</th>
+                            <th className='w-1/4 py-2 px-2 md:px-4 font-medium text-center'>REMARKS</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td className='py-2 px-2 md:px-4 text-center'>NSTP102</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>NSTP-ROTC</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>{formatGrade(userGrades?.second_semester?.equivalent_grade)}</td>
-                            <td className='py-2 px-2 md:px-4 text-center'>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>NSTP102</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>NSTP-ROTC</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>{formatGrade(userGrades?.second_semester?.equivalent_grade)}</td>
+                            <td className='w-1/4 py-2 px-2 md:px-4 text-center'>
                               {getRemarks(userGrades?.second_semester?.remarks, userGrades?.second_semester?.equivalent_grade)}
                             </td>
                           </tr>

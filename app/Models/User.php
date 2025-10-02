@@ -187,15 +187,15 @@ class User extends Authenticatable implements CanResetPasswordContract
             : 0;
         $totalPercentage = $merit + $attendance + $exams;
 
-        if ($totalPercentage >= 97) return 1.00;
-        if ($totalPercentage >= 94) return 1.25;
-        if ($totalPercentage >= 91) return 1.5;
-        if ($totalPercentage >= 88) return 1.75;
-        if ($totalPercentage >= 85) return 2.00;
-        if ($totalPercentage >= 82) return 2.25;
-        if ($totalPercentage >= 79) return 2.50;
-        if ($totalPercentage >= 76) return 2.75;
-        if ($totalPercentage >= 75) return 3.00;
+        if ($totalPercentage >= 96.5) return 1.00;
+        if ($totalPercentage >= 93.5) return 1.25;
+        if ($totalPercentage >= 90.5) return 1.5;
+        if ($totalPercentage >= 87.5) return 1.75;
+        if ($totalPercentage >= 84.5) return 2.00;
+        if ($totalPercentage >= 81.5) return 2.25;
+        if ($totalPercentage >= 78.5) return 2.50;
+        if ($totalPercentage >= 75.5) return 2.75;
+        if ($totalPercentage >= 75.0) return 3.00;
         return 5.00;
     }
 

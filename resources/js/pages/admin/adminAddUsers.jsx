@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { useForm } from '@inertiajs/react';
+import { useForm, Link } from '@inertiajs/react';
 
 export default function AddUsers({ auth, success, error }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -45,8 +45,12 @@ export default function AddUsers({ auth, success, error }) {
                 <AdminSidebar />
                 <div className="flex-1 p-3 md:p-6 w-full md:w-auto overflow-x-auto">
                     <div className="font-regular min-w-[320px]">
-                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base">
-                            Home {">"} Add Users
+                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                        <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
+                            Dashboard
+                        </Link>
+                        <span className="mx-2 font-semibold">{">"}</span>
+                        <span className="cursor-default font-bold">Add Users</span>  
                         </div>
                         <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-4 mb-6 pl-3 md:pl-5 py-5 md:py-7">
                             <h1 className="text-lg md:text-2xl font-semibold">User Management</h1>

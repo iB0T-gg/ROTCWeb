@@ -91,7 +91,7 @@ const FacultyReportAnIssue = ({ auth }) => {
           <div className='font-regular'>
             {/* Breadcrumb */}
             <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 mb-3 md:mb-4 text-sm md:text-base'>
-              <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
+              <Link href="/faculty/facultyHome" className="hover:underline font-semibold">
                 Dashboard
               </Link>
               <span className="mx-2 font-semibold">{">"}</span>

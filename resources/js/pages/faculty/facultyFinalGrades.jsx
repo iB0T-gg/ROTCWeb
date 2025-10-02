@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+const toast = { info: () => {}, success: () => {}, error: () => {} };
+import { Link } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
@@ -472,19 +473,15 @@ const FacultyFinalGrades = ({ auth }) => {
     const examsNum = typeof exams === 'number' ? exams : 0;
     
     const totalPercentage = meritNum + attendanceNum + examsNum;
-    if (totalPercentage >= 97) return 1.00;
-    if (totalPercentage >= 94) return 1.25;
-    if (totalPercentage >= 91) return 1.50;
-    if (totalPercentage >= 88) return 1.75;
-    if (totalPercentage >= 85) return 2.00;
-    if (totalPercentage >= 82) return 2.25;
-    if (totalPercentage >= 79) return 2.50;
-    if (totalPercentage >= 76) return 2.75;
-    if (totalPercentage >= 73) return 3.00;
-    if (totalPercentage >= 70) return 3.25;
-    if (totalPercentage >= 67) return 3.50;
-    if (totalPercentage >= 64) return 3.75;
-    if (totalPercentage >= 60) return 4.00;
+    if (totalPercentage >= 96.5) return 1.00;
+    if (totalPercentage >= 93.5) return 1.25;
+    if (totalPercentage >= 90.5) return 1.50;
+    if (totalPercentage >= 87.5) return 1.75;
+    if (totalPercentage >= 84.5) return 2.00;
+    if (totalPercentage >= 81.5) return 2.25;
+    if (totalPercentage >= 78.5) return 2.50;
+    if (totalPercentage >= 75.5) return 2.75;
+    if (totalPercentage >= 75.0) return 3.00;
     return 5.00;
   };
   
@@ -551,12 +548,16 @@ const FacultyFinalGrades = ({ auth }) => {
         <div className='flex-1 p-3 md:p-6'>
           <div className='font-regular'>
             {/* Breadcrumb */}
-            <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base'>
-              Home {">"} Dashboard
-            </div>
+            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
+                  Dashboard
+                </Link>
+                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="cursor-default font-bold">Final Grades</span>  
+          </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
-              <h1 className='text-xl md:text-2xl font-semibold'>Exams & Grades</h1>
+              <h1 className='text-xl md:text-2xl font-semibold'>Final Grades</h1>
             </div>
 
             {/* Tab Navigation */}

@@ -125,22 +125,30 @@ class ExamController extends Controller
     {
         try {
             $semester = $request->input('semester');
+            $maxFinal = (int) ($request->input('max_final', 100));
+            $maxMidterm = (int) ($request->input('max_midterm', 100));
+            if ($maxFinal <= 0) { $maxFinal = 100; }
+            if ($maxMidterm <= 0) { $maxMidterm = 100; }
             
-            // Set different validation rules based on semester
-            $finalExamMax = ($semester === '2025-2026 1st semester') ? 50 : 62;
+            // Validation rules use dynamic max score for both midterm and final
+            $finalExamMax = $maxFinal;
+            $midtermExamMax = $maxMidterm;
             
             $request->validate([
                 'scores' => 'required|array',
                 'scores.*.id' => 'required|exists:users,id',
                 'scores.*.final_exam' => "nullable|integer|min:0|max:{$finalExamMax}",
-                'scores.*.midterm_exam' => 'nullable|integer|min:0|max:61',
+                'scores.*.midterm_exam' => "nullable|integer|min:0|max:{$midtermExamMax}",
                 'semester' => 'required|string',
+                // Allow any positive max scores (no upper cap)
+                'max_final' => 'nullable|integer|min:1',
+                'max_midterm' => 'nullable|integer|min:1',
             ]);
             $examScoreModel = $this->getExamScoreModelForSemester($semester);
             $scores = $request->input('scores');
             
             // Use database transaction to ensure atomicity
-            DB::transaction(function () use ($scores, $examScoreModel, $semester) {
+            DB::transaction(function () use ($scores, $examScoreModel, $semester, $maxFinal, $maxMidterm) {
                 foreach ($scores as $score) {
                     $finalExam = $score['final_exam'];
                     $midtermExam = $score['midterm_exam'] ?? null;
@@ -148,35 +156,38 @@ class ExamController extends Controller
                     // Calculate average and subject_prof based on semester
                     $subjectProf = 0;
                     if ($semester === '2026-2027 2nd semester') {
-                        // For 2nd semester: (Total / 123) * 100
-                        $total = (($finalExam === '' || $finalExam === null) ? 0 : $finalExam) + (($midtermExam === '' || $midtermExam === null) ? 0 : $midtermExam);
-                        $average = $total > 0 ? ($total / 123) * 100 : 0;
+                        // For 2nd semester: mean of normalized scores × 100
+                        $finalNorm = ($finalExam === '' || $finalExam === null) ? 0 : (($maxFinal > 0) ? ($finalExam / $maxFinal) : 0);
+                        $midNorm = ($midtermExam === '' || $midtermExam === null) ? 0 : (($maxMidterm > 0) ? ($midtermExam / $maxMidterm) : 0);
+                        $average = (($finalNorm + $midNorm) / 2) * 100;
                         // Format to 2 decimal places for 2nd semester
                         $average = round($average, 2);
-                        
-                        // Calculate Subject Prof (40%) for 2nd semester (rounded to whole number)
-                        $subjectProf = min(40, round($average * 0.40));
                     } else {
-                        // For 1st semester: Final Exam * 2
-                        $average = ($finalExam === '' || $finalExam === null) ? 0 : $finalExam * 2;
+                        // For 1st semester: (Final / maxFinal) * 100
+                        $denominator = max(1, $maxFinal);
+                        $average = ($finalExam === '' || $finalExam === null) ? 0 : ($finalExam / $denominator) * 100;
                         // Format to whole number for 1st semester
                         $average = round($average);
-                        
-                        // Calculate Subject Prof (40%) for 1st semester
-                        $subjectProf = min(40, round($average * 0.40));
                     }
-                    
+                    // Calculate Subject Prof (40%) for both semesters (rounded to whole number, max 40)
+                    $subjectProf = min(40, round($average * 0.40));
+
+                    // Build payload; only 2nd sem table contains subject_prof column
+                    $payload = [
+                        'final_exam' => $finalExam,
+                        'midterm_exam' => $midtermExam,
+                        'average' => $average,
+                    ];
+                    if (strpos($semester, '2nd semester') !== false) {
+                        $payload['subject_prof'] = $subjectProf;
+                    }
+
                     $examScore = $examScoreModel::updateOrCreate(
                         [
                             'user_id' => $score['id'],
                             'semester' => $semester
                         ],
-                        [
-                            'final_exam' => $finalExam,
-                            'midterm_exam' => $midtermExam,
-                            'average' => $average,
-                            'subject_prof' => $subjectProf,
-                        ]
+                        $payload
                     );
                 }
             });
