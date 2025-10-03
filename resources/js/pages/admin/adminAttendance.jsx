@@ -2,7 +2,6 @@ import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
 import { FaSort } from 'react-icons/fa6'
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';

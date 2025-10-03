@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useForm } from '@inertiajs/react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';

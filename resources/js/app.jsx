@@ -8,8 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 createInertiaApp({
   resolve: name => {
-    const pages = import.meta.glob('./pages/**/*.jsx', { eager: true })
-    return pages[`./pages/${name}.jsx`]
+    const pages = import.meta.glob('./pages/**/*.jsx')
+    return pages[`./pages/${name}.jsx`]()
   },
   setup({ el, App, props }) {
     const root = createRoot(el);

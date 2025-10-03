@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useForm } from '@inertiajs/react';
 
 export default function ResetPassword({ token, email }) {

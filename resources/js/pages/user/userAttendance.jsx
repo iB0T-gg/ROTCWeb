@@ -1,4 +1,3 @@
-import React from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
 import { usePage, Link } from '@inertiajs/react';

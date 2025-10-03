@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { useForm } from '@inertiajs/react';
