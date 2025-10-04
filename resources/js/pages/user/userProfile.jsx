@@ -365,7 +365,7 @@ const UserProfile = ({ auth, user }) => {
                    <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center gap-4">
                        <div 
-                         className={`relative w-24 h-24 rounded-full bg-gray-200 overflow-hidden ${editing ? 'cursor-pointer hover:opacity-80 border-2 border-2 border-primary' : ''}`}
+                         className={`relative w-24 h-24 rounded-full bg-gray-200 overflow-hidden ${editing ? 'cursor-pointer hover:opacity-80 border-2 border-primary' : ''}`}
                          onClick={() => editing && setShowAvatarModal(true)}
                          title={editing ? "Click to change profile picture" : ""}
                        >
