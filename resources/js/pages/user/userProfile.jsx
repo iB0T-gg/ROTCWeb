@@ -364,7 +364,11 @@ const UserProfile = ({ auth, user }) => {
                    {/* Header with avatar/name/email and edit button */}
                    <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center gap-4">
-                       <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
+                       <div 
+                         className={`relative w-24 h-24 rounded-full bg-gray-200 overflow-hidden ${editing ? 'cursor-pointer hover:opacity-80 border-2 border-2 border-primary' : ''}`}
+                         onClick={() => editing && setShowAvatarModal(true)}
+                         title={editing ? "Click to change profile picture" : ""}
+                       >
                          <img
                            src={profilePic || "/images/default-profile.png"}
                            alt="Profile"
@@ -376,10 +380,18 @@ const UserProfile = ({ auth, user }) => {
                              }
                            }}
                          />
+                         {editing && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity">
+                             <span className="text-white text-xs">Change</span>
+                           </div>
+                         )}
                        </div>
                        <div>
                          <div className="text-lg font-semibold text-black">{user?.last_name}, {user?.first_name}</div>
                          <div className="text-sm text-gray-600">{user?.email}</div>
+                         {editing && (
+                           <div className="text-xs text-primary mt-1">Click photo to change</div>
+                         )}
                        </div>
                      </div>
                      {!editing && (

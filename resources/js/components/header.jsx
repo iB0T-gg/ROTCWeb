@@ -60,7 +60,7 @@ export default function Header({ auth }) {
                         : '/user/userHome'
                     }>
                         <div className='flex items-center gap-3'>
-                            <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-11 h-10' />
+                            <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-11 h-10' />
                             <h1 className='hidden md:block text-xl font-regular'>Bulacan State University ROTC Portal</h1>
                             <h1 className='md:hidden text-xl font-regular'>BulSU ROTC</h1>
                         </div>

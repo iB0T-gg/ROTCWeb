@@ -71,6 +71,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     'height',
     'address',
     'profile_pic',
+    'profile_pic_url',
     'remarks',
 ];
 

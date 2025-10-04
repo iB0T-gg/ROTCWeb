@@ -74,7 +74,7 @@ export default function Register() {
                             msOverflowStyle: 'none',  
                         }}
                     >
-                        <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
+                        <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
                         <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>Registration</h1>
                         
                         <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular'>
