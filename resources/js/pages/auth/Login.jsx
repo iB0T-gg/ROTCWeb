@@ -1,5 +1,6 @@
 import { Link, useForm, router } from '@inertiajs/react';
 
+
 export default function Login({ status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -36,8 +37,8 @@ export default function Login({ status }) {
 
             <div className='container mx-auto flex flex-col items-center justify-center h-full z-10 relative'>
                 <div className='w-full max-w-[30rem] bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-2xl shadow-lg'>
-                    <img src='/images/ROTClogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4' />
-                    <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>Login to your Account</h1>
+                    <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4' />
+                    <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>your Account</h1>
                     
                     {status && (
                         <div className="mb-4 font-medium text-sm text-green-600 bg-green-100 p-2 rounded">
