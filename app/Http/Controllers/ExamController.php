@@ -54,7 +54,12 @@ class ExamController extends Controller
             
             $finalExam = $examScore ? $examScore->final_exam : '';
             $midtermExam = $examScore ? $examScore->midterm_exam : '';
-            $subjectProf = $examScore ? $examScore->subject_prof : null;
+            // For first semester the column is subj_prof_40; for second it's subject_prof
+            if ($semester === '2025-2026 1st semester') {
+                $subjectProf = $examScore ? ($examScore->subj_prof_40 ?? null) : null;
+            } else {
+                $subjectProf = $examScore ? ($examScore->subject_prof ?? null) : null;
+            }
             
             // Get aptitude and attendance data for Final Grade calculation
             $aptitude30 = 0;
@@ -115,7 +120,7 @@ class ExamController extends Controller
                 'final_exam' => $finalExam,
                 'midterm_exam' => $midtermExam,
                 'average' => $average,
-                'subject_prof' => $subjectProf,
+                'subject_prof' => $subjectProf, // 1st sem maps subj_prof_40
                 'aptitude_30' => $aptitude30,
                 'attendance_30' => $attendance30,
                 'final_grade' => $finalGrade,
@@ -188,6 +193,12 @@ class ExamController extends Controller
                         'midterm_exam' => $midtermExam,
                         'average' => $average,
                     ];
+                    // Persist computed Subject Proficiency (40%) for first semester too
+                    if (strpos($semester, '2nd semester') !== false) {
+                        $payload['subject_prof'] = $subjectProf;
+                    } else {
+                        $payload['subj_prof_40'] = $subjectProf;
+                    }
                     if (strpos($semester, '2nd semester') !== false) {
                         $payload['subject_prof'] = $subjectProf;
                     }

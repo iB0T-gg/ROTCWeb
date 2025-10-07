@@ -23,6 +23,7 @@ class ExamScore extends Model
         'midterm_exam',
         'final_exam',
         'average',
+        'subj_prof_40',
         'semester'
     ];
 
@@ -35,6 +36,7 @@ class ExamScore extends Model
         'midterm_exam' => 'integer',
         'final_exam' => 'integer',
         'average' => 'integer',
+        'subj_prof_40' => 'integer',
     ];
 
     /**

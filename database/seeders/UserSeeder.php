@@ -39,26 +39,63 @@ class UserSeeder extends Seeder
                 'status' => 'approved',
             ]);
             
-            // Create a robust test set of cadet users (>= 111 cadets)
+            // Create a robust test set of cadet users (>= 111 cadets) with realistic-looking data
+            $faker = \Faker\Factory::create();
             $totalCadets = 150;
-            $letters = range('A', 'Z');
+            // Supporting lists mirroring dropdowns
+            $heightOptions = [
+                '4\'0"', '4\'1"', '4\'2"', '4\'3"', '4\'4"', '4\'5"', '4\'6"', '4\'7"', '4\'8"', '4\'9"', '4\'10"', '4\'11"',
+                '5\'0"', '5\'1"', '5\'2"', '5\'3"', '5\'4"', '5\'5"', '5\'6"', '5\'7"', '5\'8"', '5\'9"', '5\'10"', '5\'11"',
+                '6\'0"', '6\'1"', '6\'2"', '6\'3"', '6\'4"', '6\'5"', '6\'6"', '6\'7"', '6\'8"', '6\'9"', '6\'10"', '6\'11"', '7\'0"'
+            ];
+            $provinces = ['Bulacan','Pampanga','Nueva Ecija','Tarlac','Zambales','Bataan','Cavite','Laguna','Batangas','Rizal','Quezon','Pangasinan','Isabela','Cagayan','Ilocos Norte','Ilocos Sur','Aurora','Benguet','Ifugao'];
+            $municipalities = ['Pulilan','Malolos','Meycauayan','San Jose del Monte','Hagonoy','Bustos','San Rafael','San Fernando','Angeles','Mabalacat','Tarlac City','Iba','Olongapo','Imus','Bacoor','Santa Rosa','Calamba','Batangas City','Antipolo','Tayabas','Dagupan','Ilagan','Tuguegarao','Laoag','Vigan','Baler','La Trinidad','Lagawe'];
+            $barangays = ['Brgy. Paltao','Brgy. Poblacion','Brgy. San Jose','Brgy. San Roque','Brgy. San Isidro','Brgy. San Miguel','Brgy. San Pedro','Brgy. Santa Cruz','Brgy. San Juan','Brgy. San Antonio','Brgy. San Vicente'];
             for ($i = 1; $i <= $totalCadets; $i++) {
-                $gender = rand(0, 1) ? 'Male' : 'Female';
-                // Distribute last names alphabetically for meaningful sorting
-                $letter = $letters[($i - 1) % count($letters)];
-                $lastName = sprintf('%s_Cadet_%03d', $letter, $i);
-                $firstName = sprintf('Cadet%03d', $i);
+                $genderBool = (bool) random_int(0, 1);
+                $gender = $genderBool ? 'Male' : 'Female';
+                $firstName = $genderBool ? $faker->firstNameMale() : $faker->firstNameFemale();
+                $lastName = $faker->lastName();
+                $middleInitial = strtoupper($faker->randomLetter());
+                $email = strtolower($firstName . '.' . $lastName . $i . '@example.com');
+                $course = $faker->randomElement(['BSIT','BSCS','BSEE','BSA','BSED','BSCpE','BSBA']);
+                $year = $faker->randomElement(['1G','2G','3G']);
+                $section = $faker->randomElement(['G1','G2','G3']);
+                $birthday = $faker->date('Y-m-d', '-18 years');
+                // Match userProfile dropdowns
+                $bloodType = $faker->randomElement(['A+','A-','B+','B-','AB+','AB-','O+','O-']);
+                // Address format: Barangay, Municipality/City, Province (no house number)
+                $province = $faker->randomElement($provinces);
+                $municipality = $faker->randomElement($municipalities);
+                $barangay = $faker->randomElement($barangays);
+                $address = $barangay . ', ' . $municipality . ', ' . $province;
+                $region = $faker->randomElement(['Region I','Region II','Region III','Region IV-A','Region IV-B','Region V','Region VI','Region VII','Region VIII','Region IX','Region X','Region XI','Region XII','Region XIII','NCR','CAR','BARMM']);
+                // Use dropdown-style height values
+                $height = $faker->randomElement($heightOptions);
+                $phone = '09' . $faker->numberBetween(100000000, 999999999);
+                $campus = $faker->randomElement(['Hagonoy Campus', 'Meneses Campus', 'Sarmiento Campus', 'Bustos Campus', 'San Rafael Campus', 'Main Campus']);
 
                 User::create([
                     'first_name' => $firstName,
-                    'middle_name' => 'M',
+                    'middle_name' => $middleInitial,
                     'last_name' => $lastName,
-                    'email' => sprintf('cadet%03d@example.com', $i),
+                    'email' => $email,
                     'password' => Hash::make('password'),
-                    'student_number' => sprintf('2025-%04d', $i),
+                    // 10-digit student number. Parser uses last 8 digits for scanner mapping
+                    'student_number' => sprintf('25%08d', $i),
                     'role' => 'user',
                     'status' => 'approved',
                     'gender' => $gender,
+                    'course' => $course,
+                    'year' => $year,
+                    'section' => $section,
+                    'birthday' => $birthday,
+                    'blood_type' => $bloodType,
+                    'address' => $address,
+                    'region' => $region,
+                    'height' => $height,
+                    'phone_number' => $phone,
+                    'campus' => $campus,
                     // platoon/company/battalion will be assigned after alphabetical sorting
                 ]);
             }

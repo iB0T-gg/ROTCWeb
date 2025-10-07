@@ -116,7 +116,27 @@ const FacultyExams = ({ auth }) => {
       
       setCadets(processedCachedData);
       setOriginalCadets(processedCachedData);
-      setLoading(false);
+      // Kick off a background refresh to pick up newly added cadets
+      (async () => {
+        try {
+          const response = await axios.get(`${window.location.protocol}//${window.location.host}/api/exams?semester=${encodeURIComponent(semester)}&_t=${Date.now()}`);
+          const fresh = (response.data || []).map(c => ({
+            ...c,
+            midterm_exam: c.midterm_exam === null || c.midterm_exam === undefined ? '' : c.midterm_exam,
+            final_exam: c.final_exam === null || c.final_exam === undefined ? '' : c.final_exam
+          }));
+          // Only update if count changed or data differs
+          if (fresh.length !== processedCachedData.length) {
+            setCadets(fresh);
+            setOriginalCadets(fresh);
+            setSemesterData(prev => ({ ...prev, [semester]: fresh }));
+            const nextStored = getStoredCache();
+            nextStored[semester] = fresh;
+            setStoredCache(nextStored);
+          }
+        } catch (e) {}
+        setLoading(false);
+      })();
       return;
     }
 
@@ -131,7 +151,26 @@ const FacultyExams = ({ auth }) => {
       setCadets(processedStored);
       setOriginalCadets(processedStored);
       setSemesterData(prev => ({ ...prev, [semester]: processedStored }));
-      setLoading(false);
+      // Background refresh to pick up newly added cadets
+      (async () => {
+        try {
+          const response = await axios.get(`${window.location.protocol}//${window.location.host}/api/exams?semester=${encodeURIComponent(semester)}&_t=${Date.now()}`);
+          const fresh = (response.data || []).map(c => ({
+            ...c,
+            midterm_exam: c.midterm_exam === null || c.midterm_exam === undefined ? '' : c.midterm_exam,
+            final_exam: c.final_exam === null || c.final_exam === undefined ? '' : c.final_exam
+          }));
+          if (fresh.length !== processedStored.length) {
+            setCadets(fresh);
+            setOriginalCadets(fresh);
+            setSemesterData(prev => ({ ...prev, [semester]: fresh }));
+            const nextStored = getStoredCache();
+            nextStored[semester] = fresh;
+            setStoredCache(nextStored);
+          }
+        } catch (e) {}
+        setLoading(false);
+      })();
       return;
     }
     

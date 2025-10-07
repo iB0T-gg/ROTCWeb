@@ -218,7 +218,7 @@ export default function AdminCadetsProfile(){
               
               <div className='overflow-x-auto -mx-3 md:mx-0'>
                 <div className="min-w-full">
-                  <table className='w-full border-collapse min-w-[1000px]'>
+                  <table className='w-full border-collapse min-w-[1200px]'>
                     <thead className='text-gray-600'>
                       <tr className=''>
                         <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Student No.</th>
@@ -279,10 +279,7 @@ export default function AdminCadetsProfile(){
                             <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.blood_type || 'N/A'}</td>
                             <td className='p-2 md:p-3 text-left text-sm md:text-base'>
                               {cadet.address ? (
-                                <div 
-                                  className="max-w-[120px] md:max-w-[150px] truncate" 
-                                  title={cadet.address}
-                                >
+                                <div className="min-w-[260px] whitespace-nowrap">
                                   {cadet.address}
                                 </div>
                               ) : 'N/A'}

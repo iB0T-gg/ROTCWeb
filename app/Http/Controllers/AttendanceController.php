@@ -19,8 +19,8 @@ class AttendanceController extends Controller
         try {
             $semester = $request->get('semester', '2025-2026 1st semester');
             
-            // Get all cadets (non-admin users) ordered alphabetically by last name, then first name
-            $cadets = User::where('role', '!=', 'admin')
+            // Get all cadets (role 'user' only) ordered alphabetically by last name, then first name
+            $cadets = User::where('role', 'user')
                 ->where('status', 'approved')
                 ->orderBy('last_name')
                 ->orderBy('first_name')
