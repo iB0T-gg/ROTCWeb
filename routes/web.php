@@ -269,7 +269,12 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/user/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
     Route::get('/filter-options', [UserController::class, 'getFilterOptions']);
     Route::get('/user/grades', [UserController::class, 'getUserGrades']);
+    Route::get('/user/rotc-grade-breakdown', [UserController::class, 'getUserRotcGradeBreakdown']);
     Route::post('/change-password', [App\Http\Controllers\PasswordController::class, 'changePassword']);
+    
+    // Attendance endpoints for all authenticated users
+    Route::get('/attendance/cadets', [AttendanceController::class, 'getCadets']);
+    Route::get('/attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
     
     // Issue reporting endpoints
     Route::post('/issues', [App\Http\Controllers\IssueController::class, 'store']);
@@ -279,6 +284,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/admin-cadets', [App\Http\Controllers\GradeController::class, 'getAdminMasterlistGrades']);
+        Route::get('/admin-semesters', [App\Http\Controllers\GradeController::class, 'getAvailableSemesters']);
+        Route::get('/admin-cadets-by-semester/{semester?}', [App\Http\Controllers\GradeController::class, 'getCadetsBySemester']);
         Route::get('/top-cadet', [App\Http\Controllers\GradeController::class, 'getTopCadet']);
         Route::post('/admin/change-password', [App\Http\Controllers\PasswordController::class, 'adminChangePassword']);
         Route::post('/admin/add-user', [AdminController::class, 'addUser']);
@@ -289,9 +296,13 @@ Route::middleware('auth')->prefix('api')->group(function () {
         
         // Attendance API endpoints for admin
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
-        Route::get('/attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
+        // Note: /attendance/cadets and /attendance/{userId} are available to all authenticated users above
         Route::post('/attendance/update', [AttendanceController::class, 'updateAttendance']);
+        Route::post('/attendance/bulk-update', [AttendanceController::class, 'bulkUpdateAttendance']);
         Route::post('/attendance/fingerprint-scan', [AttendanceController::class, 'fingerprintScan']);
+        Route::post('/attendance/import', [AttendanceController::class, 'importAttendanceData']);
+        Route::post('/fingerprint/register', [AttendanceController::class, 'registerFingerprint']);
+        Route::get('/fingerprint/check-connection', [AttendanceController::class, 'checkScannerConnection']);
         Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
         Route::post('/approve-user', [AdminController::class, 'approveUser']);
         Route::post('/reject-user', [AdminController::class, 'rejectUser']);
@@ -325,7 +336,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         
         Route::post('/faculty/change-password', [App\Http\Controllers\PasswordController::class, 'facultyChangePassword']);
         
-        // Attendance API endpoints for faculty
+        // Faculty-specific attendance API endpoints
         Route::get('/faculty-attendance', [AttendanceController::class, 'getAllAttendance']);
         Route::get('/faculty-attendance/{userId}', [AttendanceController::class, 'getUserAttendance']);
         
@@ -347,9 +358,28 @@ Route::middleware('auth')->prefix('api')->group(function () {
     });
     
     
+    // ROTC Grade Calculation API endpoints for faculty
+    Route::middleware(FacultyMiddleware::class)->group(function () {
+        Route::get('/rotc-grades', [App\Http\Controllers\RotcGradeController::class, 'getRotcGrades']);
+        Route::get('/rotc-grades/stored', [App\Http\Controllers\RotcGradeController::class, 'getStoredGrades']);
+        Route::get('/rotc-grades/cadet/{userId}', [App\Http\Controllers\RotcGradeController::class, 'getCadetGradeBreakdown']);
+        Route::get('/rotc-grades/summary', [App\Http\Controllers\RotcGradeController::class, 'getGradeSummary']);
+        Route::post('/rotc-grades/calculate', [App\Http\Controllers\RotcGradeController::class, 'calculateAndSaveGrades']);
+        Route::post('/rotc-grades/recalculate', [App\Http\Controllers\RotcGradeController::class, 'recalculateAllGrades']);
+    });
+    
     // Equivalent Grades API endpoints - not in API group
     Route::get('/grade-equivalents', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);
     Route::post('/grade-equivalents/save', [App\Http\Controllers\GradeController::class, 'saveEquivalentGrades']);
     Route::post('/grade-equivalents/update', [App\Http\Controllers\GradeController::class, 'updateEquivalentGrade']);
     Route::post('/grade-equivalents/calculate', [App\Http\Controllers\GradeController::class, 'calculateAndUpdateGrades']);
+
+// Temporary debug route to check authentication
+Route::get('/debug-auth', function () {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'user' => auth()->user(),
+        'role' => auth()->user()?->role ?? 'none'
+    ]);
+});
 });

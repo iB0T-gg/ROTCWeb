@@ -41,7 +41,7 @@ const FacultyFinalGrades = ({ auth }) => {
   const [previousSemester, setPreviousSemester] = useState(null);
 
   // Semester options
-  const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
+  const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
 
   // Function to fetch data based on selected semester
   const fetchDataForSemester = async (semester, forceRefresh = false) => {
@@ -81,25 +81,41 @@ const FacultyFinalGrades = ({ auth }) => {
       // Process the final grades data
       const processedCadets = finalGradesData;
       
-      // Create maps for backward compatibility
+      // Create maps for backward compatibility and real-time calculations
       const attendanceMap = {};
       const examScoresMap = {};
       const equivalentGradesMap = {};
       const commonModuleMap = {};
+      const meritsMap = {}; // For 2nd semester aptitude calculations
       
       finalGradesData.forEach(cadet => {
-        // Create attendance map entry
+        // Create attendance map entry using the provided attendance_data
         attendanceMap[cadet.id] = {
           user_id: cadet.id,
-          weeks_present: 0, // This will be calculated from ROTC grade components
-          attendance_30: 0  // This will be calculated from ROTC grade components
+          weekly_attendance: cadet.attendance_data?.weekly_attendance || {},
+          weeks_present: cadet.attendance_data?.weeks_present || 0,
+          attendance_30: cadet.attendance_data?.attendance_30 || 0,
+          percentage: cadet.attendance_data?.percentage || 0
         };
         
-        // Create exam scores map entry
+        // Create exam scores map entry - include actual exam data for calculations
         examScoresMap[cadet.id] = {
           id: cadet.id,
+          midterm_exam: cadet.exam_data?.midterm_exam || 0,
+          final_exam: cadet.exam_data?.final_exam || 0,
           average: 0 // This will be calculated from ROTC grade components
         };
+        
+        // For 2nd semester, create merits map from aptitude data if available
+        if (selectedSemester === '2025-2026 2nd semester' && cadet.aptitude_data) {
+          meritsMap[cadet.id] = {
+            aptitude_30: cadet.aptitude_data.aptitude_30 || 0,
+            total_merits: cadet.aptitude_data.total_merits || 0,
+            merits_array: cadet.aptitude_data.merits_array || [],
+            demerits_array: cadet.aptitude_data.demerits_array || [],
+            percentage: cadet.aptitude_data.aptitude_30 || 0
+          };
+        }
         
         // Create equivalent grades map
         equivalentGradesMap[cadet.id] = cadet.equivalent_grade;
@@ -109,7 +125,7 @@ const FacultyFinalGrades = ({ auth }) => {
       });
 
       setCadets(processedCadets);
-      setMerits({}); // Not needed for final grades
+      setMerits(meritsMap); // Now contains actual merit data for 2nd semester
       setAttendanceMap(attendanceMap);
       setExamScores(examScoresMap);
       setEquivalentGrades(equivalentGradesMap);
@@ -120,7 +136,7 @@ const FacultyFinalGrades = ({ auth }) => {
         ...prev,
         [semester]: {
           cadets: processedCadets,
-          merits: {},
+          merits: meritsMap,
           attendanceMap,
           examScores: examScoresMap,
           equivalentGrades: equivalentGradesMap,
@@ -172,8 +188,8 @@ const FacultyFinalGrades = ({ auth }) => {
         const n = { ...prev };
         delete n[selectedSemester];
         // Extra clear for 2nd semester to ensure fresh data
-        if (selectedSemester === '2026-2027 2nd semester') {
-          delete n['2026-2027 2nd semester'];
+        if (selectedSemester === '2025-2026 2nd semester') {
+          delete n['2025-2026 2nd semester'];
         }
         return n;
       });
@@ -213,32 +229,59 @@ const FacultyFinalGrades = ({ auth }) => {
   const getAttendancePercentage = (cadet) => {
     const attendance = attendanceMap[cadet.id];
     if (!attendance) return 0;
-    // Prefer computing from merits_array to ensure consistency with UI (weeks present)
+    
     const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-    const days = Array.isArray(attendance.merits_array) ? attendance.merits_array : [];
-    if (days.length > 0) {
-      const presentCount = days.filter(Boolean).length;
+    
+    // For 2nd semester, check if there's a pre-calculated attendance_30 value
+    if (selectedSemester === '2025-2026 2nd semester' && attendance.attendance_30 !== undefined && attendance.attendance_30 > 0) {
+      return Math.min(30, Math.round(attendance.attendance_30));
+    }
+    
+    // First, try to get attendance from weekly_attendance data (the correct source)
+    if (attendance.weekly_attendance) {
+      const presentCount = Object.values(attendance.weekly_attendance).filter(Boolean).length;
       const percentage = (presentCount / weekLimit) * 30;
       return Math.min(30, Math.round(percentage));
     }
-    // Next, fallback to computed map shape (attendances boolean map)
+    
+    // Fallback to attendances boolean map
     if (attendance.attendances) {
       const presentCount = Object.values(attendance.attendances).filter(Boolean).length;
       const percentage = (presentCount / weekLimit) * 30;
       return Math.min(30, Math.round(percentage));
     }
-    // Lastly, fallback to backend stored percentage
+    
+    // Fallback to backend stored percentage
     if (attendance.percentage !== undefined && attendance.percentage !== null && attendance.percentage !== '') {
       const p = typeof attendance.percentage === 'number' ? attendance.percentage : parseFloat(attendance.percentage);
       return Number.isNaN(p) ? 0 : Math.min(30, Math.round(p));
     }
+    
     return 0;
-  };
-
-  // Aptitude (Merits/Demerits) percentage logic – match facultyMerits.jsx
+  };  // Aptitude (Merits/Demerits) percentage logic – match facultyMerits.jsx
   const getAptitudePercentage = (cadetId) => {
     const record = merits[cadetId] || merits[String(cadetId)] || merits[Number(cadetId)];
-    if (!record) { console.log('[Aptitude] No record for cadet', cadetId); return 0; }
+    if (!record) { 
+      console.log('[Aptitude] No record for cadet', cadetId); 
+      
+      // For 2nd semester, check if cadet has pre-calculated aptitude_30 from backend
+      if (selectedSemester === '2025-2026 2nd semester') {
+        const cadet = cadets.find(c => c.id === cadetId);
+        if (cadet && cadet.aptitude_30 !== undefined && cadet.aptitude_30 !== null) {
+          console.log('[Aptitude] Using backend aptitude_30 for 2nd semester:', cadet.aptitude_30);
+          return Math.min(30, Math.round(cadet.aptitude_30));
+        }
+      }
+      
+      return 0; 
+    }
+    
+    // For 2nd semester, prefer pre-calculated aptitude_30 if available
+    if (selectedSemester === '2025-2026 2nd semester' && record.aptitude_30 !== undefined && record.aptitude_30 !== null && record.aptitude_30 > 0) {
+      console.log('[Aptitude] Using stored aptitude_30 for 2nd semester:', record.aptitude_30);
+      return Math.min(30, Math.round(record.aptitude_30));
+    }
+    
     // Prefer computing from merit/demerit day arrays for consistency with the UI grid
     const meritDays = record.merits_array || record.days || record.merits_days || [];
     const demDays = record.demerits_array || record.demerit_days || (record.demerits && (record.demerits.merits_array || record.demerits.days)) || [];
@@ -293,38 +336,67 @@ const FacultyFinalGrades = ({ auth }) => {
   // Exam score percentage logic
   const getExamPercentage = (cadet) => {
     const examData = examScores[cadet.id];
-    if (!examData) return 0;
+    if (!examData) {
+      // For 2nd semester, check if cadet has exam data directly in the cadet object
+      if (selectedSemester === '2025-2026 2nd semester' && cadet.exam_data) {
+        const final = cadet.exam_data.final_exam === '' || cadet.exam_data.final_exam === null ? 0 : Number(cadet.exam_data.final_exam) || 0;
+        const midterm = cadet.exam_data.midterm_exam === '' || cadet.exam_data.midterm_exam === null ? 0 : Number(cadet.exam_data.midterm_exam) || 0;
+        
+        if (final === 0 && midterm === 0) return 0;
+        
+        // For 2nd semester: average of midterm and final, then 40% weighting
+        const average = (final + midterm) / 2;
+        const examScore = Math.min(40, Math.round(average * 0.40));
+        console.log('[ExamScore] 2nd semester calc from cadet data', { cadetId: cadet.id, final, midterm, average, examScore });
+        return examScore;
+      }
+      return 0;
+    }
     
     const final = examData.final_exam === '' || examData.final_exam === null ? 0 : Number(examData.final_exam) || 0;
     const midterm = examData.midterm_exam === '' || examData.midterm_exam === null ? 0 : Number(examData.midterm_exam) || 0;
     
     let average = 0;
-    if (selectedSemester === '2026-2027 2nd semester') {
-      // For 2nd semester: (Total / 123) * 100
-      const total = final + midterm;
-      average = total > 0 ? (total / 123) * 100 : 0;
+    if (selectedSemester === '2025-2026 2nd semester') {
+      // For 2nd semester: average of midterm and final
+      if (final === 0 && midterm === 0) return 0;
+      average = (final + midterm) / 2;
     } else {
       // For 1st semester: Final Exam * 2
       average = final * 2;
     }
     
     // Calculate exam score with semester-specific weighting
-    // 2025-2026 1st semester: 40% weighting, capped at 40
-    // 2026-2027 2nd semester (current): retain 40% weighting, capped at 40
-    const isFirstSem = selectedSemester === '2025-2026 1st semester';
-    const weight = isFirstSem ? 0.40 : 0.40;
-    const cap = isFirstSem ? 40 : 40;
-    const examScore = Math.min(cap, Math.round(average * weight));
-    console.log('[SubjectProf] calc', { cadetId: cadet.id, final, midterm, average, examScore });
+    // Both semesters: 40% weighting, capped at 40
+    const examScore = Math.min(40, Math.round(average * 0.40));
+    console.log('[SubjectProf] calc', { cadetId: cadet.id, final, midterm, average, examScore, semester: selectedSemester });
     return examScore;
   };
 
-  // Helpers for first semester computed columns
+  // Helpers for computed columns
   const getRotcGrade = (cadet) => {
+    // Prefer backend pre-calculated values if available for both semesters for consistency
+    if (cadet.rotc_grade !== undefined && cadet.rotc_grade !== null) {
+      return cadet.rotc_grade;
+    }
+    
+    // Fallback to real-time calculation when backend data is not available
     const apt = getAptitudePercentage(cadet.id);
     const att = getAttendancePercentage(cadet);
     const ex = getExamPercentage(cadet);
-    return Math.round(apt + att + ex);
+    const total = Math.round(apt + att + ex);
+    
+    console.log('[ROTC Grade] Real-time calculation fallback', { 
+      cadetId: cadet.id, 
+      semester: selectedSemester,
+      aptitude: apt, 
+      attendance: att, 
+      exam: ex, 
+      total: total,
+      backendRotc: cadet.rotc_grade 
+    });
+    
+    return total;
   };
 
   const getCommonModule = (cadetId) => {
@@ -406,25 +478,24 @@ const FacultyFinalGrades = ({ auth }) => {
     toast.info('Editing cancelled. Changes discarded.');
   };
 
-  const handlePostGrades = async () => {
+  const handlePostGrades = async (semester) => {
     if (isPosting) return;
     
     setIsPosting(true);
     
     try {
-      // Prepare the grades data for posting
+      // Prepare the grades data for posting (remarks auto-computed on backend)
       const gradesData = filteredCadets.map(cadet => ({
         user_id: cadet.id,
         equivalent_grade: cadet.equivalent_grade,
-        remarks: cadet.remarks,
         final_grade: cadet.final_grade,
-        semester: selectedSemester
+        semester: semester
       }));
 
       // Get CSRF token
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
       console.log('CSRF Token:', csrfToken);
-      console.log('Posting grades:', { semester: selectedSemester, grades: gradesData });
+      console.log('Posting grades:', { semester: semester, grades: gradesData });
 
       const response = await fetch('/api/final-grades/post', {
         method: 'POST',
@@ -433,7 +504,7 @@ const FacultyFinalGrades = ({ auth }) => {
           'X-CSRF-TOKEN': csrfToken,
         },
         body: JSON.stringify({ 
-          semester: selectedSemester, 
+          semester: semester, 
           grades: gradesData 
         })
       });
@@ -444,22 +515,42 @@ const FacultyFinalGrades = ({ auth }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Success response:', result);
-        toast.success('Grades posted successfully!');
+        toast.success(`${semester === '2025-2026 1st semester' ? '1st Semester' : '2nd Semester'} grades posted successfully!`);
       } else {
         const responseText = await response.text();
         console.error('Error response:', responseText);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
         
-        try {
-          const errorData = JSON.parse(responseText);
-          toast.error(`Failed to post grades: ${errorData.message || 'Unknown error'}`);
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          toast.error(`Failed to post grades: Server returned ${response.status} status`);
+        let errorMessage = `Failed to post ${semester === '2025-2026 1st semester' ? '1st semester' : '2nd semester'} grades`;
+        
+        if (response.status === 419) {
+          errorMessage += ': CSRF token mismatch. Please refresh the page and try again.';
+        } else if (response.status === 403) {
+          errorMessage += ': Access denied. Faculty privileges required.';
+        } else if (response.status === 401) {
+          errorMessage += ': Authentication required. Please login.';
+        } else if (response.status === 422) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage += `: Validation error - ${errorData.message || 'Invalid data format'}`;
+          } catch (e) {
+            errorMessage += ': Validation error';
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage += `: ${errorData.message || 'Unknown error'}`;
+          } catch (parseError) {
+            errorMessage += `: Server returned ${response.status} status`;
+          }
         }
+        
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error posting grades:', error);
-      toast.error('Error posting grades. Please try again.');
+      toast.error(`Error posting ${semester === '2025-2026 1st semester' ? '1st semester' : '2nd semester'} grades. Please try again.`);
     } finally {
       setIsPosting(false);
     }
@@ -697,9 +788,9 @@ const FacultyFinalGrades = ({ auth }) => {
                     )}
                   </div>
                   
-                  {/* Post Button */}
+                  {/* Post Button - Separate for each semester */}
                   <button
-                    onClick={handlePostGrades}
+                    onClick={() => handlePostGrades(selectedSemester)}
                     disabled={isLoading || isPosting}
                     className={`w-full sm:w-auto px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-150 text-xs md:text-sm ${
                       isPosting
@@ -713,7 +804,7 @@ const FacultyFinalGrades = ({ auth }) => {
                         <span>Posting...</span>
                       </div>
                     ) : (
-                      'Post'
+                      selectedSemester === '2025-2026 1st semester' ? 'Post 1st Semester' : 'Post 2nd Semester'
                     )}
                   </button>
                 </div>
@@ -751,21 +842,36 @@ const FacultyFinalGrades = ({ auth }) => {
                   </thead>
                   <tbody>
                     {paginatedCadets.map(cadet => {
-                      // Use the pre-calculated values from the final grades API
+                      // Prefer backend-calculated values for accuracy, fall back to frontend calculation if needed
                       const commonModuleGrade = cadet.common_module_grade || 0;
-                      const rotcGrade = cadet.rotc_grade || 0;
-                      const finalGrade = cadet.final_grade || 0;
-                      const equivalentGrade = cadet.equivalent_grade || 0;
-                      // Prefer backend-provided remarks if present
+                      const rotcGrade = cadet.rotc_grade !== undefined && cadet.rotc_grade !== null 
+                        ? cadet.rotc_grade 
+                        : getRotcGrade(cadet); // Fallback to frontend calculation
+                      
+                      const finalGrade = cadet.final_grade !== undefined && cadet.final_grade !== null
+                        ? cadet.final_grade
+                        : selectedSemester === '2025-2026 1st semester' 
+                          ? Math.round((rotcGrade + commonModuleGrade) / 2) // 1st semester: (ROTC + Common) / 2
+                          : rotcGrade; // 2nd semester: ROTC grade only
+                      
+                      // Use backend-calculated equivalent grade if available, otherwise compute
+                      const equivalentGrade = cadet.equivalent_grade !== undefined && cadet.equivalent_grade !== null
+                        ? cadet.equivalent_grade
+                        : (() => {
+                            const apt = getAptitudePercentage(cadet.id);
+                            const att = getAttendancePercentage(cadet);
+                            const ex = getExamPercentage(cadet);
+                            return computeEquivalentGrade(apt, att, ex);
+                          })();
+                      
+                      // Use new remarks system: < 4.0 = Passed, = 4.0 = Incomplete, > 4.0 = Failed
                       const remark = cadet.remarks
                         ? cadet.remarks
-                        : (equivalentGrade === 5.0)
-                          ? 'Failed'
-                          : (equivalentGrade === 4.0)
-                            ? 'INC'
-                            : (equivalentGrade === 3.0 && Math.round(finalGrade) === 75)
-                              ? '75 (PASSED)'
-                              : 'Passed';
+                        : (equivalentGrade === 4.0)
+                          ? 'Incomplete'
+                          : (equivalentGrade > 4.0)
+                            ? 'Failed'
+                            : 'Passed';
                       
                       if (selectedSemester === '2025-2026 1st semester') {
                         // 1st semester: Show Common Module Grade, ROTC Grade, Final Grade, Equivalent Grade, Remarks

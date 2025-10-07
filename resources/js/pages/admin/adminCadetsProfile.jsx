@@ -13,6 +13,7 @@ export default function AdminCadetsProfile(){
     const { auth } = usePage().props;
     const [cadets, setCadets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredCadets, setFilteredCadets] = useState([]);
     // Add pagination states
@@ -54,30 +55,51 @@ export default function AdminCadetsProfile(){
     useEffect(() => {
         const fetchCadets = async () => {
             try {
-                const response = await axios.get('/api/admin-cadets');
-                console.log('Cadets data from API:', response.data);
+                setLoading(true);
+                setError(null);
+                console.log('Fetching cadets from /api/admin-cadets...');
                 
-                // Check specifically for birthday data
-                if (response.data.length > 0) {
-                    console.log('First cadet birthday data:', response.data[0].birthday);
-                    console.log('Birthday data type:', typeof response.data[0].birthday);
-                    
-                    // Log all user birthdays for debugging
-                    console.log('All cadet birthdays:');
-                    response.data.forEach((cadet, index) => {
-                        if (index < 10) { // Limit to first 10 for brevity
-                            console.log(`Cadet ${index + 1} (${cadet.first_name} ${cadet.last_name}):`);
-                            console.log(`  - Raw from DB: "${cadet.birthday}"`);
-                            console.log(`  - Formatted as dd-mm-yyyy: "${getBirthdayFromDatabase(cadet.birthday)}"`);
-                        }
-                    });
+                const response = await axios.get('/api/admin-cadets');
+                console.log('API Response:', response);
+                console.log('Cadets data:', response.data);
+                console.log('Number of cadets:', response.data?.length);
+                
+                if (Array.isArray(response.data)) {
+                    setCadets(response.data);
+                    setFilteredCadets(response.data);
+                    console.log('✅ Successfully loaded', response.data.length, 'cadets');
+                } else {
+                    console.error('❌ Response data is not an array:', response.data);
+                    setCadets([]);
+                    setFilteredCadets([]);
+                    setError('Invalid data format received from server');
                 }
                 
-                setCadets(response.data);
-                setFilteredCadets(response.data);
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching cadets:', error);
+                console.error('❌ Error fetching cadets:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data
+                });
+                
+                setCadets([]);
+                setFilteredCadets([]);
+                
+                let errorMessage = 'Failed to load cadets';
+                if (error.response?.status === 401) {
+                    errorMessage = 'You are not authorized to view this data. Please login as admin.';
+                } else if (error.response?.status === 403) {
+                    errorMessage = 'Access denied. Admin privileges required.';
+                } else if (error.response?.status === 404) {
+                    errorMessage = 'API endpoint not found.';
+                } else if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+                
+                setError(errorMessage);
                 setLoading(false);
             }
         };
@@ -155,10 +177,10 @@ export default function AdminCadetsProfile(){
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
-      <div className='flex'>
+      <div className='flex flex-col md:flex-row'>
         <AdminSidebar  />
         
-        <div className='flex-1 p-6'>
+        <div className='flex-1 p-3 md:p-6'>
           <div className='font-regular'>
             <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
                 <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
@@ -167,136 +189,160 @@ export default function AdminCadetsProfile(){
                 <span className="mx-2 font-semibold">{">"}</span>
                 <span className="cursor-default font-bold">Cadets Profile Record</span>  
           </div>
-            <div className='flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg'>
-                <h1 className='text-2xl font-semibold'>Master Lists</h1>
+            <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+                <h1 className='text-xl md:text-2xl font-semibold'>Master Lists</h1>
             </div>
 
-            <div className='bg-white p-6 rounded-lg shadow w-full mx-auto h-full'>
-              <div className='flex justify-between items-center mb-6'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4'>
                 <div>
-                  <h1 className='text-lg font-semibold text-black'>List of Cadets</h1>
-                  <p className='text-sm text-gray-500 mt-1'>
+                  <h1 className='text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
+                  <p className='text-xs md:text-sm text-gray-500 mt-1'>
                     Showing {filteredCadets.length} of {cadets.length} cadets
                   </p>
                 </div>
 
-                <div className='flex items-center gap-4'>
-                  <div className="relative">
+                <div className='flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto'>
+                  <div className="relative w-full sm:w-auto">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="search"
                       placeholder="Search Cadets"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-64 p-2 pl-10 border border-gray-300 rounded-lg"
+                      className="w-full sm:w-64 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                     />
+                  </div>
+                  
+                  {/* Export Button - Mobile */}
+                  <div className="w-full sm:w-auto">
+                    <button 
+                      onClick={exportToExcel}
+                      className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 w-full sm:w-auto text-sm md:text-base"
+                    >
+                      <FaFileExcel />
+                      Export to Excel
+                    </button>
                   </div>
                 </div>
               </div>
               
-              <div className='overflow-x-auto '>
-                <table className='w-full border-collapse'>
-                  <thead className='text-gray-600 '>
-                    <tr className=''>
-                      <th className='p-2 border-b font-medium text-left'>Student No.</th>
-                      <th className='p-2 border-b font-medium text-left'>First Name</th>
-                      <th className='p-2 border-b font-medium text-left'>Middle Name</th>
-                      <th className='p-2 border-b font-medium text-left'>Last Name</th>
-                      <th className='p-2 border-b font-medium text-left'>CY&S</th>
-                      <th className='p-2 border-b font-medium text-left'>Birthday</th>
-                      <th className='p-2 border-b font-medium text-left'>Blood Type</th>
-                      <th className='p-2 border-b font-medium text-left'>Address</th>
-                      <th className='p-2 border-b font-medium text-left'>Region</th>
-                      <th className='p-2 border-b font-medium text-left'>Height</th>
-                      <th className='p-2 border-b font-medium text-left'>Contact No.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan="11" className="p-4 text-center text-gray-500">
-                          Loading cadets...
-                        </td>
+              <div className='overflow-x-auto -mx-3 md:mx-0'>
+                <div className="min-w-full">
+                  <table className='w-full border-collapse min-w-[1000px]'>
+                    <thead className='text-gray-600'>
+                      <tr className=''>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Student No.</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>First Name</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Middle Name</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Last Name</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>CY&S</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Birthday</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Blood Type</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Address</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Region</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Height</th>
+                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Contact No.</th>
                       </tr>
-                    ) : paginatedCadets.length === 0 ? (
-                      <tr>
-                        <td colSpan="11" className="p-4 text-center text-gray-500">
-                          {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedCadets.map((cadet) => (
-                        <tr key={cadet.id} className='hover:bg-gray-50'>
-                          <td className='p-2 border-b text-left'>{cadet.student_number || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.first_name || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.middle_name || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.last_name || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>
-                            {getBirthdayFromDatabase(cadet.birthday)}
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan="11" className="p-4 text-center text-gray-500">
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+                              <span>Loading cadets...</span>
+                            </div>
                           </td>
-                          <td className='p-2 border-b text-left'>{cadet.blood_type || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>
-                            {cadet.address ? (
-                              <div 
-                                className="max-w-[150px] truncate" 
-                                title={cadet.address}
-                              >
-                                {cadet.address}
-                              </div>
-                            ) : 'N/A'}
-                          </td>
-                          <td className='p-2 border-b text-left'>{cadet.region || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.height || 'N/A'}</td>
-                          <td className='p-2 border-b text-left'>{cadet.phone_number || 'N/A'}</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : error ? (
+                        <tr>
+                          <td colSpan="11" className="p-4 text-center">
+                            <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+                              <p className="font-semibold">Error Loading Data</p>
+                              <p className="text-sm mt-1">{error}</p>
+                              <button 
+                                onClick={() => window.location.reload()} 
+                                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : paginatedCadets.length === 0 ? (
+                        <tr>
+                          <td colSpan="11" className="p-4 text-center text-gray-500">
+                            {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedCadets.map((cadet) => (
+                          <tr key={cadet.id} className='hover:bg-gray-50 border-b border-gray-100'>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.student_number || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.first_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.middle_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.last_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>
+                              {getBirthdayFromDatabase(cadet.birthday)}
+                            </td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.blood_type || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>
+                              {cadet.address ? (
+                                <div 
+                                  className="max-w-[120px] md:max-w-[150px] truncate" 
+                                  title={cadet.address}
+                                >
+                                  {cadet.address}
+                                </div>
+                              ) : 'N/A'}
+                            </td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.region || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.height || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.phone_number || 'N/A'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
                 
                 {/* Pagination Controls */}
-                <div className="flex justify-between items-center mt-4 w-full">
-                  <div className="text-gray-600">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
+                  <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
                     Showing data {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                   </div>
-                  <div className="flex-1 flex justify-center">
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <button
-                        key={i}
-                        className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    {currentPage < totalPages && (
-                      <button
-                        className="mx-1 px-3 py-1 rounded bg-white border"
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                      >
-                        &gt;
-                      </button>
-                    )}
+                  <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
                     {currentPage > 1 && (
                       <button
-                        className="mx-1 px-3 py-1 rounded bg-white border"
+                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
                         onClick={() => setCurrentPage(currentPage - 1)}
                       >
                         {'<'}
                       </button>
                     )}
-                  </div>
-                  
-                  {/* Export Button */}
-                  <div>
-                    <button 
-                      onClick={exportToExcel}
-                      className="flex items-center gap-2 bg-primary hover:bg-olive-700 text-white px-4 py-2 rounded transition-colors duration-150"
-                    >
-                      <FaFileExcel />
-                      Export to Excel
-                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    {currentPage < totalPages && (
+                      <button
+                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                      >
+                        &gt;
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

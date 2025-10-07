@@ -51,28 +51,39 @@ export default function Issue({ issues = [] }) {
         if (!selectedIssue) return;
         
         try {
-            const response = await axios.put(`/api/issues/${selectedIssue.id}`, {
-                status,
-                admin_response: response
-            });
+            const updateData = {
+                status
+            };
             
-            // Update the issue in the list
+            const apiResponse = await axios.put(`/api/issues/${selectedIssue.id}`, updateData);
+            
+            // Update the issue in the local state
             setAllIssues(prevIssues => 
                 prevIssues.map(issue => 
-                    issue.id === selectedIssue.id ? response.data.issue : issue
+                    issue.id === selectedIssue.id 
+                        ? { ...issue, status: status, resolved_at: status === 'resolved' ? new Date().toISOString() : null }
+                        : issue
                 )
             );
             
-            // Reset the form
+            // Reset the form and close modal
             setSelectedIssue(null);
-            setResponse('');
             setStatus('pending');
             
-            // Refresh the list
-            fetchIssues();
+            // Show success message (you can add a toast notification here if needed)
+            console.log('Issue updated successfully');
+            
         } catch (error) {
             console.error('Error updating issue:', error);
+            // You can add error handling/notification here
+            alert('Failed to update issue. Please try again.');
         }
+    };
+    
+    // Function to open modal and set initial values
+    const openIssueModal = (issue) => {
+        setSelectedIssue(issue);
+        setStatus(issue.status || 'pending');
     };
     
     // Filter issues based on selected filter
@@ -207,7 +218,7 @@ export default function Issue({ issues = [] }) {
                                             <p className="text-xs text-gray-400">{formatDate(issue.created_at).split(',')[0]}</p>
                                             <button 
                                                 className="bg-primary text-white text-xs py-1 px-3 rounded-md"
-                                                onClick={() => setSelectedIssue(issue)}
+                                                onClick={() => openIssueModal(issue)}
                                             >
                                                 View Details
                                             </button>
@@ -251,7 +262,7 @@ export default function Issue({ issues = [] }) {
                                             <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
                                                 <button 
                                                     className='text-primary hover:text-primary-dark'
-                                                    onClick={() => setSelectedIssue(issue)}
+                                                    onClick={() => openIssueModal(issue)}
                                                 >
                                                     View
                                                 </button>
@@ -326,15 +337,6 @@ export default function Issue({ issues = [] }) {
                                 </div>
                             </div>
                             
-                            {selectedIssue.admin_response && (
-                                <div className='mb-3 md:mb-6'>
-                                    <p className='text-xs md:text-sm text-gray-500 mb-1'>Admin Response</p>
-                                    <div className='p-2 md:p-3 bg-blue-50 rounded-lg whitespace-pre-wrap text-xs md:text-sm'>
-                                        {selectedIssue.admin_response}
-                                    </div>
-                                </div>
-                            )}
-                            
                             <div className='border-t pt-3 md:pt-4'>
                                 <h3 className='font-semibold mb-2 text-sm md:text-base'>Update Issue</h3>
                                 
@@ -349,16 +351,6 @@ export default function Issue({ issues = [] }) {
                                         <option value="in-progress">In Progress</option>
                                         <option value="resolved">Resolved</option>
                                     </select>
-                                </div>
-                                
-                                <div className='mb-3 md:mb-4'>
-                                    <label className='block text-xs md:text-sm text-gray-700 mb-1'>Response</label>
-                                    <textarea
-                                        className='w-full border rounded p-1.5 md:p-2 min-h-[80px] md:min-h-[100px] text-xs md:text-sm'
-                                        placeholder='Enter your response to this issue'
-                                        value={response}
-                                        onChange={(e) => setResponse(e.target.value)}
-                                    ></textarea>
                                 </div>
                                 
                                 <div className='flex justify-end'>

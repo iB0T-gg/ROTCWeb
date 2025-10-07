@@ -158,25 +158,37 @@ class GradeController extends Controller
     public function getAdminMasterlistGrades()
     {
         try {
+            // Get users with their grade information
             $users = User::where('role', 'user')
+                        ->leftJoin('user_grades', function($join) {
+                            $join->on('users.id', '=', 'user_grades.user_id')
+                                 ->where('user_grades.semester', '=', \DB::raw('users.semester'));
+                        })
                         ->select(
-                            'id',
-                            'student_number',
-                            'first_name',
-                            'last_name',
-                            'middle_name',
-                            'year',
-                            'course',
-                            'section',
-                            'gender',
-                            'midterm_exam',
-                            'final_exam',
-                            'equivalent_grade',
-                            'final_grade',
-                            'remarks',
-                            'platoon',
-                            'company',
-                            'battalion'
+                            'users.id',
+                            'users.student_number',
+                            'users.first_name',
+                            'users.last_name',
+                            'users.middle_name',
+                            'users.year',
+                            'users.course',
+                            'users.section',
+                            'users.gender',
+                            'users.birthday',
+                            'users.blood_type',
+                            'users.address',
+                            'users.region',
+                            'users.height',
+                            'users.phone_number',
+                            'users.platoon',
+                            'users.company',
+                            'users.battalion',
+                            'users.semester',
+                            'users.campus',
+                            'user_grades.final_grade',
+                            'user_grades.equivalent_grade',
+                            'user_grades.remarks as grade_remarks',
+                            'users.remarks as user_remarks'
                         )
                         ->get();
             
@@ -195,26 +207,39 @@ class GradeController extends Controller
     public function getTopCadet()
     {
         try {
-            $topCadet = User::where('role', 'user')
-                ->whereNotNull('equivalent_grade')
-                ->select(
-                    'id',
-                    'first_name',
-                    'middle_name',
-                    'last_name',
-                    'equivalent_grade',
-                    'final_grade',
-                    'year',
-                    'course',
-                    'section'
-                )
-                ->orderBy('equivalent_grade') // Order by grade ascending (1.0 is better than 5.0)
-                ->first();
+            // Check if equivalent_grade column exists
+            $columns = \Schema::getColumnListing('users');
+            $hasEquivalentGrade = in_array('equivalent_grade', $columns);
+            $hasFinalGrade = in_array('final_grade', $columns);
+            
+            if (!$hasEquivalentGrade && !$hasFinalGrade) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Grade system not yet configured. No grade columns found in users table.'
+                ]);
+            }
+            
+            $query = User::where('role', 'user');
+            
+            // Select columns that exist
+            $selectColumns = ['id', 'first_name', 'middle_name', 'last_name', 'year', 'course', 'section'];
+            
+            if ($hasEquivalentGrade) {
+                $selectColumns[] = 'equivalent_grade';
+                $query->whereNotNull('equivalent_grade')
+                      ->orderBy('equivalent_grade'); // Order by grade ascending (1.0 is better than 5.0)
+            } elseif ($hasFinalGrade) {
+                $selectColumns[] = 'final_grade';
+                $query->whereNotNull('final_grade')
+                      ->orderBy('final_grade'); // Order by grade ascending (1.0 is better than 5.0)
+            }
+            
+            $topCadet = $query->select($selectColumns)->first();
 
             if (!$topCadet) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No cadets with grades found.'
+                    'message' => 'No cadets with grades found. Grades may not be calculated yet.'
                 ]);
             }
 
@@ -227,6 +252,139 @@ class GradeController extends Controller
                 'status' => 'error',
                 'message' => 'Error fetching top cadet: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get available semesters for filtering
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAvailableSemesters()
+    {
+        try {
+            // Get semesters from users table
+            $userSemesters = User::where('role', 'user')
+                            ->whereNotNull('semester')
+                            ->distinct()
+                            ->pluck('semester')
+                            ->filter();
+            
+            // Get semesters from second semester tables
+            $secondSemesterSemesters = collect();
+            try {
+                $secondSemesterSemesters = \DB::table('second_semester_aptitude')
+                                            ->distinct()
+                                            ->pluck('semester')
+                                            ->filter();
+            } catch (\Exception $e) {
+                // Table might not exist, ignore
+            }
+            
+            // Combine and sort semesters
+            $allSemesters = $userSemesters->merge($secondSemesterSemesters)
+                                        ->unique()
+                                        ->sort()
+                                        ->values();
+            
+            return response()->json($allSemesters);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error fetching semesters: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get cadets filtered by semester
+     * 
+     * @param string $semester
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getCadetsBySemester($semester = null)
+    {
+        try {
+            // Check if this is a second semester request
+            $isSecondSemester = $semester && str_contains($semester, '2nd');
+            
+            if ($isSecondSemester) {
+                // Handle second semester data from separate tables
+                $users = User::where('role', 'user')
+                            ->leftJoin('user_grades', function($join) use ($semester) {
+                                $join->on('users.id', '=', 'user_grades.user_id')
+                                     ->where('user_grades.semester', '=', $semester);
+                            })
+                            ->select(
+                                'users.id',
+                                'users.student_number',
+                                'users.first_name',
+                                'users.last_name',
+                                'users.middle_name',
+                                'users.year',
+                                'users.course',
+                                'users.section',
+                                'users.gender',
+                                'users.campus',
+                                'user_grades.final_grade',
+                                'user_grades.equivalent_grade',
+                                'user_grades.remarks as grade_remarks',
+                                'users.remarks as user_remarks'
+                            )
+                            ->get()
+                            ->map(function($user) use ($semester) {
+                                // Add semester information
+                                $user->semester = $semester;
+                                
+                                // Check if this user has second semester data
+                                $hasSecondSemesterData = \DB::table('second_semester_aptitude')
+                                                           ->where('cadet_id', $user->id)
+                                                           ->where('semester', $semester)
+                                                           ->exists();
+                                
+                                if (!$hasSecondSemesterData) {
+                                    // User doesn't have second semester data, set grades to null
+                                    $user->final_grade = null;
+                                    $user->equivalent_grade = null;
+                                    $user->grade_remarks = 'No Data';
+                                }
+                                
+                                return $user;
+                            });
+            } else {
+                // Handle first semester or all semesters (existing logic)
+                $query = User::where('role', 'user')
+                            ->leftJoin('user_grades', function($join) use ($semester) {
+                                $join->on('users.id', '=', 'user_grades.user_id');
+                                if ($semester) {
+                                    $join->where('user_grades.semester', '=', $semester);
+                                }
+                            });
+
+                if ($semester) {
+                    $query->where('users.semester', $semester);
+                }
+
+                $users = $query->select(
+                                'users.id',
+                                'users.student_number',
+                                'users.first_name',
+                                'users.last_name',
+                                'users.middle_name',
+                                'users.year',
+                                'users.course',
+                                'users.section',
+                                'users.gender',
+                                'users.semester',
+                                'users.campus',
+                                'user_grades.final_grade',
+                                'user_grades.equivalent_grade',
+                                'user_grades.remarks as grade_remarks',
+                                'users.remarks as user_remarks'
+                            )
+                            ->get();
+            }
+            
+            return response()->json($users);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error fetching cadets: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -72,6 +72,8 @@ class User extends Authenticatable implements CanResetPasswordContract
     'address',
     'profile_pic',
     'profile_pic_url',
+    'fingerprint',
+    'fingerprint_registered_at',
     'remarks',
 ];
 
@@ -286,5 +288,21 @@ class User extends Authenticatable implements CanResetPasswordContract
     {
         return $this->hasOne(\App\Models\SecondSemesterMerit::class, 'cadet_id')
             ->where('type', 'military_attitude');
+    }
+
+    /**
+     * Get the user's grades for different semesters.
+     */
+    public function userGrades()
+    {
+        return $this->hasMany(\App\Models\UserGrade::class);
+    }
+
+    /**
+     * Get the user's grade for a specific semester.
+     */
+    public function gradeForSemester($semester)
+    {
+        return $this->hasOne(\App\Models\UserGrade::class)->where('semester', $semester);
     }
 }

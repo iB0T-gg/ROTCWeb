@@ -35,15 +35,19 @@ const userGrades = ({ auth, user }) => {
 
   // Helper function to get remarks with fallback
   const getRemarks = (remarks, equivalentGrade) => {
-    if (remarks) {
-      return remarks;
-    }
+    // Always compute remarks based on equivalent grade, ignore stored remarks
     if (equivalentGrade === null || equivalentGrade === undefined || equivalentGrade === '') {
       return '-';
     }
     const eq = parseFloat(equivalentGrade);
-    if (!isNaN(eq) && eq >= 1.0 && eq <= 3.0) {
-      return 'Passed';
+    if (!isNaN(eq)) {
+      if (eq === 4.0) {
+        return 'Incomplete';
+      } else if (eq > 4.0) {
+        return 'Failed';
+      } else {
+        return 'Passed';
+      }
     }
     return 'Failed';
   };

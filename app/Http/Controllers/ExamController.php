@@ -61,10 +61,11 @@ class ExamController extends Controller
             $attendance30 = 0;
             $finalGrade = 0;
             
-            if ($semester === '2026-2027 2nd semester') {
+            if ($semester === '2025-2026 2nd semester') {
                 // Get aptitude_30 from second_semester_aptitude
                 $aptitude = DB::table('second_semester_aptitude')
                     ->where('cadet_id', $user->id)
+                    ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester']) // Handle both semester formats
                     ->first();
                 $aptitude30 = $aptitude ? (float) $aptitude->aptitude_30 : 0;
                 
@@ -80,15 +81,24 @@ class ExamController extends Controller
             }
             
             // Calculate average based on semester
-            if ($semester === '2026-2027 2nd semester') {
-                // For 2nd semester: (Total / 123) * 100
-                $total = (($finalExam === '' || $finalExam === null) ? 0 : $finalExam) + (($midtermExam === '' || $midtermExam === null) ? 0 : $midtermExam);
-                $average = $total > 0 ? ($total / 123) * 100 : 0;
+            if ($semester === '2025-2026 2nd semester') {
+                // For 2nd semester: average of normalized midterm and final scores
+                $final = ($finalExam === '' || $finalExam === null) ? 0 : (float) $finalExam;
+                $midterm = ($midtermExam === '' || $midtermExam === null) ? 0 : (float) $midtermExam;
+                
+                // Use dynamic max scores (default to 100 if not specified)
+                $maxFinalScore = 100; // This should come from the request, but default to 100
+                $maxMidtermScore = 100; // This should come from the request, but default to 100
+                
+                $finalNorm = $maxFinalScore > 0 ? ($final / $maxFinalScore) : 0;
+                $midNorm = $maxMidtermScore > 0 ? ($midterm / $maxMidtermScore) : 0;
+                $average = (($finalNorm + $midNorm) / 2) * 100;
+                
                 // Format to 2 decimal places for 2nd semester
                 $average = round($average, 2);
             } else {
-                // For 1st semester: Final Exam * 2
-                $average = ($finalExam === '' || $finalExam === null) ? 0 : $finalExam * 2;
+                // For 1st semester: (Final / 100) * 100 = Final score directly
+                $average = ($finalExam === '' || $finalExam === null) ? 0 : (float) $finalExam;
                 // Format to whole number for 1st semester
                 $average = round($average);
             }
@@ -155,7 +165,7 @@ class ExamController extends Controller
                     
                     // Calculate average and subject_prof based on semester
                     $subjectProf = 0;
-                    if ($semester === '2026-2027 2nd semester') {
+                    if ($semester === '2025-2026 2nd semester') {
                         // For 2nd semester: mean of normalized scores × 100
                         $finalNorm = ($finalExam === '' || $finalExam === null) ? 0 : (($maxFinal > 0) ? ($finalExam / $maxFinal) : 0);
                         $midNorm = ($midtermExam === '' || $midtermExam === null) ? 0 : (($maxMidterm > 0) ? ($midtermExam / $maxMidterm) : 0);

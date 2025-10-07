@@ -105,8 +105,33 @@ const FacultyMerits = ({ auth }) => {
             const existingMerit = meritsData[cadet.id];
             if (existingMerit) {
               console.log(`Found existing merit for cadet ${cadet.id}:`, existingMerit);
-              const meritDays = existingMerit.merits_array || Array(weekCount).fill(10);
-              const demeritDays = existingMerit.demerits_array || Array(weekCount).fill(0);
+              
+              // Ensure merits_array and demerits_array are arrays
+              let meritDays = existingMerit.merits_array;
+              let demeritDays = existingMerit.demerits_array;
+              
+              // Handle case where arrays might be stored as strings or other formats
+              if (typeof meritDays === 'string') {
+                try {
+                  meritDays = JSON.parse(meritDays);
+                } catch (e) {
+                  console.warn(`Failed to parse merits_array for cadet ${cadet.id}, using defaults`);
+                  meritDays = Array(weekCount).fill(10);
+                }
+              } else if (!Array.isArray(meritDays)) {
+                meritDays = Array(weekCount).fill(10);
+              }
+              
+              if (typeof demeritDays === 'string') {
+                try {
+                  demeritDays = JSON.parse(demeritDays);
+                } catch (e) {
+                  console.warn(`Failed to parse demerits_array for cadet ${cadet.id}, using defaults`);
+                  demeritDays = Array(weekCount).fill(0);
+                }
+              } else if (!Array.isArray(demeritDays)) {
+                demeritDays = Array(weekCount).fill(0);
+              }
               
               // Recalculate merits based on demerits to ensure Merit = 10 - Demerit
               console.log(`Recalculating merits for cadet ${cadet.id}:`);
@@ -134,8 +159,22 @@ const FacultyMerits = ({ auth }) => {
           const initialDemerits = cadetsData.map(cadet => {
             const existingMerit = meritsData[cadet.id];
             if (existingMerit) {
+              let demeritDays = existingMerit.demerits_array;
+              
+              // Handle case where array might be stored as string or other format
+              if (typeof demeritDays === 'string') {
+                try {
+                  demeritDays = JSON.parse(demeritDays);
+                } catch (e) {
+                  console.warn(`Failed to parse demerits_array for cadet ${cadet.id}, using defaults`);
+                  demeritDays = Array(weekCount).fill(0);
+                }
+              } else if (!Array.isArray(demeritDays)) {
+                demeritDays = Array(weekCount).fill(0);
+              }
+              
               return {
-                days: existingMerit.demerits_array || Array(weekCount).fill(0), // Default to 0 for demerits
+                days: demeritDays
               };
             }
             return { days: Array(weekCount).fill(0) };
@@ -471,9 +510,9 @@ const FacultyMerits = ({ auth }) => {
   return (
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <FacultySidebar />
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-3 md:p-6">
             {/* Breadcrumb */}
           <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
                 <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
@@ -483,14 +522,14 @@ const FacultyMerits = ({ auth }) => {
                 <span className="cursor-default font-bold">Aptitude</span>  
           </div>
           {/* Page Header and Controls */}
-          <div className="flex items-center justify-between mt-4 mb-6 pl-5 py-7 bg-primary text-white p-4 rounded-lg">
-            <h1 className="text-2xl font-semibold">Aptitude Management</h1>
+          <div className="flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg">
+            <h1 className="text-lg md:text-2xl font-semibold">Aptitude Management</h1>
             
               </div>
              {/* Tab Navigation */}
-              <div className="bg-white p-6 rounded-lg shadow mb-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
+              <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                    <button 
                      onClick={() => {
                        console.log('Switching to current semester');
@@ -500,7 +539,7 @@ const FacultyMerits = ({ auth }) => {
                        setSelectedSemester('2025-2026 1st semester');
                        // Fetch will be triggered by useEffect on selectedSemester
                      }}
-                      className={`py-2 px-4 rounded-lg ${activeTab === 'current' 
+                      className={`w-full sm:w-auto py-2 px-3 md:px-4 rounded-lg text-sm md:text-base ${activeTab === 'current' 
                        ? 'bg-primary text-white' 
                        : 'bg-gray-100 text-gray-700'}`}
                    >
@@ -515,28 +554,28 @@ const FacultyMerits = ({ auth }) => {
                        setSelectedSemester('2026-2027 2nd semester');
                        // Fetch will be triggered by useEffect on selectedSemester
                      }}
-                      className={`py-2 px-4 rounded-lg ${activeTab === 'previous' 
+                      className={`w-full sm:w-auto py-2 px-3 md:px-4 rounded-lg text-sm md:text-base ${activeTab === 'previous' 
                        ? 'bg-primary text-white' 
                        : 'bg-gray-100 text-gray-700'}`}
                    >
                      2026-2027 2nd semester
                    </button>
                 </div>
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 w-full lg:w-auto">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full lg:w-auto">
+                      <div className="relative w-full sm:w-auto">
                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                           type="search"
                           placeholder="Search"
                           value={search}
                           onChange={e => setSearch(e.target.value)}
-                          className="w-48 p-2 pl-10 border border-gray-300 rounded-lg"
+                          className="w-full sm:w-48 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                         />
                       </div>
-                      <div className="relative">
+                      <div className="relative w-full sm:w-auto">
                         <div
-                          className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer"
+                          className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer w-full text-sm md:text-base"
                           onClick={() => setShowSortPicker(!showSortPicker)}
                         >
                           <span className="text-gray-600">
@@ -552,7 +591,7 @@ const FacultyMerits = ({ auth }) => {
                         </div>
                         {showSortPicker && (
                         <div
-                          className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-64"
+                          className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-full sm:w-64"
                           style={{ top: '100%', right: 0 }}
                         >
                           <div className="space-y-4">
@@ -607,7 +646,7 @@ const FacultyMerits = ({ auth }) => {
                       </div>
                     </div>
                     {/* Mobile-only quick action below Sort by */}
-                    <div className="flex md:hidden items-center">
+                    <div className="flex lg:hidden items-center w-full sm:w-auto">
                       <button
                         onClick={() => {
                           if (!isEditing) {
@@ -619,7 +658,7 @@ const FacultyMerits = ({ auth }) => {
                             handleSave();
                           }
                         }}
-                        className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                        className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 w-full text-sm md:text-base'
                       >
                         {isEditing ? 'Save' : 'Edit Merits'}
                       </button>
@@ -629,34 +668,35 @@ const FacultyMerits = ({ auth }) => {
              </div>
  
              {/* Main Content */}
-             <div className="bg-white p-6 rounded-lg shadow w-full mx-auto">
-               <div className="flex justify-between items-center mb-6">
-                 <h1 className="text-lg font-semibold text-black">Military Attitude</h1>
+             <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto">
+               <div className="flex justify-between items-center mb-4 md:mb-6">
+                 <h1 className="text-base md:text-lg font-semibold text-black">Military Attitude</h1>
                </div>
                
                
                {/* Current Semester Content */}
                {activeTab === 'current' && (
                  <>
-                    <div className="overflow-x-auto">
-                   <table key={renderKey} className="w-full border-collapse">
+                    <div className="overflow-x-auto -mx-3 md:mx-0">
+                      <div className="min-w-full">
+                   <table key={renderKey} className="w-full border-collapse min-w-[800px]">
                 <thead className="text-gray-600">
                   <tr>
-                    <th className="p-3 border-b font-medium text-left">Cadet Names</th>
+                    <th className="p-2 md:p-3 border-b font-medium text-left text-sm md:text-base">Cadet Names</th>
                     {/* Dynamically render week columns with M/D subheaders */}
                     {getCurrentWeeks().map((week) => (
-                      <th key={week} className="p-3 border-b font-medium text-center">
+                      <th key={week} className="p-2 md:p-3 border-b font-medium text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-sm font-medium text-gray-700 mb-2">{week}</span>
-                          <div className="flex justify-center gap-2">
-                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">M</span>
-                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">D</span>
+                          <span className="text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">{week}</span>
+                          <div className="flex justify-center gap-1 md:gap-2">
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                           </div>
                         </div>
                       </th>
                     ))}
-                    <th className="p-3 border-b font-medium text-center">Total Merits</th>
-                    <th className="p-3 border-b font-medium text-center">Aptitude (30%)</th>
+                    <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Total Merits</th>
+                    <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Aptitude (30%)</th>
                   </tr>
                 </thead>
                   <tbody>
@@ -674,12 +714,12 @@ const FacultyMerits = ({ auth }) => {
                     
                     return (
                       <tr key={cadet.id} className="border-b border-gray-200">
-                        <td className="p-3 text-gray-900">{formatCadetName(cadet)}</td>
+                        <td className="p-2 md:p-3 text-gray-900 text-sm md:text-base">{formatCadetName(cadet)}</td>
                         {getCurrentWeeks().map((week, j) => {
                           const weekIndex = selectedSemester === '2025-2026 1st semester' ? j : currentWeekRange.start + j;
                           return (
-                            <td key={j} className="p-3 text-center">
-                              <div className="flex gap-2 justify-center">
+                            <td key={j} className="p-2 md:p-3 text-center">
+                              <div className="flex gap-1 md:gap-2 justify-center">
                                 {/* Merits input (Green) */}
                                 <input
                                   type="number"
@@ -688,7 +728,7 @@ const FacultyMerits = ({ auth }) => {
                                   value={(meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-')
                                     ? Math.max(0, 10 - (Number(demeritValues[weekIndex]) || 0))
                                     : meritValues[weekIndex]}
-                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -700,7 +740,7 @@ const FacultyMerits = ({ auth }) => {
                                   max="10"
                                   value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />
@@ -708,11 +748,11 @@ const FacultyMerits = ({ auth }) => {
                             </td>
                           );
                         })}
-                        <td className="p-3 text-center">
+                        <td className="p-2 md:p-3 text-center text-sm md:text-base">
                           {/* Display total merit score */}
                           {totalMerits}
                         </td>
-                        <td className="p-3 text-center">
+                        <td className="p-2 md:p-3 text-center text-sm md:text-base">
                           {/* Display calculated aptitude score, not an input */}
                           {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                         </td>
@@ -721,40 +761,45 @@ const FacultyMerits = ({ auth }) => {
                   })}
                   </tbody>
                 </table>
+                      </div>
             </div>
-            <div className="flex justify-between items-center mt-4 w-full">
-              <div className="text-gray-600">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
+              <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
                 Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
               </div>
-              <div className="flex-1 flex justify-center">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
-                    onClick={() => setCurrentPage(i + 1)}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                {currentPage < totalPages && (
-                  <button
-                    className="mx-1 px-3 py-1 rounded bg-white border"
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                  >
-                    &gt;
-                  </button>
-                )}
+              <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
                 {currentPage > 1 && (
                   <button
-                    className="mx-1 px-3 py-1 rounded bg-white border"
+                    className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
                     onClick={() => setCurrentPage(currentPage - 1)}
                   >
                     {'<'}
                   </button>
                 )}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  if (pageNum > totalPages) return null;
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                {currentPage < totalPages && (
+                  <button
+                    className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    &gt;
+                  </button>
+                )}
               </div>
               {/* Right: Action Buttons */}
-              <div className="flex justify-end gap-2">
+              <div className="hidden lg:flex justify-end gap-2 order-3">
                 {!isEditing ? (
                   <button 
                     onClick={() => {
@@ -764,7 +809,7 @@ const FacultyMerits = ({ auth }) => {
                       setIsEditing(true);
                       toast.info('Edit mode enabled. You can now modify demerits.');
                     }}
-                    className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                    className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
                   >
                     Edit Merits
                   </button>
@@ -773,14 +818,14 @@ const FacultyMerits = ({ auth }) => {
                     
                     <button 
                       onClick={handleCancel}
-                      className="bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150"
+                      className="bg-gray-500 text-white px-3 md:px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150 text-sm md:text-base"
                     >
                       Cancel
                     </button>
 
                     <button 
                       onClick={handleSave}
-                      className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                      className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
                     >
                       Save
                     </button>
@@ -794,25 +839,26 @@ const FacultyMerits = ({ auth }) => {
                {/* Previous Semester Content */}
                {activeTab === 'previous' && (
                  <>
-                    <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
+                    <div className="overflow-x-auto -mx-3 md:mx-0">
+                      <div className="min-w-full">
+                    <table className="w-full border-collapse min-w-[800px]">
                  <thead className="text-gray-600">
                    <tr>
-                     <th className="p-3 border-b font-medium text-left">Cadet Names</th>
+                     <th className="p-2 md:p-3 border-b font-medium text-left text-sm md:text-base">Cadet Names</th>
                      {/* Dynamically render week columns with M/D subheaders */}
                      {getCurrentWeeks().map((week) => (
-                       <th key={week} className="p-3 border-b font-medium text-center">
+                       <th key={week} className="p-2 md:p-3 border-b font-medium text-center">
                          <div className="flex flex-col items-center">
-                           <span className="text-sm font-medium text-gray-700 mb-2">{week}</span>
-                          <div className="flex justify-center gap-2">
-                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">M</span>
-                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">D</span>
+                           <span className="text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">{week}</span>
+                          <div className="flex justify-center gap-1 md:gap-2">
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                            </div>
                          </div>
                        </th>
                      ))}
-                     <th className="p-3 border-b font-medium text-center">Total Merits</th>
-                     <th className="p-3 border-b font-medium text-center">Aptitude (30%)</th>
+                     <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Total Merits</th>
+                     <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Aptitude (30%)</th>
                    </tr>
                  </thead>
                 <tbody>
@@ -829,7 +875,7 @@ const FacultyMerits = ({ auth }) => {
                      
                      return (
                        <tr key={cadet.id} className="hover:bg-gray-50 border-b border-gray-200">
-                         <td className="p-3 border-b">
+                         <td className="p-2 md:p-3 border-b text-sm md:text-base">
                            <div className="text-gray-900">
                              {formatCadetName(cadet)}
                            </div>
@@ -837,15 +883,15 @@ const FacultyMerits = ({ auth }) => {
                         {getCurrentWeeks().map((week, j) => {
                           const weekIndex = selectedSemester === '2025-2026 1st semester' ? j : currentWeekRange.start + j;
                           return (
-                            <td key={j} className="p-3 text-center border-b">
-                              <div className="flex gap-2 justify-center">
+                            <td key={j} className="p-2 md:p-3 text-center border-b">
+                              <div className="flex gap-1 md:gap-2 justify-center">
                                 {/* Merits input (Green) */}
                                 <input
                                   type="number"
                                   min="0"
                                   max="10"
                                   value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
-                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -857,7 +903,7 @@ const FacultyMerits = ({ auth }) => {
                                   max="10"
                                   value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-10 md:w-12 h-8 text-center border border-gray-300 rounded text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />
@@ -865,11 +911,11 @@ const FacultyMerits = ({ auth }) => {
                             </td>
                           );
                         })}
-                         <td className="p-3 text-center">
+                         <td className="p-2 md:p-3 text-center text-sm md:text-base">
                            {/* Display total merit score */}
                            {totalMerits}
                          </td>
-                         <td className="p-3 text-center">
+                         <td className="p-2 md:p-3 text-center text-sm md:text-base">
                            {/* Display calculated aptitude score, not an input */}
                            {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                          </td>
@@ -878,13 +924,14 @@ const FacultyMerits = ({ auth }) => {
                    })}
                    </tbody>
                  </table>
+                      </div>
              </div>
              
              {/* Horizontal Scrollbar for Second Semester */}
-             <div className="w-full">
+             <div className="w-full mt-4">
                <div className="flex items-center gap-2 w-full">
                  <button
-                   className="text-gray-600 hover:text-gray-800 text-lg"
+                   className="text-gray-600 hover:text-gray-800 text-lg p-2 rounded hover:bg-gray-100"
                    onClick={() => handleSliderChange(Math.max(0, scrollPosition - 1))}
                    disabled={scrollPosition === 0}
                  >
@@ -907,11 +954,11 @@ const FacultyMerits = ({ auth }) => {
                      step="1"
                      value={scrollPosition}
                      onChange={(e) => handleSliderChange(Number(e.target.value))}
-                     className="absolute top-0 left-0 w-full h-2 opacity-0 cursor-pointer"
+                     className="absolute top-0 left-0 w-full h-6 opacity-0 cursor-pointer"
                    />
                  </div>
                  <button
-                   className="text-gray-600 hover:text-gray-800 text-lg"
+                   className="text-gray-600 hover:text-gray-800 text-lg p-2 rounded hover:bg-gray-100"
                    onClick={() => handleSliderChange(Math.min(5, scrollPosition + 1))}
                    disabled={scrollPosition === 5}
                  >
@@ -920,46 +967,50 @@ const FacultyMerits = ({ auth }) => {
                </div>
              </div>
              
-             <div className="flex justify-between items-center mt-2 w-full">
-               <div className="text-gray-600">
+             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
+               <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
                  Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                </div>
-               <div className="flex-1 flex justify-center">
-                 {Array.from({ length: totalPages }, (_, i) => (
-                   <button
-                     key={i}
-                     className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
-                     onClick={() => setCurrentPage(i + 1)}
-                   >
-                     {i + 1}
-                   </button>
-                 ))}
-                 {currentPage < totalPages && (
-                   <button
-                     className="mx-1 px-3 py-1 rounded bg-white border"
-                     onClick={() => setCurrentPage(currentPage + 1)}
-                   >
-                     &gt;
-                   </button>
-                 )}
+               <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
                  {currentPage > 1 && (
                    <button
-                     className="mx-1 px-3 py-1 rounded bg-white border"
+                     className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
                      onClick={() => setCurrentPage(currentPage - 1)}
                    >
                      {'<'}
                    </button>
                  )}
+                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                   const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                   if (pageNum > totalPages) return null;
+                   return (
+                     <button
+                       key={pageNum}
+                       className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                       onClick={() => setCurrentPage(pageNum)}
+                     >
+                       {pageNum}
+                     </button>
+                   );
+                 })}
+                 {currentPage < totalPages && (
+                   <button
+                     className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                     onClick={() => setCurrentPage(currentPage + 1)}
+                   >
+                     &gt;
+                   </button>
+                 )}
                </div>
                {/* Right: Action Buttons */}
-               <div className="flex justify-end gap-2">
+               <div className="hidden lg:flex justify-end gap-2 order-3">
                  {!isEditing ? (
                    <button 
                      onClick={() => {
                        setIsEditing(true);
                        toast.info('Edit mode enabled. You can now modify merits.');
                      }}
-                     className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                     className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
                    >
                      Edit Merits
                    </button>
@@ -968,14 +1019,14 @@ const FacultyMerits = ({ auth }) => {
                      
                      <button 
                        onClick={handleCancel}
-                       className="bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150"
+                       className="bg-gray-500 text-white px-3 md:px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150 text-sm md:text-base"
                      >
                        Cancel
                      </button>
  
                      <button 
                        onClick={handleSave}
-                       className='bg-primary text-white px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150'
+                       className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
                      >
                        Save
                      </button>

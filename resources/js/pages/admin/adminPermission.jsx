@@ -2,7 +2,7 @@ import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
 import { Link } from '@inertiajs/react';
-import { FaSort } from 'react-icons/fa6'
+import { FaSort, FaFingerprint } from 'react-icons/fa6'
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -16,6 +16,13 @@ export default function AdminPermission(){
     const [showFilterPicker, setShowFilterPicker] = useState(false);
     const [processingUser, setProcessingUser] = useState(null);
     const [processingBulk, setProcessingBulk] = useState(false);
+    
+    // Fingerprint registration state
+    const [showFingerprintModal, setShowFingerprintModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [fingerprintStatus, setFingerprintStatus] = useState('');
+    const [processingFingerprint, setProcessingFingerprint] = useState(false);
+    const [scannerConnected, setScannerConnected] = useState(false);
 
     // Fetch pending users
     useEffect(() => {
@@ -195,6 +202,82 @@ export default function AdminPermission(){
         }
     };
     
+    // Handle fingerprint registration
+    const handleFingerprintRegistration = (user) => {
+        setSelectedUser(user);
+        setShowFingerprintModal(true);
+        setFingerprintStatus('');
+        setScannerConnected(false);
+        // Check scanner connection when modal opens
+        checkScannerConnection();
+    };
+
+    // Check if fingerprint scanner is connected
+    const checkScannerConnection = async () => {
+        try {
+            setFingerprintStatus('Checking scanner connection...');
+            const response = await axios.get('/api/fingerprint/check-connection');
+            setScannerConnected(response.data.connected);
+            if (response.data.connected) {
+                setFingerprintStatus('Scanner connected. Ready to scan fingerprint.');
+            } else {
+                setFingerprintStatus('⚠️ Fingerprint scanner not detected. Please connect the Deli scanner and try again.');
+            }
+        } catch (error) {
+            setScannerConnected(false);
+            setFingerprintStatus('⚠️ Unable to detect fingerprint scanner. Please ensure it is connected and try again.');
+        }
+    };
+
+    // Register fingerprint with Deli scanner
+    const registerFingerprint = async () => {
+        if (!selectedUser) return;
+        
+        if (!scannerConnected) {
+            setFingerprintStatus('⚠️ Scanner not connected. Please connect the Deli fingerprint scanner first.');
+            return;
+        }
+        
+        try {
+            setProcessingFingerprint(true);
+            setFingerprintStatus('Place your finger on the scanner now...');
+            
+            // Call the fingerprint registration API
+            const response = await axios.post('/api/fingerprint/register', {
+                user_id: selectedUser.id,
+                student_number: selectedUser.student_number,
+                first_name: selectedUser.first_name,
+                last_name: selectedUser.last_name
+            });
+            
+            if (response.data.success) {
+                setFingerprintStatus('✅ Fingerprint registered successfully!');
+                setTimeout(() => {
+                    setShowFingerprintModal(false);
+                    setSelectedUser(null);
+                    setFingerprintStatus('');
+                    setScannerConnected(false);
+                }, 2000);
+            } else {
+                setFingerprintStatus('❌ ' + (response.data.message || 'Failed to register fingerprint'));
+            }
+        } catch (error) {
+            console.error('Error registering fingerprint:', error);
+            setFingerprintStatus('❌ ' + (error.response?.data?.message || 'Error connecting to fingerprint scanner'));
+        } finally {
+            setProcessingFingerprint(false);
+        }
+    };
+    
+    // Close fingerprint modal
+    const closeFingerprintModal = () => {
+        setShowFingerprintModal(false);
+        setSelectedUser(null);
+        setFingerprintStatus('');
+        setProcessingFingerprint(false);
+        setScannerConnected(false);
+    };
+    
     return (
     <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
@@ -323,13 +406,14 @@ export default function AdminPermission(){
                     <tr>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Registration Type</th>
+                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Fingerprint</th>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="3" className="text-center py-3 md:py-4 text-xs md:text-sm">Loading pending users...</td>
+                        <td colSpan="4" className="text-center py-3 md:py-4 text-xs md:text-sm">Loading pending users...</td>
                       </tr>
                     ) : filteredAndSortedUsers().length > 0 ? (
                       filteredAndSortedUsers().map(user => (
@@ -343,6 +427,15 @@ export default function AdminPermission(){
                             }`}>
                               {user.creation_method === 'admin_created' ? 'Admin Created' : 'Self Registered'}
                             </span>
+                          </td>
+                          <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center'>
+                            <button 
+                              onClick={() => handleFingerprintRegistration(user)}
+                              className='text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors duration-200'
+                              title="Register Fingerprint"
+                            >
+                              <FaFingerprint className="text-lg md:text-xl" />
+                            </button>
                           </td>
                           <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center'>
                             <div className='flex justify-center gap-2 md:gap-4'>
@@ -366,7 +459,7 @@ export default function AdminPermission(){
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="3" className="text-center py-4">
+                        <td colSpan="4" className="text-center py-4">
                           {searchTerm ? 'No pending users found matching your search.' : 'No pending users to approve.'}
                       </td>
                     </tr>
@@ -394,6 +487,104 @@ export default function AdminPermission(){
           </div>
         </div>
       </div>
+      
+      {/* Fingerprint Registration Modal */}
+      {showFingerprintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <FaFingerprint className="text-blue-600" />
+                Fingerprint Registration
+              </h2>
+              <button
+                onClick={closeFingerprintModal}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+                disabled={processingFingerprint}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {selectedUser && (
+              <div className="mb-6">
+                <h3 className="font-medium text-gray-800 mb-2">Cadet Information:</h3>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p><span className="font-medium">Name:</span> {selectedUser.last_name}, {selectedUser.first_name}</p>
+                  <p><span className="font-medium">Student Number:</span> {selectedUser.student_number}</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="mb-6">
+              <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg ${
+                scannerConnected ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
+              }`}>
+                <FaFingerprint className={`text-4xl mb-2 ${
+                  scannerConnected ? 'text-green-600' : 'text-red-600'
+                }`} />
+                <div className="text-center">
+                  <p className={`mb-1 ${scannerConnected ? 'text-green-600' : 'text-red-600'}`}>
+                    {scannerConnected ? 'Scanner Ready' : 'Scanner Not Connected'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {scannerConnected 
+                      ? 'Place finger on the Deli fingerprint scanner'
+                      : 'Please connect the Deli scanner and try again'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {fingerprintStatus && (
+              <div className={`mb-4 p-3 rounded text-center ${
+                fingerprintStatus.includes('successfully') 
+                  ? 'bg-green-100 text-green-800' 
+                  : fingerprintStatus.includes('Error') || fingerprintStatus.includes('Failed')
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-blue-100 text-blue-800'
+              }`}>
+                {fingerprintStatus}
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeFingerprintModal}
+                disabled={processingFingerprint}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={checkScannerConnection}
+                disabled={processingFingerprint}
+                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
+              >
+                Check Scanner
+              </button>
+              <button
+                onClick={registerFingerprint}
+                disabled={processingFingerprint || !scannerConnected}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {processingFingerprint ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <FaFingerprint />
+                    Register Fingerprint
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -41,6 +41,17 @@ class FinalGradesController extends Controller
                 // Get ROTC Grade (sum of aptitude_30 + attendance_30 + subject_prof_score)
                 $rotcGrade = $this->getROTCGrade($cadet->id, $semester);
                 
+                // Get attendance data for this cadet
+                $attendanceData = $this->getAttendanceData($cadet->id, $semester);
+                
+                // Get aptitude data for 2nd semester calculations
+                $aptitudeData = null;
+                $examData = null;
+                if ($semester === '2025-2026 2nd semester') {
+                    $aptitudeData = $this->getAptitudeData($cadet->id, $semester);
+                    $examData = $this->getExamData($cadet->id, $semester);
+                }
+                
                 // Calculate Final Grade and Equivalent Grade based on semester
                 if ($semester === '2025-2026 1st semester') {
                     // 1st semester: Final Grade = round((Common Module + ROTC) / 2)
@@ -71,7 +82,12 @@ class FinalGradesController extends Controller
                     'final_grade' => $finalGrade,
                     'equivalent_grade' => $equivalentGrade,
                     'remarks' => $remarks,
-                    'semester' => $semester
+                    'semester' => $semester,
+                    // Include attendance data for frontend calculations
+                    'attendance_data' => $attendanceData,
+                    // Include aptitude and exam data for 2nd semester
+                    'aptitude_data' => $aptitudeData,
+                    'exam_data' => $examData
                 ];
             }
             
@@ -95,7 +111,6 @@ class FinalGradesController extends Controller
             'grades' => 'required|array',
             'grades.*.user_id' => 'required|integer|exists:users,id',
             'grades.*.equivalent_grade' => 'required|numeric',
-            'grades.*.remarks' => 'required|string',
             'grades.*.final_grade' => 'required|integer',
         ]);
 
@@ -105,6 +120,16 @@ class FinalGradesController extends Controller
         try {
             DB::transaction(function () use ($grades, $semester) {
                 foreach ($grades as $gradeData) {
+                    // Auto-compute remarks based on equivalent grade
+                    $equivalentGrade = (float) $gradeData['equivalent_grade'];
+                    if ($equivalentGrade === 4.00) {
+                        $remarks = 'Incomplete';
+                    } elseif ($equivalentGrade > 4.00) {
+                        $remarks = 'Failed';
+                    } else {
+                        $remarks = 'Passed';
+                    }
+                    
                     // Update or create user grade record
                     DB::table('user_grades')->updateOrInsert(
                         [
@@ -113,7 +138,7 @@ class FinalGradesController extends Controller
                         ],
                         [
                             'equivalent_grade' => $gradeData['equivalent_grade'],
-                            'remarks' => $gradeData['remarks'],
+                            'remarks' => $remarks,
                             'final_grade' => $gradeData['final_grade'],
                             'updated_at' => now(),
                             'created_at' => now()
@@ -176,8 +201,8 @@ class FinalGradesController extends Controller
     private function computeRemarks($finalPercent, $equivalent)
     {
         $eq = (float) $equivalent;
-        if ($eq === 5.00) return 'Failed';
-        if ($eq === 4.00) return 'Conditional Passed';
+        if ($eq === 4.00) return 'Incomplete';
+        if ($eq > 4.00) return 'Failed';
         return 'Passed';
     }
 
@@ -197,68 +222,294 @@ class FinalGradesController extends Controller
     /**
      * Get ROTC Grade (sum of aptitude_30 + attendance_30 + subject_prof_score)
      * For 2025-2026 1st semester: Subject Prof = 40%, Attendance = 30%, Aptitude = 30%
+     * Now calculates values dynamically like the frontend does
      */
     private function getROTCGrade($userId, $semester)
     {
         $rotcGrade = 0;
         
         if ($semester === '2025-2026 1st semester') {
-            // Get aptitude_30 from first_semester_aptitude
-            $aptitude = DB::table('first_semester_aptitude')
-                ->where('cadet_id', $userId)
-                ->first();
-            $aptitude30 = $aptitude ? (int) $aptitude->aptitude_30 : 0;
+            // Calculate aptitude from weekly data like frontend does
+            $aptitudeScore = $this->calculateAptitudePercentage($userId, $semester);
             
-            // Get attendance_30 from first_semester_attendance
+            // Calculate attendance from weekly data like frontend does
+            $attendanceScore = $this->calculateAttendancePercentage($userId, $semester);
+            
+            // Calculate exam score from stored values
+            $examScore = $this->calculateExamPercentage($userId, $semester);
+            
+            $rotcGrade = $aptitudeScore + $attendanceScore + $examScore;
+            
+        } else if ($semester === '2025-2026 2nd semester') {
+            // For second semester, use second semester calculation logic
+            $aptitudeScore = $this->calculateSecondSemesterAptitude($userId, $semester);
+            $attendanceScore = $this->calculateSecondSemesterAttendance($userId, $semester);
+            $examScore = $this->calculateSecondSemesterExam($userId, $semester);
+            
+            $rotcGrade = $aptitudeScore + $attendanceScore + $examScore;
+        }
+        
+        return round($rotcGrade);
+    }
+    
+    /**
+     * Calculate aptitude percentage for first semester (matches frontend logic)
+     */
+    private function calculateAptitudePercentage($userId, $semester)
+    {
+        $aptitude = DB::table('first_semester_aptitude')
+            ->where('cadet_id', $userId)
+            ->first();
+            
+        if (!$aptitude) return 0;
+        
+        // Get weekly merit and demerit data
+        $merits = [];
+        $demerits = [];
+        
+        for ($i = 1; $i <= 10; $i++) {
+            $merit = $aptitude->{"merits_week_$i"};
+            $demerit = $aptitude->{"demerits_week_$i"};
+            
+            $merits[] = ($merit === null || $merit === '') ? 0 : (int) $merit;
+            $demerits[] = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
+        }
+        
+        // Calculate like frontend: sum merits, subtract demerits, convert to percentage
+        $totalMerits = array_sum($merits);
+        $totalDemerits = array_sum($demerits);
+        $netScore = max(0, $totalMerits - $totalDemerits); // Don't allow negative
+        
+        // Calculate percentage (assuming max possible is around 100, can be adjusted)
+        $percentage = min(100, ($netScore / 70) * 100); // 70 is rough max expected (10 weeks * 7 avg merit)
+        
+        // Convert to 30-point scale
+        return min(30, round($percentage * 0.30));
+    }
+    
+    /**
+     * Calculate attendance percentage for first semester (matches frontend logic)
+     */
+    private function calculateAttendancePercentage($userId, $semester)
+    {
+        $attendance = DB::table('first_semester_attendance')
+            ->where('user_id', $userId)
+            ->where('semester', $semester)
+            ->first();
+            
+        if (!$attendance) return 0;
+        
+        // Count present weeks from weekly columns (week_1 to week_10 for first semester)
+        $presentCount = 0;
+        $weekLimit = 10; // First semester has 10 weeks
+        
+        for ($i = 1; $i <= $weekLimit; $i++) {
+            $weekColumn = "week_{$i}";
+            if (isset($attendance->$weekColumn) && $attendance->$weekColumn) {
+                $presentCount++;
+            }
+        }
+        
+        // Calculate percentage and convert to 30-point scale
+        $percentage = ($presentCount / $weekLimit) * 30;
+        return min(30, round($percentage));
+    }
+    
+    /**
+     * Calculate exam percentage for first semester
+     */
+    private function calculateExamPercentage($userId, $semester)
+    {
+        $exam = DB::table('first_semester_exam_scores')
+            ->where('user_id', $userId)
+            ->where('semester', $semester)
+            ->first();
+            
+        if (!$exam) return 0;
+        
+        $midterm = $exam->midterm_exam ? (float) $exam->midterm_exam : 0;
+        $final = $exam->final_exam ? (float) $exam->final_exam : 0;
+        
+        // If no final exam score, return 0
+        if ($final == 0) return 0;
+        
+        // For 1st semester: Final Exam * 2, then convert to 40-point scale
+        $average = $final * 2;
+        return min(40, round($average * 0.40));
+    }
+    
+    /**
+     * Calculate aptitude for second semester
+     */
+    private function calculateSecondSemesterAptitude($userId, $semester)
+    {
+        // Handle semester name variations in database
+        $aptitude = DB::table('second_semester_aptitude')
+            ->where('cadet_id', $userId)
+            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->first();
+            
+        if (!$aptitude) return 0;
+        
+        // Calculate from weekly data like frontend does
+        $totalMerits = 0;
+        $totalDemerits = 0;
+        
+        for ($i = 1; $i <= 15; $i++) {
+            $merit = $aptitude->{"merits_week_$i"} ?? 0;
+            $demerit = $aptitude->{"demerits_week_$i"} ?? 0;
+            
+            $merit = ($merit === null || $merit === '' || $merit === '-') ? 0 : (int) $merit;
+            $demerit = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
+            
+            $totalMerits += $merit;
+            $totalDemerits += $demerit;
+        }
+        
+        // Calculate like frontend: net score, convert to percentage, scale to 30
+        $netScore = max(0, $totalMerits - $totalDemerits);
+        $maxPossible = 15 * 10; // 15 weeks * 10 max points per week
+        $aptitude30 = $maxPossible > 0 ? ($netScore / $maxPossible) * 30 : 0;
+        
+        return min(30, round($aptitude30));
+    }
+    
+    /**
+     * Calculate attendance for second semester
+     */
+    private function calculateSecondSemesterAttendance($userId, $semester)
+    {
+        $attendance = DB::table('second_semester_attendance')
+            ->where('user_id', $userId)
+            ->where('semester', $semester)
+            ->first();
+            
+        if (!$attendance) return 0;
+        
+        // If attendance_30 is already calculated, use it
+        if ($attendance->attendance_30 > 0) {
+            return (int) $attendance->attendance_30;
+        }
+        
+        // Otherwise, count present weeks from weekly columns (week_1 to week_15 for second semester)
+        $presentCount = 0;
+        $weekLimit = 15; // Second semester has 15 weeks
+        
+        for ($i = 1; $i <= $weekLimit; $i++) {
+            $weekColumn = "week_{$i}";
+            if (isset($attendance->$weekColumn) && $attendance->$weekColumn) {
+                $presentCount++;
+            }
+        }
+        
+        // Calculate percentage and convert to 30-point scale
+        $percentage = ($presentCount / $weekLimit) * 30;
+        return min(30, round($percentage));
+    }
+    
+    /**
+     * Calculate exam score for second semester
+     */
+    private function calculateSecondSemesterExam($userId, $semester)
+    {
+        // Handle semester name variations in database
+        $exam = DB::table('second_semester_exam_scores')
+            ->where('user_id', $userId)
+            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->first();
+            
+        if (!$exam) return 0;
+        
+        $midterm = $exam->midterm_exam ? (float) $exam->midterm_exam : 0;
+        $final = $exam->final_exam ? (float) $exam->final_exam : 0;
+        
+        // For second semester: use average of midterm and final exam, then convert to 40-point scale
+        if ($midterm == 0 && $final == 0) return 0;
+        
+        $average = ($midterm + $final) / 2;
+        return min(40, round($average * 0.40));
+    }
+    
+    /**
+     * Get attendance data for frontend consumption
+     */
+    private function getAttendanceData($userId, $semester)
+    {
+        if ($semester === '2025-2026 1st semester') {
             $attendance = DB::table('first_semester_attendance')
                 ->where('user_id', $userId)
                 ->where('semester', $semester)
                 ->first();
-            $attendance30 = $attendance ? (int) $attendance->attendance_30 : 0;
-            
-            // Get exam scores from first_semester_exam_scores for the requested semester
-            $exam = DB::table('first_semester_exam_scores')
-                ->where('user_id', $userId)
-                ->where('semester', $semester)
-                ->first();
-            
-            // Calculate Subject Prof score using stored average (respects dynamic Max)
-            $subjectProfScore = 0;
-            if ($exam) {
-                $average = $exam->average ? (float) $exam->average : 0.0;
-                $subjectProfScore = min(40, round($average * 0.40)); // 40% weighting, capped at 40
+                
+            if (!$attendance) {
+                return [
+                    'weekly_attendance' => [],
+                    'weeks_present' => 0,
+                    'attendance_30' => 0,
+                    'percentage' => 0
+                ];
             }
             
-            $rotcGrade = $aptitude30 + $attendance30 + $subjectProfScore;
+            // Build weekly attendance data (week_1 to week_10 for first semester)
+            $weeklyAttendance = [];
+            $weekLimit = 10;
+            $presentCount = 0;
             
-        } else if ($semester === '2026-2027 2nd semester') {
-            // For second semester, use second semester tables
-            // Get aptitude_30 from second_semester_aptitude
-            $aptitude = DB::table('second_semester_aptitude')
-                ->where('cadet_id', $userId)
-                ->where('semester', $semester)
-                ->first();
-            $aptitude30 = $aptitude ? (int) $aptitude->aptitude_30 : 0;
+            for ($i = 1; $i <= $weekLimit; $i++) {
+                $weekColumn = "week_{$i}";
+                $isPresent = isset($attendance->$weekColumn) && $attendance->$weekColumn;
+                $weeklyAttendance[$i] = $isPresent;
+                if ($isPresent) $presentCount++;
+            }
             
-            // Get attendance_30 from second_semester_attendance
+            $attendancePercentage = ($presentCount / $weekLimit) * 100;
+            $attendance30 = ($presentCount / $weekLimit) * 30;
+            
+            return [
+                'weekly_attendance' => $weeklyAttendance,
+                'weeks_present' => $presentCount,
+                'attendance_30' => round($attendance30),
+                'percentage' => round($attendancePercentage, 2)
+            ];
+            
+        } else {
+            // Second semester logic
             $attendance = DB::table('second_semester_attendance')
                 ->where('user_id', $userId)
                 ->where('semester', $semester)
                 ->first();
-            $attendance30 = $attendance ? (int) $attendance->attendance_30 : 0;
+                
+            if (!$attendance) {
+                return [
+                    'weekly_attendance' => [],
+                    'weeks_present' => 0,
+                    'attendance_30' => 0,
+                    'percentage' => 0
+                ];
+            }
             
-            // Get subject_prof directly from second_semester_exam_scores
-            $exam = DB::table('second_semester_exam_scores')
-                ->where('user_id', $userId)
-                ->where('semester', $semester)
-                ->first();
-            $subjectProfScore = $exam ? (int) $exam->subject_prof : 0;
+            // Build weekly attendance data (week_1 to week_15 for second semester)
+            $weeklyAttendance = [];
+            $weekLimit = 15;
+            $presentCount = 0;
             
-            // ROTC Grade = Aptitude (30) + Attendance (30) + Subject Prof (40)
-            $rotcGrade = round($aptitude30 + $attendance30 + $subjectProfScore);
+            for ($i = 1; $i <= $weekLimit; $i++) {
+                $weekColumn = "week_{$i}";
+                $isPresent = isset($attendance->$weekColumn) && $attendance->$weekColumn;
+                $weeklyAttendance[$i] = $isPresent;
+                if ($isPresent) $presentCount++;
+            }
+            
+            $attendancePercentage = ($presentCount / $weekLimit) * 100;
+            $attendance30 = ($presentCount / $weekLimit) * 30;
+            
+            return [
+                'weekly_attendance' => $weeklyAttendance,
+                'weeks_present' => $presentCount,
+                'attendance_30' => round($attendance30),
+                'percentage' => round($attendancePercentage, 2)
+            ];
         }
-        
-        return $rotcGrade;
     }
     
     /**
@@ -318,5 +569,91 @@ class FinalGradesController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to fetch common module data'], 500);
         }
+    }
+    
+    /**
+     * Get aptitude data for 2nd semester frontend consumption
+     */
+    private function getAptitudeData($userId, $semester)
+    {
+        if ($semester !== '2025-2026 2nd semester') {
+            return null;
+        }
+        
+        // Handle semester name variations in database
+        $aptitude = DB::table('second_semester_aptitude')
+            ->where('cadet_id', $userId)
+            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->first();
+            
+        if (!$aptitude) {
+            return [
+                'aptitude_30' => 0,
+                'total_merits' => 0,
+                'merits_array' => [],
+                'demerits_array' => []
+            ];
+        }
+        
+        // Build weekly merit and demerit arrays for 15 weeks
+        $meritsArray = [];
+        $demeritsArray = [];
+        $totalMerits = 0;
+        $totalDemerits = 0;
+        
+        for ($i = 1; $i <= 15; $i++) {
+            $merit = $aptitude->{"merits_week_$i"} ?? 0;
+            $demerit = $aptitude->{"demerits_week_$i"} ?? 0;
+            
+            $merit = ($merit === null || $merit === '' || $merit === '-') ? 0 : (int) $merit;
+            $demerit = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
+            
+            $meritsArray[] = $merit;
+            $demeritsArray[] = $demerit;
+            
+            $totalMerits += $merit;
+            $totalDemerits += $demerit;
+        }
+        
+        // Calculate aptitude_30 using the same logic as frontend
+        $netScore = max(0, $totalMerits - $totalDemerits);
+        $maxPossible = 15 * 10; // 15 weeks * 10 max points per week
+        $aptitude30 = $maxPossible > 0 ? ($netScore / $maxPossible) * 30 : 0;
+        $aptitude30 = min(30, round($aptitude30));
+        
+        return [
+            'aptitude_30' => $aptitude30,
+            'total_merits' => $totalMerits,
+            'merits_array' => $meritsArray,
+            'demerits_array' => $demeritsArray
+        ];
+    }
+    
+    /**
+     * Get exam data for 2nd semester frontend consumption
+     */
+    private function getExamData($userId, $semester)
+    {
+        if ($semester !== '2025-2026 2nd semester') {
+            return null;
+        }
+        
+        // Handle semester name variations in database
+        $exam = DB::table('second_semester_exam_scores')
+            ->where('user_id', $userId)
+            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->first();
+            
+        if (!$exam) {
+            return [
+                'midterm_exam' => 0,
+                'final_exam' => 0
+            ];
+        }
+        
+        return [
+            'midterm_exam' => $exam->midterm_exam ?? 0,
+            'final_exam' => $exam->final_exam ?? 0
+        ];
     }
 }

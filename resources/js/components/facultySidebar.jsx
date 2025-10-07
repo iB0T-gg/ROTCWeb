@@ -10,6 +10,7 @@ import { FaLock } from "react-icons/fa";
 import { TbMessageReportFilled } from "react-icons/tb";
 import { IoMdClose } from "react-icons/io";
 import { GrKey } from "react-icons/gr";
+import { FaGraduationCap } from "react-icons/fa";
 
 const FacultySidebar = () => {
   const [isOpen, setOpen] = useState(true);

@@ -340,114 +340,221 @@ const UserProfile = ({ auth, user }) => {
     <div className="relative w-full min-h-screen">
       <div className="fixed inset-0 bg-backgroundColor -z-10" />
       <Header auth={auth} />
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         <UserSidebar />
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-3 lg:p-6">
           <div className="font-regular">
-            <div className="bg-white p-3 text-[#6B6A6A] rounded-lg pl-5">
+            <div className="bg-white p-2 lg:p-3 text-[#6B6A6A] rounded-lg pl-3 lg:pl-5 text-sm lg:text-base">
               <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
                 Dashboard
               </Link>
-              <span className="mx-2 font-semibold">{">"}</span>
+              <span className="mx-1 lg:mx-2 font-semibold">{">"}</span>
               <span className="cursor-default font-bold">Profile</span>
             </div>
-            <div className="bg-primary text-white p-4 rounded-lg flex items-center justify-between mt-4 mb-6 pl-5 py-7">
-              <h1 className="text-2xl font-semibold">Profile</h1>
+            <div className="bg-primary text-white p-3 lg:p-4 rounded-lg flex items-center justify-between mt-4 mb-4 lg:mb-6 pl-3 lg:pl-5 py-4 lg:py-7">
+              <h1 className="text-xl lg:text-2xl font-semibold">Profile</h1>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              {/* LEFT CARD HIDDEN (merged into header) */}
-              <div className="hidden" />
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 items-start">
+              {/* LEFT COLUMN - Profile Info and Academic Info */}
+              <div className="lg:col-span-1 flex flex-col gap-4 order-1 lg:order-1">
+                {/* Profile Info Card */}
+                <div className="bg-white p-4 lg:p-6 rounded-lg shadow">
+                <div className="flex flex-col items-center text-center">
+                  {/* Profile Picture */}
+                  <div 
+                    className={`relative w-24 h-24 lg:w-32 lg:h-32 rounded-full overflow-hidden mb-4 ${editing ? 'cursor-pointer hover:opacity-80 border-2 border-primary' : ''}`}
+                    onClick={() => editing && setShowAvatarModal(true)}
+                    title={editing ? "Click to change profile picture" : ""}
+                  >
+                    {profilePic ? (
+                      <img
+                        src={profilePic}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '';
+                          e.target.style.display = 'none';
+                          // Show the fallback div
+                          const fallbackDiv = e.target.nextElementSibling;
+                          if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-2xl lg:text-3xl font-semibold ${profilePic ? 'hidden' : 'flex'}`}
+                      style={{ display: profilePic ? 'none' : 'flex' }}
+                    >
+                      {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                    {editing && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs">Change</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* User Info */}
+                  <div className="w-full">
+                    <h2 className="text-lg lg:text-xl font-semibold text-black mb-2">
+                      {user?.last_name}, {user?.first_name}
+                    </h2>
+                    
+                    {/* Student Number */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Student Number</label>
+                      <div className="bg-blue-100 p-3 rounded text-center font-medium">
+                        {user?.student_number || '-'}
+                      </div>
+                    </div>
+                    
+                    {/* Email */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                      <div className="bg-blue-100 p-3 rounded text-center font-medium break-words">
+                        {user?.email || '-'}
+                      </div>
+                    </div>
+                    
+                    {editing && (
+                      <div className="text-xs text-primary mt-2">Click photo to change</div>
+                    )}
+                  </div>
+                </div>
+                </div>
 
-              {/* SINGLE MAIN CARD */}
-              <form onSubmit={handleSubmit} className="md:col-span-3 bg-white w-full mx-auto p-6 rounded-lg shadow">
+                {/* Academic Information Section - Separate Card */}
+                <div className="bg-white p-3 lg:p-4 rounded-lg shadow">
+                  <h3 className="text-base lg:text-lg font-semibold text-black mb-3 text-center">Academic Info</h3>
+                  
+                  {/* Course */}
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Course</label>
+                    {editing ? (
+                      <div className="relative">
+                        <select
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
+                          name="course"
+                          value={form.course}
+                          onChange={handleChange}
+                          required={editing}
+                        >
+                          <option value="">-</option>
+                          {['BSIT','BSCS','BSCpE','BSEE','BSME','BSED','BEED','BSA','BSBA','BSHM'].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      </div>
+                    ) : (
+                      <div className="bg-gray-100 p-3 rounded">
+                        {form.course || '-'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Year & Section */}
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Year & Section</label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={form.year}
+                        onChange={handleChange}
+                        required={editing}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
+                        name="year"
+                        placeholder="e.g., 3rd Year - A"
+                      />
+                    ) : (
+                      <div className="bg-gray-100 p-3 rounded">
+                        {form.year || '-'}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Group */}
+                  <div className="mb-0">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Group</label>
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={form.section}
+                        onChange={handleChange}
+                        required={editing}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
+                        name="section"
+                        placeholder="e.g., Group 1"
+                      />
+                    ) : (
+                      <div className="bg-gray-100 p-3 rounded">
+                        {form.section || '-'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT CARD - Editable Fields */}
+              <form onSubmit={handleSubmit} className="lg:col-span-3 bg-white p-4 lg:p-6 rounded-lg shadow order-2 lg:order-2">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-3 lg:gap-0">
+                  <h1 className="text-lg lg:text-xl font-semibold text-black">Personal Information</h1>
+                  {!editing && (
+                    <button
+                      type="button"
+                      className="bg-primary text-white px-3 lg:px-4 py-2 rounded hover:bg-primary transition-colors text-sm lg:text-base w-full lg:w-auto"
+                      onClick={handleEdit}
+                    >
+                      Edit Info
+                    </button>
+                  )}
+                </div>
+                
                 <div className="flex flex-col gap-4">
-                   {/* Header with avatar/name/email and edit button */}
-                   <div className="flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-4">
-                       <div 
-                         className={`relative w-24 h-24 rounded-full bg-gray-200 overflow-hidden ${editing ? 'cursor-pointer hover:opacity-80 border-2 border-primary' : ''}`}
-                         onClick={() => editing && setShowAvatarModal(true)}
-                         title={editing ? "Click to change profile picture" : ""}
-                       >
-                         <img
-                           src={profilePic || "/images/default-profile.png"}
-                           alt="Profile"
-                           className="w-full h-full object-cover"
-                           onError={(e) => {
-                             if (e.target.src !== "/images/default-profile.png") {
-                               e.target.onerror = null;
-                               e.target.src = "/images/default-profile.png";
-                             }
-                           }}
-                         />
-                         {editing && (
-                           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity">
-                             <span className="text-white text-xs">Change</span>
-                           </div>
-                         )}
-                       </div>
-                       <div>
-                         <div className="text-lg font-semibold text-black">{user?.last_name}, {user?.first_name}</div>
-                         <div className="text-sm text-gray-600">{user?.email}</div>
-                         {editing && (
-                           <div className="text-xs text-primary mt-1">Click photo to change</div>
-                         )}
-                       </div>
-                     </div>
-                     {!editing && (
-                       <button
-                         type="button"
-                         className="bg-primary text-white px-4 py-2 rounded"
-                         onClick={handleEdit}
-                       >
-                         Edit Info
-                       </button>
-                     )}
-                   </div>
-                {/* Row 1 */}
-                <div className="flex gap-x-4 mb-3">
-                  <div className="flex-1 min-w-0">
-                    <label className="block font-medium text-black">First Name</label>
+                {/* Row 1 - Name Fields (Read-only) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block font-medium text-black mb-2">First Name</label>
                     <input
                       type="text"
                       value={form.first_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="first_name"
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Middle Name</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Middle Name</label>
                     <input
                       type="text"
                       value={form.middle_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="middle_name"
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Last Name</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Last Name</label>
                     <input
                       type="text"
                       value={form.last_name}
                       readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
                       name="last_name"
                     />
                   </div>
                 </div>
 
                 {/* Row 2: Birthday, Gender, Age, Phone Number, Campus */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Birthday</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                  <div>
+                    <label className="block font-medium text-black mb-2">Birthday</label>
                     <div className="relative">
-                      <div className="flex items-center bg-gray-100 rounded py-3">
+                      <div className="flex items-center bg-gray-100 rounded p-3">
                         <button
                           type="button"
                           onClick={() => editing && setShowDatePicker(!showDatePicker)}
-                          className={`pl-2 mr-2 ${editing ? 'cursor-pointer hover:text-blue-600' : 'cursor-default'}`}
+                          className={`mr-2 ${editing ? 'cursor-pointer hover:text-blue-600' : 'cursor-default'}`}
                           disabled={!editing}
                         >
                           📅
@@ -457,7 +564,7 @@ const UserProfile = ({ auth, user }) => {
                           value={form.birthday}
                           readOnly={!editing}
                           required={editing}
-                        className={`bg-transparent w-full ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
+                          className={`bg-transparent w-full ${editing ? 'bg-gray-100' : ''} ${focusClass}`}
                           name="birthday"
                           onChange={handleChange}
                           placeholder="dd/mm/yy"
@@ -490,25 +597,25 @@ const UserProfile = ({ auth, user }) => {
                       )}
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Age</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Age</label>
                     <input
                       type="text"
                       value={form.age}
                       readOnly={!editing}
                       required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-3 rounded ${focusClass}`}
                       name="age"
                       onChange={handleChange}
                       placeholder='-'
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Gender</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Gender</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="gender"
                           value={form.gender}
                           onChange={handleChange}
@@ -526,28 +633,28 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.gender || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Phone Number</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Phone Number</label>
                     <input
                       type="text"
                       value={form.phone_number}
                       readOnly={!editing}
                       required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
+                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-3 rounded ${focusClass}`}
                       name="phone_number"
                       onChange={handleChange}
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Campus</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Campus</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="campus"
                           value={form.campus}
                           onChange={handleChange}
@@ -565,30 +672,20 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.campus || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
                 </div>
 
-                {/* Row 3: Student Number, Platoon, Company, Battalion, Email */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Student Number</label>
-                    <input
-                      type="text"
-                      value={form.student_number}
-                      readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
-                      name="student_number"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Platoon</label>
+                {/* Row 3: Platoon, Company, Battalion */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block font-medium text-black mb-2">Platoon</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="platoon"
                           value={form.platoon}
                           onChange={handleChange}
@@ -606,17 +703,17 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.platoon || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                         name="platoon"
                       />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Company</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Company</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="company"
                           value={form.company}
                           onChange={handleChange}
@@ -634,16 +731,16 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.company || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Battalion</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Battalion</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="battalion"
                           value={form.battalion}
                           onChange={handleChange}
@@ -661,81 +758,20 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.battalion || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-black">Email</label>
-                    <input
-                      type="text"
-                      value={form.email}
-                      readOnly
-                      className={`w-full bg-blue-100 p-2 rounded py-3 ${focusClass} pointer-events-none select-none cursor-not-allowed`}
-                      name="email"
-                    />
                   </div>
                 </div>
 
-                {/* Row 4: Course, Yr Level & Section, Group, Blood, Height, Region, Address (wide) */}
-                <div className="flex flex-wrap gap-4 mb-3">
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Course</label>
+                {/* Row 5: Physical and Location Information */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block font-medium text-black mb-2">Blood Type</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
-                          name="course"
-                          value={form.course}
-                          onChange={handleChange}
-                          required={editing}
-                        >
-                          <option value="">-</option>
-                          {['BSIT','BSCS','BSCpE','BSEE','BSME','BSED','BEED','BSA','BSBA','BSHM'].map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.course}
-                        readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                      />
-                    )}
-                  </div>
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Yr Level & Section</label>
-                    <input
-                      type="text"
-                      value={form.year}
-                      readOnly={!editing}
-                      required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
-                      name="year"
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Group</label>
-                    <input
-                      type="text"
-                      value={form.section}
-                      readOnly={!editing}
-                      required={editing}
-                      className={`w-full ${editing ? 'bg-gray-100' : 'bg-gray-100'} p-2 rounded py-3 ${focusClass}`}
-                      name="section"
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Blood Type</label>
-                    {editing ? (
-                      <div className="relative">
-                        <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="blood_type"
                           value={form.blood_type}
                           onChange={handleChange}
@@ -753,16 +789,16 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.blood_type || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Height</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Height</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="height"
                           value={form.height}
                           onChange={handleChange}
@@ -780,16 +816,16 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.height || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
-                  <div className="basis-[10%] min-w-[60px]">
-                    <label className="block font-medium text-black">Region</label>
+                  <div>
+                    <label className="block font-medium text-black mb-2">Region</label>
                     {editing ? (
                       <div className="relative">
                         <select
-                          className={`w-full bg-gray-100 p-2 rounded py-3 pr-9 appearance-none ${focusClass}`}
+                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
                           name="region"
                           value={form.region}
                           onChange={handleChange}
@@ -807,150 +843,150 @@ const UserProfile = ({ auth, user }) => {
                         type="text"
                         value={form.region || '-'}
                         readOnly
-                        className={`w-full bg-gray-100 p-2 rounded py-3 ${focusClass}`}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-[320px]">
-                    <label className="block font-medium text-black">Address</label>
-                    {editing ? (
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={form.address}
-                          readOnly
-                          required={editing}
-                          className="w-full bg-gray-100 p-2 rounded py-3 pr-9 cursor-pointer focus:outline-none"
-                          placeholder="-"
-                          onClick={() => setShowPicker(true)}
-                        />
-                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                        {showPicker && (
-                          <div
-                            ref={pickerRef}
-                            style={{
-                              position: "absolute",
-                              top: "100%",
-                              left: 0,
-                              right: 0,
-                              zIndex: 20,
-                              background: "white",
-                              border: "1px solid #ccc",
-                              borderRadius: 8,
-                              padding: "16px 16px 0 16px",
-                              marginTop: 4,
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                              width: "100%",
-                              maxHeight: 360,
-                              overflowY: "auto"
-                            }}
-                          >
-                            <div className="flex flex-col gap-2">
-                              <div>
-                                <label className="block text-sm mb-1">Province</label>
-                                <div className="relative">
-                                  <select
-                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
-                                    value={province}
-                                    onChange={(e) => setProvince(e.target.value)}
-                                  >
-                                    <option value="">Select Province</option>
-                                    {provinces.map((prov) => (
-                                      <option key={prov.code} value={prov.code}>
-                                        {prov.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm mb-1">Municipality/City</label>
-                                <div className="relative">
-                                  <select
-                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
-                                    value={municipality}
-                                    onChange={(e) => setMunicipality(e.target.value)}
-                                    disabled={!province}
-                                  >
-                                    <option value="">Select Municipality/City</option>
-                                    {municipalities.map((mun) => (
-                                      <option key={mun.code} value={mun.code}>
-                                        {mun.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm mb-1">Barangay</label>
-                                <div className="relative">
-                                  <select
-                                    className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
-                                    value={barangay}
-                                    onChange={(e) => setBarangay(e.target.value)}
-                                    disabled={!municipality}
-                                  >
-                                    <option value="">Select Barangay</option>
-                                    {barangays.map((brgy) => (
-                                      <option key={brgy.code} value={brgy.name}>
-                                        {brgy.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                                </div>
-                              </div>
-                              <button
-                                className="mt-2 mb-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                                onClick={() => setShowPicker(false)}
-                                type="button"
-                              >
-                                Close
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.address}
-                        readOnly
-                        className="w-full bg-gray-100 p-2 rounded py-3 focus:outline-none"
+                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
                       />
                     )}
                   </div>
                 </div>
 
-                {/* Bottom-right controls */}
+                {/* Row 6: Address */}
+                <div className="mb-4">
+                  <label className="block font-medium text-black mb-2">Address</label>
+                  {editing ? (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={form.address}
+                        readOnly
+                        required={editing}
+                        className="w-full bg-gray-100 p-3 rounded pr-9 cursor-pointer focus:outline-none"
+                        placeholder="-"
+                        onClick={() => setShowPicker(true)}
+                      />
+                      <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                      {showPicker && (
+                        <div
+                          ref={pickerRef}
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 20,
+                            background: "white",
+                            border: "1px solid #ccc",
+                            borderRadius: 8,
+                            padding: "16px 16px 0 16px",
+                            marginTop: 4,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                            width: "100%",
+                            maxHeight: 360,
+                            overflowY: "auto"
+                          }}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div>
+                              <label className="block text-sm mb-1">Province</label>
+                              <div className="relative">
+                                <select
+                                  className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                  value={province}
+                                  onChange={(e) => setProvince(e.target.value)}
+                                >
+                                  <option value="">Select Province</option>
+                                  {provinces.map((prov) => (
+                                    <option key={prov.code} value={prov.code}>
+                                      {prov.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Municipality/City</label>
+                              <div className="relative">
+                                <select
+                                  className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                  value={municipality}
+                                  onChange={(e) => setMunicipality(e.target.value)}
+                                  disabled={!province}
+                                >
+                                  <option value="">Select Municipality/City</option>
+                                  {municipalities.map((mun) => (
+                                    <option key={mun.code} value={mun.code}>
+                                      {mun.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Barangay</label>
+                              <div className="relative">
+                                <select
+                                  className="w-full bg-gray-100 p-2 rounded pr-9 appearance-none"
+                                  value={barangay}
+                                  onChange={(e) => setBarangay(e.target.value)}
+                                  disabled={!municipality}
+                                >
+                                  <option value="">Select Barangay</option>
+                                  {barangays.map((brgy) => (
+                                    <option key={brgy.code} value={brgy.name}>
+                                      {brgy.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
+                              </div>
+                            </div>
+                            <button
+                              className="mt-2 mb-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                              onClick={() => setShowPicker(false)}
+                              type="button"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={form.address}
+                      readOnly
+                      className="w-full bg-gray-100 p-3 rounded focus:outline-none"
+                    />
+                  )}
+                </div>
+                </div>
+
+                {/* Bottom controls */}
                 {editing && (
-                  <div className="flex justify-end mt-8">
+                  <div className="flex flex-col sm:flex-row justify-end mt-8 gap-2">
                     <button
                       type="button"
-                      className="bg-gray-400 text-white px-4 py-2 rounded mr-2"
+                      className="bg-gray-400 text-white px-4 lg:px-6 py-2 rounded hover:bg-gray-500 transition-colors order-2 sm:order-1"
                       onClick={handleCancel}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="bg-primary text-white px-4 py-2 rounded"
+                      className="bg-primary text-white px-4 lg:px-6 py-2 rounded hover:bg-primary transition-colors order-1 sm:order-2"
                     >
                       Save Changes
                     </button>
                   </div>
                 )}
-                </div>
               </form>
             </div>
           </div>    
-          </div>
         </div>
-
-      {/* Remove backdrop for address picker (no gray background) */}
-
+      </div>
+      
       {/* Avatar Modal */}
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -963,17 +999,29 @@ const UserProfile = ({ auth, user }) => {
             </button>
             <h2 className="text-xl font-semibold mb-4 text-center">Choose profile picture</h2>
             <div className="flex flex-col items-center">
-              <img
-                src={previewUrl || profilePic || "/images/default-profile.png"}
-                alt="Profile Preview"
-                className="w-32 h-32 rounded-full object-cover mb-4"
-                onError={(e) => {
-                  if (e.target.src !== "/images/default-profile.png") {
-                    e.target.onerror = null;
-                    e.target.src = "/images/default-profile.png";
-                  }
-                }}
-              />
+              <div className="w-32 h-32 rounded-full overflow-hidden mb-4">
+                {previewUrl || profilePic ? (
+                  <img
+                    src={previewUrl || profilePic}
+                    alt="Profile Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '';
+                      e.target.style.display = 'none';
+                      // Show the fallback div
+                      const fallbackDiv = e.target.nextElementSibling;
+                      if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-full h-full bg-gray-300 flex items-center justify-center text-gray-600 text-3xl font-semibold ${(previewUrl || profilePic) ? 'hidden' : 'flex'}`}
+                  style={{ display: (previewUrl || profilePic) ? 'none' : 'flex' }}
+                >
+                  {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              </div>
               <input
                 type="file"
                 accept="image/*"
@@ -1002,6 +1050,6 @@ const UserProfile = ({ auth, user }) => {
       )}
     </div>
   );
-  };
-  
-  export default UserProfile; 
+};
+
+export default UserProfile; 

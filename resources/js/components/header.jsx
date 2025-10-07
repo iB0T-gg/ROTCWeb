@@ -52,13 +52,25 @@ export default function Header({ auth }) {
                 <div className='flex items-center'>
 
                     {/* Logo and Title */}
-                    <Link href={
-                        auth && auth.user ?
-                            auth.user.role === 'admin' ? '/admin/adminHome'
-                            : auth.user.role === 'faculty' ? '/faculty/facultyHome'
+                    <Link 
+                        href={
+                            auth && auth.user ?
+                                auth.user.role === 'admin' ? '/adminHome'
+                                : auth.user.role === 'faculty' ? '/faculty/facultyHome'
+                                : auth.user.role === 'user' ? '/user/userHome'
+                                : '/user/userHome'
                             : '/user/userHome'
-                        : '/user/userHome'
-                    }>
+                        }
+                        onClick={() => {
+                            console.log('Logo clicked - User role:', auth?.user?.role);
+                            console.log('Redirecting to:', auth && auth.user ?
+                                auth.user.role === 'admin' ? '/adminHome'
+                                : auth.user.role === 'faculty' ? '/faculty/facultyHome'
+                                : auth.user.role === 'user' ? '/user/userHome'
+                                : '/user/userHome'
+                            : '/user/userHome');
+                        }}
+                    >
                         <div className='flex items-center gap-3'>
                             <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-11 h-10' />
                             <h1 className='hidden md:block text-xl font-regular'>Bulacan State University ROTC Portal</h1>

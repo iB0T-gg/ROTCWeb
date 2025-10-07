@@ -18,7 +18,6 @@ const ChevronDownIcon = ({ className }) => (
 
 const FacultyAttendance = ({ auth }) => {
   const [cadets, setCadets] = useState([]);
-  const [attendanceMap, setAttendanceMap] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedPlatoon, setSelectedPlatoon] = useState('');
@@ -27,41 +26,49 @@ const FacultyAttendance = ({ auth }) => {
   const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const cadetsPerPage = 8;
 
   // Semester options
-  const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
+  const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
 
   // Function to fetch data based on selected semester
   const fetchDataForSemester = async (semester) => {
     setIsLoading(true);
-    const semesterParam = encodeURIComponent(semester);
+    setError(null);
     
     try {
-      // Fetch all cadets
-      const cadetsResponse = await fetch(`/api/cadets?semester=${semesterParam}`);
-      let cadetsData = [];
-      if (cadetsResponse.ok) {
-        cadetsData = await cadetsResponse.json();
-        setCadets(cadetsData);
+      const response = await fetch(`/api/attendance/cadets?semester=${encodeURIComponent(semester)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
-      // Fetch all attendance records
-      const attendanceResponse = await fetch(`/api/faculty-attendance?semester=${semesterParam}`);
-      if (attendanceResponse.ok) {
-          const attendanceData = await attendanceResponse.json();
-          // Map attendance by user_id for quick lookup
-          const map = {};
-          attendanceData.forEach(record => {
-            map[record.user_id] = record;
-          });
-          setAttendanceMap(map);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
+
+      const result = await response.json();
+      
+      console.log('Faculty attendance API result:', result);
+      console.log('First cadet data structure:', result.data?.[0]);
+      
+      if (result && result.data && Array.isArray(result.data)) {
+        setCadets(result.data);
+      } else {
+        setCadets([]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+      setError(`Failed to load attendance data: ${error.message}`);
+      setCadets([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch data on component mount
   useEffect(() => {
@@ -86,12 +93,12 @@ const FacultyAttendance = ({ auth }) => {
   // Filter and sort cadets
   const filteredCadets = cadets
     .filter(cadet => {
-      const isUser = cadet.role === 'user';
+      // adminAttendance already filters for non-admin users, so we don't need role filtering
       const nameMatches = formatCadetName(cadet).toLowerCase().includes(search.toLowerCase());
       const platoonMatches = !selectedPlatoon || cadet.platoon === selectedPlatoon;
       const companyMatches = !selectedCompany || cadet.company === selectedCompany;
       const battalionMatches = !selectedBattalion || cadet.battalion === selectedBattalion;
-      return isUser && nameMatches && platoonMatches && companyMatches && battalionMatches;
+      return nameMatches && platoonMatches && companyMatches && battalionMatches;
     })
     .sort((a, b) => formatCadetName(a).localeCompare(formatCadetName(b)));
 
@@ -240,48 +247,62 @@ const FacultyAttendance = ({ auth }) => {
               </div>
               
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                <thead className='text-gray-600'>
-                  <tr>
-                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
-                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Weeks Present</th>
-                    <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Attendance (30%)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCadets.map((cadet) => {
-                    const attendance = attendanceMap[cadet.id];
-                    
-                    // Get max weeks based on semester
-                    const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-                    
-                    // For first semester, use the new aggregated data structure
-                    let presentCount = 0;
-                    let attendanceScore = 0;
-                    
-                    if (selectedSemester === '2025-2026 1st semester') {
-                      // Use aggregated data from the new structure
-                      presentCount = attendance ? attendance.weeks_present : 0;
-                      attendanceScore = attendance ? attendance.attendance_30 : 0;
-                    } else {
-                      // For second semester, use the old individual week logic
-                      if (attendance && attendance.attendances) {
-                        presentCount = Object.values(attendance.attendances).filter(Boolean).length;
-                      }
-                      attendanceScore = Math.min(30, Math.round((presentCount / maxWeeks) * 30));
-                    }
-                    
-                    return (
-                      <tr className='border-b border-gray-200' key={cadet.id}>
-                        <td className='py-2 md:py-4 px-2 md:px-3 text-black text-xs md:text-sm'>{formatCadetName(cadet)}</td>
-                        <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{presentCount}/{maxWeeks}</td>
-                        <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{Math.round(attendanceScore)}</td>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-32 md:h-40">
+                    <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
+                    <span className="ml-3 text-gray-600">Loading attendance data...</span>
+                  </div>
+                ) : (
+                  <table className="w-full border-collapse">
+                    <thead className='text-gray-600'>
+                      <tr>
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Weeks Present</th>
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Attendance (30%)</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody>
+                      {paginatedCadets.length === 0 ? (
+                        <tr>
+                          <td colSpan="3" className="py-8 px-4 text-center text-gray-500">
+                            {error ? (
+                              <div>
+                                <p>Error loading data: {error}</p>
+                                <button 
+                                  onClick={() => fetchDataForSemester(selectedSemester)}
+                                  className="mt-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+                                >
+                                  Retry
+                                </button>
+                              </div>
+                            ) : cadets.length === 0 ? (
+                              `No cadets found for ${selectedSemester}. Please check if attendance data has been imported.`
+                            ) : (
+                              `No cadets match the current filter criteria. Total cadets: ${cadets.length}`
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedCadets.map((cadet) => {
+                          // Calculate attendance from weekly data (same as adminAttendance)
+                          const weeklyAttendance = cadet.weekly_attendance || {};
+                          const presentCount = Object.values(weeklyAttendance).filter(Boolean).length;
+                          const attendancePercentage = ((presentCount / 15) * 30);
+                          const maxWeeks = 15;
+                          
+                          return (
+                            <tr className='border-b border-gray-200' key={cadet.user_id}>
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-black text-xs md:text-sm'>{formatCadetName(cadet)}</td>
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{presentCount}/{maxWeeks}</td>
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm'>{Math.round(attendancePercentage)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             <div className="flex flex-col sm:flex-row items-center justify-between mt-4 w-full gap-3 md:gap-4">
                 {/* Left: Showing data */}
                 <div className="text-xs md:text-sm text-gray-600 text-center sm:text-left">

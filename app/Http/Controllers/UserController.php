@@ -511,7 +511,7 @@ class UserController extends Controller
             
         $secondSemesterGrades = DB::table('user_grades')
             ->where('user_id', $user->id)
-            ->where('semester', '2026-2027 2nd semester')
+            ->where('semester', '2025-2026 2nd semester')
             ->first();
         
         // Prepare response with both semesters
@@ -538,6 +538,35 @@ class UserController extends Controller
         ];
         
         return response()->json($response);
+    }
+
+    /**
+     * Get the current user's detailed ROTC grade breakdown
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserRotcGradeBreakdown(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $semester = $request->input('semester', '2025-2026 1st semester');
+        
+        try {
+            // Use the ROTC grade controller to get detailed breakdown
+            $rotcController = new \App\Http\Controllers\RotcGradeController();
+            $gradeData = $rotcController->getCadetGradeBreakdown($user->id, $request);
+            
+            return $gradeData;
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching grade breakdown: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

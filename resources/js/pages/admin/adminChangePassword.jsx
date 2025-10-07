@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { useForm } from '@inertiajs/react';
@@ -28,63 +29,46 @@ export default function ChangePassword({ auth }) {
             return;
         }
         
-        const formData = new FormData();
-        formData.append('current_password', data.current_password);
-        formData.append('new_password', data.new_password);
-        formData.append('confirm_password', data.confirm_password);
-        
-        // Get the CSRF token from meta tag
-        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        
-        // Use fetch API directly to avoid Inertia's handling of the response
-        fetch('/api/admin/change-password', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': token,
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Failed to change password');
+        // Use Inertia's post method instead of fetch for better CSRF handling
+        post('/api/admin/change-password', {
+            onSuccess: () => {
+                // Clear form data
+                setData({
+                    current_password: '',
+                    new_password: '',
+                    confirm_password: '',
                 });
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Clear form data
-            setData({
-                current_password: '',
-                new_password: '',
-                confirm_password: '',
-            });
-            
-            // Show success toast
-            toast.success('Password changed successfully!', {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            });
-        })
-        .catch(error => {
-            // Show error toast
-            if (error.message && error.message.includes('current password is incorrect')) {
-                toast.error('The current password is incorrect', {
+                
+                // Show success toast
+                toast.success('Password changed successfully!', {
                     position: "top-center",
-                    autoClose: 5000
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true
                 });
-            } else {
-                toast.error('Failed to change password. Please try again.', {
-                    position: "top-center",
-                    autoClose: 5000
-                });
+            },
+            onError: (errors) => {
+                // Show error toast based on the specific error
+                if (errors.current_password) {
+                    toast.error(errors.current_password, {
+                        position: "top-center",
+                        autoClose: 5000
+                    });
+                } else if (errors.new_password) {
+                    toast.error(errors.new_password, {
+                        position: "top-center",
+                        autoClose: 5000
+                    });
+                } else {
+                    toast.error('Failed to change password. Please try again.', {
+                        position: "top-center",
+                        autoClose: 5000
+                    });
+                }
+                console.error('Password change errors:', errors);
             }
-            console.error('Error:', error);
         });
     };
 
