@@ -371,40 +371,44 @@ export default function AdminMasterlist(){
               )}
               
               {/* Pagination Controls */}
-              <div className="flex flex-col sm:flex-row justify-between items-center mt-4 w-full gap-3">
-                <div className="text-gray-600 text-xs md:text-sm order-2 sm:order-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-4 w-full gap-3">
+                <div className="text-gray-600 text-sm md:text-base justify-self-start">
                   Showing data {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                 </div>
-                <div className="flex justify-center order-1 sm:order-2">
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      className={`mx-1 px-2 md:px-3 py-1 rounded text-xs md:text-sm ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
-                      onClick={() => setCurrentPage(i + 1)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  {currentPage < totalPages && (
-                    <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      &gt;
-                    </button>
-                  )}
+                <div className="flex justify-center justify-self-center w-full sm:w-auto">
                   {currentPage > 1 && (
                     <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
+                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
                       onClick={() => setCurrentPage(currentPage - 1)}
                     >
                       {'<'}
                     </button>
                   )}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    if (pageNum > totalPages) return null;
+                    return (
+                      <button
+                        key={pageNum}
+                        className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  {currentPage < totalPages && (
+                    <button
+                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      &gt;
+                    </button>
+                  )}
                 </div>
                 
                 {/* Export Button */}
-                <div className="order-3 w-full sm:w-auto">
+                <div className="justify-self-end w-full sm:w-auto">
                   <button 
                     onClick={exportToExcel}
                     className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 text-xs md:text-sm w-full sm:w-auto"

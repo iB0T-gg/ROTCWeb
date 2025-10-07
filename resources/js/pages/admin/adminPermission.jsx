@@ -319,18 +319,18 @@ export default function AdminPermission(){
                   </div>
                   <div className="relative w-full sm:w-auto">
                     <div
-                      className="bg-white border border-gray-300 rounded-lg p-1.5 md:p-2 pl-3 md:pl-4 pr-8 cursor-pointer flex items-center w-full text-xs md:text-sm"
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-2 cursor-pointer flex items-center w-full sm:w-56 text-xs md:text-sm"
                       onClick={() => setShowFilterPicker(!showFilterPicker)}
                     >
-                      <span className="text-gray-600 truncate">
+                      <span className="text-gray-600">
                         {sortBy ? 
                           sortBy === 'date-newest' ? 'Date (Newest)' : 
                           sortBy === 'date-oldest' ? 'Date (Oldest)' : 
                           sortBy === 'name-az' ? 'Name (A-Z)' : 
-                          sortBy === 'name-za' ? 'Name (Z-A)' : 'Sort by'
-                        : 'Sort by'}
+                          sortBy === 'name-za' ? 'Name (Z-A)' : 'Sort by : All'
+                        : 'Sort by : All'}
                       </span>
-                      <FaSort className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
                     
                     {showFilterPicker && (

@@ -56,6 +56,86 @@ const UserProfile = ({ auth, user }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  // Only set battalion from gender if battalion is empty
+  useEffect(() => {
+    const computed = form.gender === 'Male' ? '1st Battalion' : form.gender === 'Female' ? '2nd Battalion' : null;
+    if (computed && (!form.battalion || form.battalion === '-')) {
+      setForm(prev => ({ ...prev, battalion: computed }));
+    }
+  }, [form.gender]);
+
+  // Compute Platoon and Company only if both are empty and roster is accessible
+  useEffect(() => {
+    if ((form.platoon && form.platoon !== '-') || (form.company && form.company !== '-')) return;
+    async function computePlatoonCompany() {
+      try {
+        // Try public cadets endpoint first; fall back to admin endpoint if needed
+        let data = [];
+        try {
+          const res = await fetch('/api/cadets');
+          if (res.ok) data = await res.json();
+        } catch (e) {}
+        if (!Array.isArray(data) || data.length === 0) {
+          try {
+            const res2 = await fetch('/api/admin-cadets');
+            if (res2.ok) data = await res2.json();
+          } catch (e) {}
+        }
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Sort alphabetically by last name then first name
+        const normalize = (s) => (s || '').toString().trim().toLowerCase();
+        const sorted = [...data].sort((a, b) => {
+          const aLast = normalize(a.last_name);
+          const bLast = normalize(b.last_name);
+          if (aLast !== bLast) return aLast.localeCompare(bLast);
+          const aFirst = normalize(a.first_name);
+          const bFirst = normalize(b.first_name);
+          return aFirst.localeCompare(bFirst);
+        });
+
+        // Identify this cadet by student_number first, else email, else name
+        const myStudent = normalize(user?.student_number);
+        const myEmail = normalize(user?.email);
+        const myFirst = normalize(user?.first_name);
+        const myLast = normalize(user?.last_name);
+        const myIndex = sorted.findIndex((c) => {
+          const cStudent = normalize(c.student_number);
+          const cEmail = normalize(c.email);
+          const cFirst = normalize(c.first_name);
+          const cLast = normalize(c.last_name);
+          return (
+            (myStudent && cStudent && cStudent === myStudent) ||
+            (myEmail && cEmail && cEmail === myEmail) ||
+            (cFirst === myFirst && cLast === myLast)
+          );
+        });
+
+        if (myIndex < 0) { return; }
+
+        const groupIndex = Math.floor(myIndex / 37); // 0-based groups of 37
+        // Cycle platoons every 3 groups: 1st, 2nd, 3rd, then repeat
+        const cycle = groupIndex % 3;
+        const platoonOrdinal = cycle === 0 ? '1st' : cycle === 1 ? '2nd' : '3rd';
+        const platoonName = `${platoonOrdinal} Platoon`;
+        const companies = [
+          'Alpha','Beta','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliet','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu'
+        ];
+        const companyName = companies[groupIndex % companies.length] || 'Alpha';
+
+        setForm((prev) => ({
+          ...prev,
+          platoon: (prev.platoon && prev.platoon !== '-') ? prev.platoon : platoonName,
+          company: (prev.company && prev.company !== '-') ? prev.company : companyName
+        }));
+      } catch (e) {
+        // Silently ignore if API not available
+      }
+    }
+    // Run once after mount
+    computePlatoonCompany();
+  }, [user?.first_name, user?.last_name, user?.student_number, user?.email]);
+
   // Fetch provinces on mount
   useEffect(() => {
     fetch("https://psgc.gitlab.io/api/provinces/")
@@ -136,6 +216,16 @@ const UserProfile = ({ auth, user }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Auto-assign battalion based on gender when gender changes
+    if (name === 'gender') {
+      const nextBattalion = value === 'Male' ? '1st Battalion' : value === 'Female' ? '2nd Battalion' : '-';
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+        battalion: nextBattalion
+      }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       [name]: value
@@ -682,85 +772,31 @@ const UserProfile = ({ auth, user }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block font-medium text-black mb-2">Platoon</label>
-                    {editing ? (
-                      <div className="relative">
-                        <select
-                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
-                          name="platoon"
-                          value={form.platoon}
-                          onChange={handleChange}
-                          required={editing}
-                        >
-                          <option value="">-</option>
-                          {platoonOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.platoon || '-'}
-                        readOnly
-                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
-                        name="platoon"
-                      />
-                    )}
+                    <input
+                      type="text"
+                      value={form.platoon || '-'}
+                      readOnly
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                      name="platoon"
+                    />
                   </div>
                   <div>
                     <label className="block font-medium text-black mb-2">Company</label>
-                    {editing ? (
-                      <div className="relative">
-                        <select
-                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
-                          name="company"
-                          value={form.company}
-                          onChange={handleChange}
-                          required={editing}
-                        >
-                          <option value="">-</option>
-                          {companyOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.company || '-'}
-                        readOnly
-                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
-                      />
-                    )}
+                    <input
+                      type="text"
+                      value={form.company || '-'}
+                      readOnly
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                    />
                   </div>
                   <div>
                     <label className="block font-medium text-black mb-2">Battalion</label>
-                    {editing ? (
-                      <div className="relative">
-                        <select
-                          className={`w-full bg-gray-100 p-3 rounded pr-9 appearance-none ${focusClass}`}
-                          name="battalion"
-                          value={form.battalion}
-                          onChange={handleChange}
-                          required={editing}
-                        >
-                          <option value="">-</option>
-                          {battalionOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5" />
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={form.battalion || '-'}
-                        readOnly
-                        className={`w-full bg-gray-100 p-3 rounded ${focusClass}`}
-                      />
-                    )}
+                    <input
+                      type="text"
+                      value={form.battalion || '-'}
+                      readOnly
+                      className={`w-full bg-blue-100 p-3 rounded ${focusClass} pointer-events-none select-none cursor-not-allowed`}
+                    />
                   </div>
                 </div>
 

@@ -3,6 +3,7 @@ import axios from 'axios';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
+import { FaChevronDown } from 'react-icons/fa6'
 import { Link } from '@inertiajs/react';
 
 export default function AdminUserList({ auth }) {
@@ -13,6 +14,8 @@ export default function AdminUserList({ auth }) {
     const [activeTab, setActiveTab] = useState('active'); // 'active' or 'archived'
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all'); // 'all', 'admin', 'faculty', 'user'
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 8;
 
     useEffect(() => {
         // Fetch users when component mounts
@@ -138,6 +141,11 @@ export default function AdminUserList({ auth }) {
         return lastNameA.localeCompare(lastNameB);
     });
 
+  // Reset to first page when filters/search/tab change
+  useEffect(() => {
+      setCurrentPage(1);
+  }, [searchTerm, roleFilter, activeTab]);
+
     // Filter archived users based on search term and role
     const filteredArchivedUsers = archivedUsers.filter(user => {
         const nameMatches = `${user.first_name} ${user.middle_name} ${user.last_name}`
@@ -185,7 +193,7 @@ export default function AdminUserList({ auth }) {
 
                         {/* Filters and Search */}
                         <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
-                            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 items-start sm:items-center justify-between">
                                 {/* Tabs */}
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto">
                                     <button 
@@ -210,8 +218,10 @@ export default function AdminUserList({ auth }) {
                                     </button>
                                 </div>
                                 
-                                {/* Search */}
-                                <div className="relative w-full sm:w-48 md:w-64">
+                                {/* Right controls: Search + Role filter */}
+                                <div className="flex w-full sm:w-auto items-center gap-2 md:gap-3 justify-end">
+                                    {/* Search */}
+                                    <div className="relative w-full sm:w-48 md:w-64">
                                     <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
                                     <input
                                         type="text"
@@ -220,20 +230,21 @@ export default function AdminUserList({ auth }) {
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full py-1.5 md:py-2 px-2 md:px-4 pl-7 md:pl-10 border rounded-lg text-xs md:text-sm"
                                     />
-                                </div>
-                                
-                                {/* Role filter */}
-                                <div className="w-full sm:w-auto">
-                                    <select 
-                                        value={roleFilter}
-                                        onChange={(e) => setRoleFilter(e.target.value)}
-                                        className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
-                                    >
-                                        <option value="all">All Roles</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="faculty">Faculty</option>
-                                        <option value="user">Cadets</option>
-                                    </select>
+                                    </div>
+                                    {/* Role filter */}
+                                    <div className="relative w-auto">
+                                        <select 
+                                            value={roleFilter}
+                                            onChange={(e) => setRoleFilter(e.target.value)}
+                                            className="py-1.5 md:py-2 pl-3 pr-8 md:pl-4 md:pr-10 border rounded-lg text-xs md:text-sm appearance-none"
+                                        >
+                                            <option value="all">All Roles</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="faculty">Faculty</option>
+                                            <option value="user">Cadets</option>
+                                        </select>
+                                        <FaChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -267,7 +278,9 @@ export default function AdminUserList({ auth }) {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="bg-white divide-y divide-gray-200">
-                                                            {filteredUsers.map((user) => (
+                                                            {filteredUsers
+                                                              .slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage)
+                                                              .map((user) => (
                                                                 <tr key={user.id} className="hover:bg-gray-50">
                                                                     <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
                                                                         <div className="text-xs md:text-sm font-medium text-gray-900">
@@ -322,13 +335,50 @@ export default function AdminUserList({ auth }) {
                                                 </div>
                                             )}
                                             {filteredUsers.length > 0 && (
-                                                <div className="flex justify-end mt-3 md:mt-4">
-                                                    <button
-                                                        onClick={handleArchiveAll}
-                                                        className="bg-primary hover:bg-primary/85 text-white font-medium py-1.5 md:py-2 px-3 md:px-4 rounded shadow text-xs md:text-sm"
-                                                    >
-                                                        Archive All
-                                                    </button>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-3 md:mt-4 w-full gap-4">
+                                                    <div className="text-gray-600 text-sm md:text-base justify-self-start">
+                                                        {`Showing data ${Math.min((currentPage - 1) * usersPerPage + 1, filteredUsers.length)} to ${Math.min(currentPage * usersPerPage, filteredUsers.length)} of ${filteredUsers.length} users`}
+                                                    </div>
+                                                    <div className="flex justify-center justify-self-center w-full sm:w-auto">
+                                                        {currentPage > 1 && (
+                                                            <button
+                                                                className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                                onClick={() => setCurrentPage(currentPage - 1)}
+                                                            >
+                                                                {'<'}
+                                                            </button>
+                                                        )}
+                                                        {Array.from({ length: Math.min(5, Math.ceil(filteredUsers.length / usersPerPage)) }, (_, i) => {
+                                                            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+                                                            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                                            if (pageNum > totalPages) return null;
+                                                            return (
+                                                                <button
+                                                                    key={pageNum}
+                                                                    className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                                                                    onClick={() => setCurrentPage(pageNum)}
+                                                                >
+                                                                    {pageNum}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        {currentPage < Math.ceil(filteredUsers.length / usersPerPage) && (
+                                                            <button
+                                                                className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                                onClick={() => setCurrentPage(currentPage + 1)}
+                                                            >
+                                                                &gt;
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="justify-self-end">
+                                                        <button
+                                                            onClick={handleArchiveAll}
+                                                            className="bg-primary hover:bg-primary/85 text-white font-medium py-1.5 md:py-2 px-3 md:px-4 rounded shadow text-xs md:text-sm"
+                                                        >
+                                                            Archive All
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </>
@@ -352,7 +402,9 @@ export default function AdminUserList({ auth }) {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="bg-white divide-y divide-gray-200">
-                                                            {filteredArchivedUsers.map((user) => (
+                                                            {filteredArchivedUsers
+                                                              .slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage)
+                                                              .map((user) => (
                                                                 <tr key={user.id} className="hover:bg-gray-50">
                                                                     <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
                                                                         <div className="text-xs md:text-sm font-medium text-gray-900">
@@ -385,6 +437,46 @@ export default function AdminUserList({ auth }) {
                                                             ))}
                                                         </tbody>
                                                     </table>
+                                                </div>
+                                            )}
+                                            {filteredArchivedUsers.length > 0 && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-3 md:mt-4 w-full gap-4">
+                                                    <div className="text-gray-600 text-sm md:text-base justify-self-start">
+                                                        {`Showing data ${Math.min((currentPage - 1) * usersPerPage + 1, filteredArchivedUsers.length)} to ${Math.min(currentPage * usersPerPage, filteredArchivedUsers.length)} of ${filteredArchivedUsers.length} users`}
+                                                    </div>
+                                                    <div className="flex justify-center justify-self-center w-full sm:w-auto">
+                                                        {currentPage > 1 && (
+                                                            <button
+                                                                className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                                onClick={() => setCurrentPage(currentPage - 1)}
+                                                            >
+                                                                {'<'}
+                                                            </button>
+                                                        )}
+                                                        {Array.from({ length: Math.min(5, Math.ceil(filteredArchivedUsers.length / usersPerPage)) }, (_, i) => {
+                                                            const totalPages = Math.ceil(filteredArchivedUsers.length / usersPerPage);
+                                                            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                                            if (pageNum > totalPages) return null;
+                                                            return (
+                                                                <button
+                                                                    key={pageNum}
+                                                                    className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                                                                    onClick={() => setCurrentPage(pageNum)}
+                                                                >
+                                                                    {pageNum}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        {currentPage < Math.ceil(filteredArchivedUsers.length / usersPerPage) && (
+                                                            <button
+                                                                className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                                onClick={() => setCurrentPage(currentPage + 1)}
+                                                            >
+                                                                &gt;
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="justify-self-end"></div>
                                                 </div>
                                             )}
                                         </>

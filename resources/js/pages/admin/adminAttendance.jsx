@@ -23,7 +23,7 @@ export default function AdminAttendance(){
     const [importing, setImporting] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importResults, setImportResults] = useState(null);
-    const cadetsPerPage = 10;
+    const cadetsPerPage = 8;
 
     // Semester options
     const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
@@ -412,6 +412,34 @@ export default function AdminAttendance(){
                             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-between">
                                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                     
+                                    {/* Semester Tabs */}
+                                    <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full sm:w-auto">
+                                        {semesterOptions.map((semester) => (
+                                            <button
+                                                key={semester}
+                                                onClick={() => setSelectedSemester(semester)}
+                                                disabled={editMode}
+                                                className={`py-1.5 md:py-2 px-3 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
+                                                    selectedSemester === semester
+                                                        ? 'bg-primary text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                } ${editMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            >
+                                                {semester}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-stretch sm:items-center">
+                                    {/* Import Button (stays beside search) */}
+                                    <button
+                                        onClick={() => setShowImportModal(true)}
+                                        className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
+                                    >
+                                        <FaUpload />
+                                        Import Deli Data
+                                    </button>
                                     {/* Search */}
                                     <div className="relative w-full sm:w-48 md:w-64">
                                         <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
@@ -422,64 +450,6 @@ export default function AdminAttendance(){
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             className="w-full py-1.5 md:py-2 px-2 md:px-4 pl-7 md:pl-10 border rounded-lg text-xs md:text-sm"
                                         />
-                                    </div>
-                                    
-                                    {/* Semester Selection */}
-                                    <div className="w-full sm:w-auto">
-                                        <select
-                                            value={selectedSemester}
-                                            onChange={(e) => setSelectedSemester(e.target.value)}
-                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
-                                            disabled={editMode}
-                                        >
-                                            {semesterOptions.map((semester) => (
-                                                <option key={semester} value={semester}>
-                                                    {semester}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                                    {/* Import Button */}
-                                    <button
-                                        onClick={() => setShowImportModal(true)}
-                                        className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
-                                    >
-                                        <FaUpload />
-                                        Import Deli Data
-                                    </button>
-                                    
-                                    {/* Edit Controls */}
-                                    <div className="flex gap-2">
-                                        {editMode && (
-                                            <button
-                                                onClick={cancelEditing}
-                                                className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs md:text-sm"
-                                            >
-                                                <FaTimes />
-                                                Cancel
-                                            </button>
-                                        )}
-                                        
-                                        <button
-                                            onClick={toggleEditMode}
-                                            disabled={saving}
-                                            className={`${editMode 
-                                                ? 'bg-green-600 hover:bg-green-700' 
-                                                : 'bg-primary hover:bg-primary/85'
-                                            } text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs md:text-sm`}
-                                        >
-                                            {saving ? (
-                                                <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
-                                            ) : editMode ? (
-                                                <FaSave />
-                                            ) : (
-                                                <FaEdit />
-                                            )}
-                                            {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -588,19 +558,19 @@ export default function AdminAttendance(){
                                     
                                     {/* Pagination */}
                                     {totalPages > 1 && (
-                                        <div className="flex flex-col sm:flex-row justify-between items-center mt-3 md:mt-4 gap-3">
-                                            <div className="text-xs md:text-sm text-gray-600 order-2 sm:order-1">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-3 md:mt-4 gap-3">
+                                            <div className="text-gray-600 text-sm md:text-base justify-self-start">
                                                 Showing {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                                             </div>
-                                            <div className="flex gap-1 md:gap-2 order-1 sm:order-2">
-                                                <button
-                                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                    disabled={currentPage === 1}
-                                                    className="px-2 md:px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm"
-                                                >
-                                                    Previous
-                                                </button>
-                                                
+                                            <div className="flex justify-center justify-self-center w-full sm:w-auto">
+                                                {currentPage > 1 && (
+                                                    <button
+                                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                    >
+                                                        {'<'}
+                                                    </button>
+                                                )}
                                                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                     let page;
                                                     if (totalPages <= 5) {
@@ -616,23 +586,46 @@ export default function AdminAttendance(){
                                                         <button
                                                             key={page}
                                                             onClick={() => setCurrentPage(page)}
-                                                            className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm ${
-                                                                currentPage === page 
-                                                                    ? 'bg-primary text-white' 
-                                                                    : 'bg-gray-200 hover:bg-gray-300'
-                                                            }`}
+                                                            className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === page ? 'bg-primary text-white' : 'bg-white border'}`}
                                                         >
                                                             {page}
                                                         </button>
                                                     );
                                                 })}
-                                                
                                                 <button
                                                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                                     disabled={currentPage === totalPages}
-                                                    className="px-2 md:px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm"
+                                                    className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    Next
+                                                    &gt;
+                                                </button>
+                                            </div>
+                                            <div className="justify-self-end flex gap-2">
+                                                {editMode && (
+                                                    <button
+                                                        onClick={cancelEditing}
+                                                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs md:text-sm"
+                                                    >
+                                                        <FaTimes />
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={toggleEditMode}
+                                                    disabled={saving}
+                                                    className={`${editMode 
+                                                        ? 'bg-green-600 hover:bg-green-700' 
+                                                        : 'bg-primary hover:bg-primary/85'
+                                                    } text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs md:text-sm`}
+                                                >
+                                                    {saving ? (
+                                                        <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
+                                                    ) : editMode ? (
+                                                        <FaSave />
+                                                    ) : (
+                                                        <FaEdit />
+                                                    )}
+                                                    {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
                                                 </button>
                                             </div>
                                         </div>

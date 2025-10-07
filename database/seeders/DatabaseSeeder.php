@@ -16,71 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Clear existing users to prevent unique constraint violations
-        // Comment this line if you want to keep existing users
-        // Disable foreign key checks temporarily to allow truncation
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        DB::table('users')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-        
-        // Create admin user
-        User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'student_number' => 'ADMIN000',
-                'first_name' => 'Admin',
-                'middle_name' => '',
-                'last_name' => 'User',
-                'year' => 'N/A',
-                'course' => 'N/A',
-                'section' => 'N/A',
-                'password' => Hash::make('admin@123'),
-                'phone_number' => '0000000000',
-                'role' => 'admin',
-                'status' => 'approved',
-            ]
-        );
-
-        // Create faculty user
-        User::firstOrCreate(
-            ['email' => 'faculty@example.com'],
-            [
-                'student_number' => 'FACULTY000',
-                'first_name' => 'Faculty',
-                'middle_name' => '',
-                'last_name' => 'User',
-                'year' => 'N/A',
-                'course' => 'N/A',
-                'section' => 'N/A',
-                'password' => Hash::make('faculty@123'),
-                'phone_number' => '0000000001',
-                'role' => 'faculty',
-                'status' => 'approved',
-            ]
-        );
-        
-        // Create a test cadet user
-        User::firstOrCreate(
-            ['email' => 'cadet@example.com'],
-            [
-                'student_number' => '70022768',
-                'first_name' => 'Test',
-                'middle_name' => 'White',
-                'last_name' => 'Cadet',
-                'year' => '1G',
-                'course' => 'BSIT',
-                'section' => 'G1',
-                'phone_number' => '09730341394',
-                'password' => Hash::make('cadet@123'),
-                'role' => 'user', // 'user' role represents cadets
-                'status' => 'approved',
-            ]
-        );
-
-        // Create 10 random cadet users using the factory
-        User::factory()->count(10)->create([
-            'status' => 'approved',
-            'role' => 'user', // Ensure all are cadets
-        ]);
+        // Use dedicated seeder that creates admin + 150 cadets and assigns PCB
+        $this->call(UserSeeder::class);
     }
 }

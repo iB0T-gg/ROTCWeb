@@ -24,7 +24,7 @@ class AttendanceController extends Controller
                 ->where('status', 'approved')
                 ->orderBy('last_name')
                 ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section']);
+                ->get(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section', 'platoon', 'company', 'battalion']);
             
             $attendanceData = [];
             
@@ -90,6 +90,9 @@ class AttendanceController extends Controller
                     'course' => $cadet->course,
                     'year' => $cadet->year,
                     'section' => $cadet->section,
+                    'platoon' => $cadet->platoon,
+                    'company' => $cadet->company,
+                    'battalion' => $cadet->battalion,
                     'weeks_present' => $attendance->weeks_present ?? 0,
                     'attendance_30' => $attendance->attendance_30 ?? 0,
                     'weekly_attendance' => $weeklyAttendance,

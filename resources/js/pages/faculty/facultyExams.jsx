@@ -473,7 +473,7 @@ const FacultyExams = ({ auth }) => {
                       />
                     </div>
                     <div className="relative w-full sm:w-auto">
-                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="search"
                         placeholder="Search"
@@ -484,10 +484,10 @@ const FacultyExams = ({ auth }) => {
                     </div>
                     <div className="relative w-full sm:w-auto">
                       <div
-                        className="bg-white border border-gray-300 rounded-lg p-2 pl-9 pr-8 cursor-pointer w-full text-sm md:text-base"
+                        className="relative flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2 cursor-pointer text-sm md:text-base w-full hover:border-gray-400"
                         onClick={() => setShowFilterPicker(!showFilterPicker)}
                       >
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 truncate">
                           {selectedPlatoon || selectedCompany || selectedBattalion
                             ? `Filters: ${[
                                 selectedPlatoon || '',
@@ -496,18 +496,23 @@ const FacultyExams = ({ auth }) => {
                               ].filter(Boolean).join(', ')}`
                             : 'Sort by : All'}
                         </span>
-                        <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <FaSort className="text-gray-400 flex-shrink-0 ml-2" />
                       </div>
                       {showFilterPicker && (
+                      <>
+                        <div 
+                          className="fixed inset-0 bg-black bg-opacity-30 z-40"
+                          onClick={() => setShowFilterPicker(false)}
+                        ></div>
                         <div
-                          className="absolute z-10 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-full sm:w-64"
-                          style={{ top: '100%', right: 0 }}
+                          className="fixed sm:absolute inset-x-0 sm:inset-auto z-50 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-[90%] sm:w-64 left-1/2 sm:left-auto right-0 sm:right-0 -translate-x-1/2 sm:translate-x-0 mx-auto sm:mx-0"
+                          style={{ maxWidth: "400px" }}
                         >
-                          <div className="space-y-4">
+                          <div className="space-y-3 md:space-y-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Platoon (Select Platoon)</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Platoon</label>
                               <select
-                                className="w-full bg-gray-100 p-2 rounded border"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedPlatoon}
                                 onChange={e => setSelectedPlatoon(e.target.value)}
                               >
@@ -518,9 +523,9 @@ const FacultyExams = ({ auth }) => {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Company (Select Company)</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Company</label>
                               <select
-                                className="w-full bg-gray-100 p-2 rounded border"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedCompany}
                                 onChange={e => setSelectedCompany(e.target.value)}
                               >
@@ -529,12 +534,12 @@ const FacultyExams = ({ auth }) => {
                                 <option value="Beta">Beta</option>
                                 <option value="Charlie">Charlie</option>
                                 <option value="Delta">Delta</option>
-                              </select>
+                                </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Battalion (Select Battalion)</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Battalion</label>
                               <select
-                                className="w-full bg-gray-100 p-2 rounded border"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedBattalion}
                                 onChange={e => setSelectedBattalion(e.target.value)}
                               >
@@ -543,14 +548,28 @@ const FacultyExams = ({ auth }) => {
                                 <option value="2nd Battalion">2nd Battalion</option>
                               </select>
                             </div>
-                            <button
-                              className="w-full mt-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-gray-700"
-                              onClick={() => setShowFilterPicker(false)}
-                            >
-                              Cancel
-                            </button>
+                            <div className="flex gap-2 mt-4">
+                              <button
+                                className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
+                                onClick={() => {
+                                  setSelectedPlatoon('');
+                                  setSelectedCompany('');
+                                  setSelectedBattalion('');
+                                  setShowFilterPicker(false);
+                                }}
+                              >
+                                Clear
+                              </button>
+                              <button
+                                className="flex-1 px-4 py-2 bg-primary rounded text-sm md:text-base text-white hover:bg-opacity-90"
+                                onClick={() => setShowFilterPicker(false)}
+                              >
+                                Apply
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>

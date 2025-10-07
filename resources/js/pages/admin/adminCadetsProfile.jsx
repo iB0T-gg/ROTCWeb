@@ -213,17 +213,6 @@ export default function AdminCadetsProfile(){
                       className="w-full sm:w-64 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                     />
                   </div>
-                  
-                  {/* Export Button - Mobile */}
-                  <div className="w-full sm:w-auto">
-                    <button 
-                      onClick={exportToExcel}
-                      className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 w-full sm:w-auto text-sm md:text-base"
-                    >
-                      <FaFileExcel />
-                      Export to Excel
-                    </button>
-                  </div>
                 </div>
               </div>
               
@@ -309,11 +298,11 @@ export default function AdminCadetsProfile(){
                 </div>
                 
                 {/* Pagination Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
-                  <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-4 w-full gap-4">
+                  <div className="text-gray-600 text-sm md:text-base justify-self-start">
                     Showing data {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                   </div>
-                  <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
+                  <div className="flex justify-center justify-self-center w-full sm:w-auto">
                     {currentPage > 1 && (
                       <button
                         className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
@@ -343,6 +332,15 @@ export default function AdminCadetsProfile(){
                         &gt;
                       </button>
                     )}
+                  </div>
+                  <div className="justify-self-end w-full sm:w-auto">
+                    <button 
+                      onClick={exportToExcel}
+                      className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 w-full sm:w-auto text-sm md:text-base"
+                    >
+                      <FaFileExcel />
+                      Export to Excel
+                    </button>
                   </div>
                 </div>
               </div>

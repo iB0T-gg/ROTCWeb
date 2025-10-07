@@ -637,19 +637,18 @@ const FacultyFinalGrades = ({ auth }) => {
       <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
         <div className='flex-1 p-3 md:p-6'>
-          <div className='font-regular'>
-            {/* Breadcrumb */}
-            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+          {/* Breadcrumb - separated, light background */}
+          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
                 <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
                 <span className="mx-2 font-semibold">{">"}</span>
-                <span className="cursor-default font-bold">Final Grades</span>  
+                <span className="cursor-default font-bold">Final Grades</span>
           </div>
-            {/* Page Header */}
-            <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
-              <h1 className='text-xl md:text-2xl font-semibold'>Final Grades</h1>
-            </div>
+          {/* Page Header */}
+          <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+            <h1 className='text-lg md:text-2xl font-semibold'>Final Grades</h1>
+          </div>
 
             {/* Tab Navigation */}
             <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
@@ -669,7 +668,7 @@ const FacultyFinalGrades = ({ auth }) => {
                         });
                       }}
                       disabled={isLoading}
-                      className={`py-1.5 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
+                      className={`py-1.5 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-150 text-sm md:text-base ${
                         selectedSemester === semester
                           ? 'bg-primary text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -686,19 +685,39 @@ const FacultyFinalGrades = ({ auth }) => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                  {/* Post Button - Separate for each semester (moved to the left of Search) */}
+                  <button
+                    onClick={() => handlePostGrades(selectedSemester)}
+                    disabled={isLoading || isPosting}
+                    className={`w-full sm:w-auto px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-150 text-sm md:text-base ${
+                      isPosting
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-primary text-white hover:bg-[#3d4422] transition-colors duration-150'
+                    }`}
+                  >
+                    {isPosting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
+                        <span>Posting...</span>
+                      </div>
+                    ) : (
+                      selectedSemester === '2025-2026 1st semester' ? 'Post 1st Semester' : 'Post 2nd Semester'
+                    )}
+                  </button>
+
                   <div className="relative w-full sm:w-auto">
-                    <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
+                    <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="search"
                       placeholder="Search"
-                      className="w-full sm:w-36 md:w-48 p-1.5 md:p-2 pl-7 md:pl-10 border border-gray-300 rounded-lg text-xs md:text-sm"
+                      className="w-full sm:w-48 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                     />
                   </div>
                   <div className="relative w-full sm:w-auto">
                     <div
-                      className="relative flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2 cursor-pointer text-xs md:text-sm w-full hover:border-gray-400"
+                      className="relative flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2 cursor-pointer text-sm md:text-base w-full hover:border-gray-400"
                       onClick={() => setShowFilterPicker(!showFilterPicker)}
                     >
                       <span className="text-gray-600 truncate">
@@ -708,7 +727,7 @@ const FacultyFinalGrades = ({ auth }) => {
                               selectedCompany || '',
                               selectedBattalion || ''
                             ].filter(Boolean).join(', ')}`
-                          : 'Sort by: All'}
+                          : 'Sort by : All'}
                       </span>
                       <FaSort className="text-gray-400 flex-shrink-0 ml-2" />
                     </div>
@@ -725,9 +744,9 @@ const FacultyFinalGrades = ({ auth }) => {
                         >
                           <div className="space-y-3 md:space-y-4">
                             <div>
-                              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Platoon</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Platoon</label>
                               <select
-                                className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedPlatoon}
                                 onChange={e => setSelectedPlatoon(e.target.value)}
                               >
@@ -738,9 +757,9 @@ const FacultyFinalGrades = ({ auth }) => {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Company</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Company</label>
                               <select
-                                className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedCompany}
                                 onChange={e => setSelectedCompany(e.target.value)}
                               >
@@ -752,9 +771,9 @@ const FacultyFinalGrades = ({ auth }) => {
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Battalion</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Battalion</label>
                               <select
-                                className="w-full bg-gray-100 p-1.5 md:p-2 rounded border text-xs md:text-sm"
+                                className="w-full bg-gray-100 p-2 rounded border text-sm"
                                 value={selectedBattalion}
                                 onChange={e => setSelectedBattalion(e.target.value)}
                               >
@@ -765,7 +784,7 @@ const FacultyFinalGrades = ({ auth }) => {
                             </div>
                             <div className="flex gap-2 mt-4">
                               <button
-                                className="flex-1 px-4 py-1.5 md:py-2 bg-gray-300 rounded text-xs md:text-sm hover:bg-gray-400 text-gray-700"
+                                className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
                                 onClick={() => {
                                   setSelectedPlatoon('');
                                   setSelectedCompany('');
@@ -776,66 +795,49 @@ const FacultyFinalGrades = ({ auth }) => {
                                 Clear
                               </button>
                               <button
-                                className="flex-1 px-4 py-1.5 md:py-2 bg-primary rounded text-xs md:text-sm text-white hover:bg-opacity-90"
+                                className="flex-1 px-4 py-2 bg-primary rounded text-sm md:text-base text-white hover:bg-opacity-90"
                                 onClick={() => setShowFilterPicker(false)}
                               >
                                 Apply
                               </button>
                             </div>
-                          </div>
+                          </div> 
                         </div>
                       </>
                     )}
                   </div>
                   
-                  {/* Post Button - Separate for each semester */}
-                  <button
-                    onClick={() => handlePostGrades(selectedSemester)}
-                    disabled={isLoading || isPosting}
-                    className={`w-full sm:w-auto px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-150 text-xs md:text-sm ${
-                      isPosting
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                        : 'bg-primary text-white hover:bg-[#3d4422] transition-colors duration-150'
-                    }`}
-                  >
-                    {isPosting ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
-                        <span>Posting...</span>
-                      </div>
-                    ) : (
-                      selectedSemester === '2025-2026 1st semester' ? 'Post 1st Semester' : 'Post 2nd Semester'
-                    )}
-                  </button>
                 </div>
               </div>
             </div>
 
+          {/* Main Content */}
+          <div className='w-full mx-auto'>
+            
             {/* Main Content */}
-            <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto">
-              <div className="flex justify-between items-center mb-3 md:mb-6">
-                <div>
-                  <h1 className="text-base md:text-lg font-semibold text-black">Equivalent Grades</h1>
-                </div>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto'>
+              {/* Title and Controls */}
+              <div className='flex justify-between items-center mb-4 md:mb-6'>
+                <h1 className='text-base md:text-lg font-semibold text-black'>Equivalent Grades</h1>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead className="text-gray-600">
                     <tr>
-                      <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm">Cadet Names</th>
+                      <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-sm md:text-base">Cadet Names</th>
                       {selectedSemester === '2025-2026 1st semester' ? (
                         <>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Common Module Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">ROTC Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Final Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Equivalent Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Remarks</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Common Module Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">ROTC Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Final Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Equivalent Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Remarks</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Final Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Equivalent Grade</th>
-                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm">Remarks</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Final Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Equivalent Grade</th>
+                          <th className="py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base">Remarks</th>
                         </>
                       )}
                     </tr>
@@ -877,7 +879,7 @@ const FacultyFinalGrades = ({ auth }) => {
                         // 1st semester: Show Common Module Grade, ROTC Grade, Final Grade, Equivalent Grade, Remarks
                         return (
                           <tr className="border-b border-gray-200" key={cadet.id}>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-black text-xs md:text-sm">{formatCadetName(cadet)}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-black text-sm md:text-base">{formatCadetName(cadet)}</td>
                             <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">
                               <input
                                 type="number"
@@ -885,7 +887,7 @@ const FacultyFinalGrades = ({ auth }) => {
                                 max="100"
                                 step="0.01"
                                 inputMode="decimal"
-                                className={`no-spin w-12 md:w-16 h-7 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium ${!isEditingCommon ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`no-spin w-12 md:w-16 h-7 md:h-8 text-center border border-gray-300 rounded text-sm md:text-base font-medium ${!isEditingCommon ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                 value={(isEditingCommon && commonModuleEdited[cadet.id] !== undefined)
                                   ? String(commonModuleEdited[cadet.id])
                                   : (commonModuleGrade === 0 ? '' : Number(commonModuleGrade).toFixed(2))}
@@ -903,87 +905,94 @@ const FacultyFinalGrades = ({ auth }) => {
                                 disabled={!isEditingCommon}
                               />
                             </td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{rotcGrade}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{Math.round(finalGrade)}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{Number(equivalentGrade).toFixed(2)}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{remark}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{rotcGrade}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{Math.round(finalGrade)}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{Number(equivalentGrade).toFixed(2)}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{remark}</td>
                           </tr>
                         );
                       } else {
                         // 2nd semester: Show only Final Grade (ROTC Grade), Equivalent Grade, Remarks
                         return (
                           <tr className="border-b border-gray-200" key={cadet.id}>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-black text-xs md:text-sm">{formatCadetName(cadet)}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{rotcGrade}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{equivalentGrade.toFixed(2)}</td>
-                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-xs md:text-sm">{remark}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-black text-sm md:text-base">{formatCadetName(cadet)}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{rotcGrade}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{equivalentGrade.toFixed(2)}</td>
+                            <td className="py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base">{remark}</td>
                           </tr>
                         );
                       }
                     })}
                   </tbody>
                 </table>
-                {/* Footer with Pagination and Summary */}
-                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 w-full gap-3 md:gap-4">
-                  <div className="text-xs md:text-sm text-gray-600 text-center sm:text-left">
-                    Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
-                  </div>
-                  <div className="flex justify-center my-2 sm:my-0">
-                    {currentPage > 1 && (
+              </div>
+              
+              {/* Footer with Pagination, Pagination Buttons, and Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
+                <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
+                  Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
+                </div>
+                <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
+                  {currentPage > 1 && (
+                    <button
+                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      {'<'}
+                    </button>
+                  )}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    if (pageNum > totalPages) return null;
+                    return (
                       <button
-                        className="mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
-                        onClick={() => setCurrentPage(currentPage - 1)}
+                        key={pageNum}
+                        className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                        onClick={() => setCurrentPage(pageNum)}
                       >
-                        {'<'}
+                        {pageNum}
                       </button>
-                    )}
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <button
-                        key={i}
-                        className={`mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded text-xs md:text-sm ${currentPage === i + 1 ? 'bg-primary text-white' : 'bg-white border'}`}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    {currentPage < totalPages && (
-                      <button
-                        className="mx-0.5 md:mx-1 px-2 md:px-3 py-1 rounded bg-white border text-xs md:text-sm"
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                      >
-                        &gt;
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex justify-center sm:justify-end gap-2 w-full sm:w-auto">
-                    {selectedSemester === '2025-2026 1st semester' && (
-                      <>
-                        {!isEditingCommon ? (
+                    );
+                  })}
+                  {currentPage < totalPages && (
+                    <button
+                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      &gt;
+                    </button>
+                  )}
+                </div>
+                
+                {/* Desktop Action Buttons - Hidden on mobile */}
+                <div className="hidden lg:flex justify-end gap-2 order-3">
+                  {selectedSemester === '2025-2026 1st semester' && (
+                    <>
+                      {!isEditingCommon ? (
+                        <button
+                          className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                          onClick={handleEditCommon}
+                        >
+                          Edit Common Module Grade
+                        </button>
+                      ) : (
+                        <>
                           <button
-                            className='bg-primary text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-xs md:text-sm hover:bg-[#3d4422] transition-colors duration-150 w-full sm:w-auto'
-                            onClick={handleEditCommon}
+                            className="bg-gray-500 text-white px-3 md:px-4 py-2 rounded hover:bg-gray-600 transition-colors duration-150 text-sm md:text-base"
+                            onClick={handleCancelCommon}
                           >
-                            Edit Common Module Grade
+                            Cancel
                           </button>
-                        ) : (
-                          <>
-                            <button
-                              className="bg-gray-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-xs md:text-sm hover:bg-gray-600 transition-colors duration-150"
-                              onClick={handleCancelCommon}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className='ml-2 bg-primary text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-xs md:text-sm hover:bg-[#3d4422] transition-colors duration-150'
-                              onClick={handleSaveCommonModule}
-                            >
-                              Save
-                            </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
+                          <button
+                            className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                            onClick={handleSaveCommonModule}
+                          >
+                            Save
+                          </button>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -991,7 +1000,7 @@ const FacultyFinalGrades = ({ auth }) => {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default FacultyFinalGrades;

@@ -115,6 +115,54 @@ class AdminController extends Controller
 
         $user->update(['status' => 'approved']);
 
+        // After approval, assign platoon/company/battalion deterministically
+        try {
+            if ($user->role === 'user') {
+                // Get all approved cadets sorted alphabetically
+                $cadets = User::where('role', 'user')
+                    ->where('status', 'approved')
+                    ->orderBy('last_name')
+                    ->orderBy('first_name')
+                    ->get();
+
+                // Find index of this user
+                $index = $cadets->search(function ($c) use ($user) {
+                    return $c->id === $user->id;
+                });
+
+                if ($index !== false) {
+                    // Groups of 37
+                    $groupIndex = intdiv($index, 37);
+
+                    // Platoon cycles every three groups: 1st, 2nd, 3rd, then repeat
+                    $cycle = $groupIndex % 3;
+                    $platoon = $cycle === 0 ? '1st Platoon' : ($cycle === 1 ? '2nd Platoon' : '3rd Platoon');
+
+                    // Company advances only after a full 3-platoon cycle (i.e., per 3 groups)
+                    $companies = ['Alpha','Beta','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliet','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu'];
+                    $companyIndex = intdiv($groupIndex, 3);
+                    $company = $companies[$companyIndex % count($companies)];
+
+                    // Battalion by gender (case-insensitive; supports 'M'/'F')
+                    $g = is_string($user->gender) ? strtolower(trim($user->gender)) : '';
+                    $battalion = $g === 'male' || $g === 'm' ? '1st Battalion' : ($g === 'female' || $g === 'f' ? '2nd Battalion' : null);
+
+                    $updates = [
+                        'platoon' => $platoon,
+                        'company' => $company,
+                    ];
+                    if ($battalion !== null) {
+                        $updates['battalion'] = $battalion;
+                    }
+
+                    $user->update($updates);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed assigning platoon/company/battalion: ' . $e->getMessage());
+            // Do not block approval on assignment failure
+        }
+
         // Send different emails based on creation method
         try {
             if ($user->creation_method === 'admin_created') {
