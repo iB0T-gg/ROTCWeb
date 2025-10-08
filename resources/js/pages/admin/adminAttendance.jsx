@@ -1,10 +1,38 @@
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch, FaEdit, FaSave, FaTimes, FaUpload, FaFileUpload, FaSpinner } from 'react-icons/fa';
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminAttendance(){
     const { auth } = usePage().props;
@@ -23,7 +51,18 @@ export default function AdminAttendance(){
     const [importing, setImporting] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importResults, setImportResults] = useState(null);
+    const [selectedBattalion, setSelectedBattalion] = useState('');
+    const [selectedCompany, setSelectedCompany] = useState('');
+    const [selectedPlatoon, setSelectedPlatoon] = useState('');
     const cadetsPerPage = 8;
+
+    // Alert state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        type: 'success',
+        title: '',
+        message: ''
+    });
 
     // Semester options
     const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
@@ -35,7 +74,9 @@ export default function AdminAttendance(){
             setError(null);
             const response = await axios.get(`/api/attendance/cadets?semester=${encodeURIComponent(selectedSemester)}`);
             
-            if (response.data.success) {
+            console.log('📊 API Response:', response.data);
+            
+            if (response.data.success && Array.isArray(response.data.data)) {
                 setCadets(response.data.data);
                 
                 // Initialize attendance data state with detailed logging
@@ -86,6 +127,12 @@ export default function AdminAttendance(){
                         });
                     }, 100);
                 }
+            } else {
+                console.error('❌ Invalid API response format:', response.data);
+                setCadets([]);
+                setAttendanceData({});
+                setOriginalData({});
+                setError('Invalid data format received from server');
             }
         } catch (err) {
             console.error('💥 Error fetching cadets:', err);
@@ -95,6 +142,11 @@ export default function AdminAttendance(){
                 status: err.response?.status,
                 data: err.response?.data
             });
+            
+            // Ensure cadets is always an array to prevent filter errors
+            setCadets([]);
+            setAttendanceData({});
+            setOriginalData({});
             
             // More specific error messages
             if (err.response?.status === 401) {
@@ -163,7 +215,12 @@ export default function AdminAttendance(){
                            window.Laravel?.csrfToken;
             
             if (!csrfToken) {
-                alert('Security token not found. Please refresh the page and try again.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Security Error',
+                    message: 'Security token not found. Please refresh the page and try again.'
+                });
                 setSaving(false);
                 return;
             }
@@ -190,40 +247,111 @@ export default function AdminAttendance(){
             if (response.data.success) {
                 setOriginalData(JSON.parse(JSON.stringify(attendanceData)));
                 setEditMode(false);
-                alert('Attendance saved successfully!');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'success',
+                    title: 'Success',
+                    message: 'Attendance saved successfully!'
+                });
                 
                 // Refresh data to get updated calculations
                 fetchCadets();
             } else {
                 console.error('Save failed:', response.data);
-                alert(response.data.message || 'Failed to save attendance');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Save Failed',
+                    message: response.data.message || 'Failed to save attendance'
+                });
             }
         } catch (error) {
             console.error('Error saving attendance:', error);
             console.error('Error details:', error.response?.data);
             
             if (error.response?.status === 419) {
-                alert('Security token expired. Please refresh the page and try again.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Session Expired',
+                    message: 'Security token expired. Please refresh the page and try again.'
+                });
                 window.location.reload();
             } else if (error.response?.status === 401) {
-                alert('Authentication failed. Please login again.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Authentication Failed',
+                    message: 'Authentication failed. Please login again.'
+                });
             } else if (error.response?.status === 403) {
-                alert('Access denied. You do not have permission to save attendance data.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Access Denied',
+                    message: 'Access denied. You do not have permission to save attendance data.'
+                });
             } else if (error.response?.data?.message) {
-                alert(error.response.data.message);
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Error',
+                    message: error.response.data.message
+                });
             } else {
-                alert('Failed to save attendance. Please try again.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Save Failed',
+                    message: 'Failed to save attendance. Please try again.'
+                });
             }
         } finally {
             setSaving(false);
         }
     };
 
-    // Filter cadets based on search term
-    const filteredCadets = cadets.filter(cadet => {
+    // Get unique filter options based on current cadet data
+    const getUniqueFilterOptions = () => {
+        if (!Array.isArray(cadets)) return { battalions: [], companies: [], platoons: [] };
+        
+        const battalions = [...new Set(cadets.map(cadet => cadet.battalion).filter(Boolean))].sort();
+        
+        // Filter companies based on selected battalion
+        let filteredCadetsForCompany = cadets;
+        if (selectedBattalion) {
+            filteredCadetsForCompany = cadets.filter(cadet => cadet.battalion === selectedBattalion);
+        }
+        const companies = [...new Set(filteredCadetsForCompany.map(cadet => cadet.company).filter(Boolean))].sort();
+        
+        // Filter platoons based on selected battalion and company
+        let filteredCadetsForPlatoon = cadets;
+        if (selectedBattalion) {
+            filteredCadetsForPlatoon = filteredCadetsForPlatoon.filter(cadet => cadet.battalion === selectedBattalion);
+        }
+        if (selectedCompany) {
+            filteredCadetsForPlatoon = filteredCadetsForPlatoon.filter(cadet => cadet.company === selectedCompany);
+        }
+        const platoons = [...new Set(filteredCadetsForPlatoon.map(cadet => cadet.platoon).filter(Boolean))].sort();
+        
+        return { battalions, companies, platoons };
+    };
+
+    const { battalions, companies, platoons } = getUniqueFilterOptions();
+
+    // Filter cadets based on search term and organizational filters
+    const filteredCadets = Array.isArray(cadets) ? cadets.filter(cadet => {
+        // Search filter
         const fullName = `${cadet.last_name}, ${cadet.first_name}`.toLowerCase();
-        return fullName.includes(searchTerm.toLowerCase()) || 
-               cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || 
+                            cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Organizational filters
+        const matchesBattalion = !selectedBattalion || cadet.battalion === selectedBattalion;
+        const matchesCompany = !selectedCompany || cadet.company === selectedCompany;
+        const matchesPlatoon = !selectedPlatoon || cadet.platoon === selectedPlatoon;
+        
+        return matchesSearch && matchesBattalion && matchesCompany && matchesPlatoon;
     }).sort((a, b) => {
         // Sort by last name in alphabetical order
         const lastNameA = a.last_name ? a.last_name.toLowerCase() : '';
@@ -237,7 +365,7 @@ export default function AdminAttendance(){
         }
         
         return lastNameA.localeCompare(lastNameB);
-    });
+    }) : [];
 
     // Pagination
     const totalPages = Math.ceil(filteredCadets.length / cadetsPerPage);
@@ -261,7 +389,12 @@ export default function AdminAttendance(){
                     console.log('Excel file selected. Will attempt processing with fallback to CSV conversion instructions if needed.');
                 }
             } else {
-                alert('Please select a valid file format (.csv, .txt, .xlsx, .xls)');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Invalid File Format',
+                    message: 'Please select a valid file format (.csv, .txt, .xlsx, .xls)'
+                });
                 event.target.value = '';
             }
         }
@@ -270,7 +403,12 @@ export default function AdminAttendance(){
     // Handle attendance import from Deli scanner file
     const handleImportAttendance = async () => {
         if (!importFile) {
-            alert('Please select a file to import');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No File Selected',
+                message: 'Please select a file to import'
+            });
             return;
         }
 
@@ -289,7 +427,12 @@ export default function AdminAttendance(){
                            window.Laravel?.csrfToken;
             
             if (!csrfToken) {
-                alert('Security token not found. Please refresh the page and try again.');
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Security Error',
+                    message: 'Security token not found. Please refresh the page and try again.'
+                });
                 setImporting(false);
                 return;
             }
@@ -337,8 +480,13 @@ export default function AdminAttendance(){
                     errors: ['CSRF token mismatch - session may have expired']
                 });
                 setTimeout(() => {
-                    alert('Security token expired. The page will refresh automatically.');
-                    window.location.reload();
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Session Expired',
+                        message: 'Security token expired. The page will refresh automatically.'
+                    });
+                    setTimeout(() => window.location.reload(), 2000);
                 }, 2000);
             } else if (error.response?.data?.message) {
                 console.error(error.response.data.message);
@@ -348,7 +496,12 @@ export default function AdminAttendance(){
                 const errorMsg = error.response.data.message || 'Import failed';
                 if (errorMsg.includes('Excel') && errorMsg.includes('CSV')) {
                     setTimeout(() => {
-                        alert(`❌ Excel Processing Failed\n\n${errorMsg}\n\n📝 To convert Excel to CSV:\n1. Open your Excel file\n2. Click "File" → "Save As"\n3. Choose "CSV (Comma delimited)" from the format dropdown\n4. Save the file\n5. Upload the new CSV file`);
+                        setAlertDialog({
+                            isOpen: true,
+                            type: 'error',
+                            title: 'Excel Processing Failed',
+                            message: `${errorMsg}\n\nTo convert Excel to CSV:\n1. Open your Excel file\n2. Click "File" → "Save As"\n3. Choose "CSV (Comma delimited)" from the format dropdown\n4. Save the file\n5. Upload the new CSV file`
+                        });
                     }, 500);
                 }
             } else {
@@ -387,12 +540,14 @@ export default function AdminAttendance(){
     };
     
     return (
-        <div className="w-full min-h-screen bg-backgroundColor">
+        <>
+            <Head title="ROTC Portal - Admin Attendance" />
+            <div className="w-full min-h-screen bg-backgroundColor">
             <Header auth={auth} />
             <div className="flex flex-col md:flex-row">
                 <AdminSidebar />
-                <div className="flex-1 p-3 md:p-6">
-                    <div className="font-regular">
+                <div className="flex-1 p-3 md:p-6 md:ml-0 max-w-full overflow-hidden">
+                    <div className="font-regular max-w-full">
                         {/* Breadcrumb */}
                         <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
                             <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
@@ -409,148 +564,224 @@ export default function AdminAttendance(){
 
                         {/* Filters and Search */}
                         <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
-                            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-between">
-                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                            <div className="flex flex-col gap-3 md:gap-4">
+                                {/* Top Row - Search, Semester, and Actions */}
+                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-between">
+                                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                                        {/* Semester Tabs */}
+                                        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full sm:w-auto">
+                                            {semesterOptions.map((semester) => (
+                                                <button
+                                                    key={semester}
+                                                    onClick={() => setSelectedSemester(semester)}
+                                                    disabled={editMode}
+                                                    className={`py-1.5 md:py-2 px-3 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
+                                                        selectedSemester === semester
+                                                            ? 'bg-primary text-white'
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    } ${editMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                    {semester}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     
-                                    {/* Semester Tabs */}
-                                    <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full sm:w-auto">
-                                        {semesterOptions.map((semester) => (
-                                            <button
-                                                key={semester}
-                                                onClick={() => setSelectedSemester(semester)}
-                                                disabled={editMode}
-                                                className={`py-1.5 md:py-2 px-3 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
-                                                    selectedSemester === semester
-                                                        ? 'bg-primary text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                } ${editMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                            >
-                                                {semester}
-                                            </button>
-                                        ))}
+                                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-stretch sm:items-center">
+                                        
+                                        {/* Search */}
+                                        <div className="relative w-full sm:w-48 md:w-64">
+                                            <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search cadets..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full py-1.5 md:py-2 px-2 md:px-4 pl-7 md:pl-10 border rounded-lg text-xs md:text-sm"
+                                            />
+                                        </div>
+                                        
+                                        {/* Import Button (stays beside search) */}
+                                        <button
+                                            onClick={() => setShowImportModal(true)}
+                                            className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
+                                        >
+                                            <FaUpload />
+                                            Import Deli Data
+                                        </button>
                                     </div>
                                 </div>
-                                
-                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-stretch sm:items-center">
-                                    {/* Import Button (stays beside search) */}
-                                    <button
-                                        onClick={() => setShowImportModal(true)}
-                                        className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
-                                    >
-                                        <FaUpload />
-                                        Import Deli Data
-                                    </button>
-                                    {/* Search */}
-                                    <div className="relative w-full sm:w-48 md:w-64">
-                                        <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search cadets..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 pl-7 md:pl-10 border rounded-lg text-xs md:text-sm"
-                                        />
+
+                                {/* Bottom Row - Organizational Filters */}
+                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                                    <div className="text-xs md:text-sm font-medium text-gray-700 flex items-center">
+                                        Filters:
                                     </div>
+                                    
+                                    {/* Battalion Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <select
+                                            value={selectedBattalion}
+                                            onChange={(e) => {
+                                                setSelectedBattalion(e.target.value);
+                                                // Reset company and platoon when battalion changes
+                                                setSelectedCompany('');
+                                                setSelectedPlatoon('');
+                                            }}
+                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
+                                        >
+                                            <option value="">All Battalions</option>
+                                            {battalions.map((battalion) => (
+                                                <option key={battalion} value={battalion}>
+                                                    {battalion}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Company Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <select
+                                            value={selectedCompany}
+                                            onChange={(e) => {
+                                                setSelectedCompany(e.target.value);
+                                                // Reset platoon when company changes
+                                                setSelectedPlatoon('');
+                                            }}
+                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
+                                        >
+                                            <option value="">All Companies</option>
+                                            {companies.map((company) => (
+                                                <option key={company} value={company}>
+                                                    {company}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Platoon Filter */}
+                                    <div className="w-full sm:w-auto">
+                                        <select
+                                            value={selectedPlatoon}
+                                            onChange={(e) => setSelectedPlatoon(e.target.value)}
+                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
+                                        >
+                                            <option value="">All Platoons</option>
+                                            {platoons.map((platoon) => (
+                                                <option key={platoon} value={platoon}>
+                                                    {platoon}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Clear Filters Button */}
+                                    {(selectedBattalion || selectedCompany || selectedPlatoon) && (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedBattalion('');
+                                                setSelectedCompany('');
+                                                setSelectedPlatoon('');
+                                            }}
+                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm transition-colors"
+                                        >
+                                            Clear Filters
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Attendance Table */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow">
-                            {loading ? (
-                                <div className="flex justify-center items-center h-32 md:h-40">
-                                    <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
-                                </div>
-                            ) : error ? (
-                                <div className="text-center text-red-500 py-3 md:py-4 text-sm md:text-base">{error}</div>
-                            ) : (
-                                <>
-                                    <h2 className="text-base md:text-lg font-semibold mb-2 md:mb-4">
-                                        Cadet Attendance - 15 Weeks ({selectedSemester})
-                                    </h2>
-                                    {filteredCadets.length === 0 ? (
-                                        <p className="text-center py-3 md:py-4 text-gray-500 text-sm md:text-base">No cadets found.</p>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th scope="col" className="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                                                            Cadet Name
-                                                        </th>
-                                                        <th scope="col" className="hidden sm:table-cell px-3 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Student Number
-                                                        </th>
-                                                        {Array.from({ length: 15 }, (_, i) => (
-                                                            <th key={i + 1} scope="col" className="px-1 md:px-2 py-2 md:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[40px] md:min-w-[50px]">
-                                                                W{i + 1}
+                        <div className="bg-white rounded-lg shadow max-w-full overflow-hidden">
+                            <div className="p-3 md:p-6">
+                                {loading ? (
+                                    <div className="flex justify-center items-center h-32 md:h-40">
+                                        <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
+                                    </div>
+                                ) : error ? (
+                                    <div className="text-center text-red-500 py-3 md:py-4 text-sm md:text-base">{error}</div>
+                                ) : (
+                                    <>
+                                        <h2 className="text-base md:text-lg font-semibold mb-2 md:mb-4">
+                                            Cadet Attendance - 15 Weeks ({selectedSemester})
+                                        </h2>
+                                        {filteredCadets.length === 0 ? (
+                                            <p className="text-center py-3 md:py-4 text-gray-500 text-sm md:text-base">No cadets found.</p>
+                                        ) : (
+                                            <div className="w-full overflow-x-auto border rounded-lg">
+                                                <table className="w-full divide-y divide-gray-200" style={{ minWidth: '1200px' }}>
+                                                    <thead className="bg-gray-50">
+                                                        <tr>
+                                                            <th scope="col" className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 border-r border-gray-200" style={{ minWidth: '180px', width: '180px' }}>
+                                                                Cadet Name
                                                             </th>
-                                                        ))}
-                                                        <th scope="col" className="px-3 md:px-6 py-2 md:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Present
-                                                        </th>
-                                                        <th scope="col" className="px-3 md:px-6 py-2 md:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Score
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {paginatedCadets.map((cadet) => (
-                                                        <tr key={cadet.user_id} className="hover:bg-gray-50">
-                                                            <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap sticky left-0 bg-white z-10">
-                                                                <div className="text-xs md:text-sm font-medium text-gray-900">
-                                                                    {cadet.last_name}, {cadet.first_name}
-                                                                </div>
-                                                                {/* Mobile-only student number display */}
-                                                                <div className="text-xs text-gray-500 sm:hidden mt-1">{cadet.student_number}</div>
-                                                            </td>
-                                                            <td className="hidden sm:table-cell px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
-                                                                <div className="text-xs md:text-sm text-gray-500">{cadet.student_number}</div>
-                                                            </td>
-                                                            {Array.from({ length: 15 }, (_, i) => {
-                                                                const weekNumber = i + 1;
-                                                                const isPresent = attendanceData[cadet.user_id]?.[weekNumber] || false;
-                                                                
-                                                                // Debug logging for first cadet
-                                                                if (cadet.user_id === paginatedCadets[0]?.user_id && weekNumber === 1) {
-                                                                    console.log(`Checkbox debug for cadet ${cadet.user_id}:`, {
-                                                                        weekNumber,
-                                                                        attendanceData: attendanceData[cadet.user_id],
-                                                                        isPresent,
-                                                                        rawValue: attendanceData[cadet.user_id]?.[weekNumber]
-                                                                    });
-                                                                }
-                                                                
-                                                                return (
-                                                                    <td key={`${cadet.user_id}-${weekNumber}`} className="px-1 md:px-2 py-2 md:py-4 text-center">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isPresent}
-                                                                            onChange={(e) => handleAttendanceChange(
-                                                                                cadet.user_id, 
-                                                                                weekNumber, 
-                                                                                e.target.checked
-                                                                            )}
-                                                                            disabled={!editMode}
-                                                                            className={`${!editMode ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'} 
-                                                                                w-3 h-3 md:w-4 md:h-4 text-primary bg-gray-100 border-gray-300 rounded 
-                                                                                focus:ring-primary focus:ring-2`}
-                                                                        />
-                                                                    </td>
-                                                                );
-                                                            })}
-                                                            <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-center">
-                                                                <span className="text-xs md:text-sm font-medium text-gray-900">
-                                                                    {calculateWeeksPresent(cadet.user_id)}/15
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-center">
-                                                                <span className="text-xs md:text-sm font-medium text-gray-900">
-                                                                    {calculateAttendancePercentage(cadet.user_id)}%
-                                                                </span>
-                                                            </td>
+                                                            <th scope="col" className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
+                                                                Student Number
+                                                            </th>
+                                                            {Array.from({ length: 15 }, (_, i) => (
+                                                                <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
+                                                                    <span className="hidden sm:inline">W{i + 1}</span>
+                                                                    <span className="sm:hidden">{i + 1}</span>
+                                                                </th>
+                                                            ))}
+                                                            <th scope="col" className="px-3 sm:px-4 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '80px', width: '80px' }}>
+                                                                <span className="hidden sm:inline">Present</span>
+                                                                <span className="sm:hidden">P</span>
+                                                            </th>
+                                                            <th scope="col" className="px-3 sm:px-4 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '80px', width: '80px' }}>
+                                                                <span className="hidden sm:inline">Score</span>
+                                                                <span className="sm:hidden">S</span>
+                                                            </th>
                                                         </tr>
-                                                    ))}
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                        {paginatedCadets.map((cadet) => (
+                                                            <tr key={cadet.user_id} className="hover:bg-gray-50">
+                                                                <td className="px-3 sm:px-4 md:px-6 py-3 sticky left-0 bg-white z-10 border-r border-gray-200" style={{ minWidth: '180px', width: '180px' }}>
+                                                                    <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                                                                        {cadet.last_name}, {cadet.first_name}
+                                                                    </div>
+                                                                    {/* Mobile-only student number display */}
+                                                                    <div className="text-xs text-gray-500 lg:hidden mt-1 truncate">{cadet.student_number}</div>
+                                                                </td>
+                                                                <td className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
+                                                                    <div className="text-xs sm:text-sm text-gray-500 truncate">{cadet.student_number}</div>
+                                                                </td>
+                                                                {Array.from({ length: 15 }, (_, i) => {
+                                                                    const weekNumber = i + 1;
+                                                                    const isPresent = attendanceData[cadet.user_id]?.[weekNumber] || false;
+                                                                    
+                                                                    return (
+                                                                        <td key={`${cadet.user_id}-${weekNumber}`} className="px-2 py-3 text-center border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isPresent}
+                                                                                onChange={(e) => handleAttendanceChange(
+                                                                                    cadet.user_id, 
+                                                                                    weekNumber, 
+                                                                                    e.target.checked
+                                                                                )}
+                                                                                disabled={!editMode}
+                                                                                className={`${!editMode ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'} 
+                                                                                    w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded 
+                                                                                    focus:ring-primary focus:ring-1`}
+                                                                            />
+                                                                        </td>
+                                                                    );
+                                                                })}
+                                                                <td className="px-3 sm:px-4 md:px-6 py-3 text-center border-r border-gray-200" style={{ minWidth: '80px', width: '80px' }}>
+                                                                    <span className="text-xs sm:text-sm font-medium text-gray-900">
+                                                                        {calculateWeeksPresent(cadet.user_id)}/15
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-3 sm:px-4 md:px-6 py-3 text-center" style={{ minWidth: '80px', width: '80px' }}>
+                                                                    <span className="text-xs sm:text-sm font-medium text-gray-900">
+                                                                        {calculateAttendancePercentage(cadet.user_id)}%
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -558,15 +789,15 @@ export default function AdminAttendance(){
                                     
                                     {/* Pagination */}
                                     {totalPages > 1 && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-3 md:mt-4 gap-3">
-                                            <div className="text-gray-600 text-sm md:text-base justify-self-start">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 items-center mt-4 md:mt-6 gap-3">
+                                            <div className="text-gray-600 text-xs sm:text-sm lg:justify-self-start order-2 lg:order-1 text-center lg:text-left">
                                                 Showing {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                                             </div>
-                                            <div className="flex justify-center justify-self-center w-full sm:w-auto">
+                                            <div className="flex justify-center lg:justify-self-center w-full lg:w-auto order-1 lg:order-2">
                                                 {currentPage > 1 && (
                                                     <button
                                                         onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
+                                                        className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                                                     >
                                                         {'<'}
                                                     </button>
@@ -586,7 +817,7 @@ export default function AdminAttendance(){
                                                         <button
                                                             key={page}
                                                             onClick={() => setCurrentPage(page)}
-                                                            className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === page ? 'bg-primary text-white' : 'bg-white border'}`}
+                                                            className={`mx-1 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'}`}
                                                         >
                                                             {page}
                                                         </button>
@@ -595,19 +826,19 @@ export default function AdminAttendance(){
                                                 <button
                                                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                                     disabled={currentPage === totalPages}
-                                                    className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                                                 >
                                                     &gt;
                                                 </button>
                                             </div>
-                                            <div className="justify-self-end flex gap-2">
+                                            <div className="lg:justify-self-end flex flex-col sm:flex-row gap-2 order-3 w-full lg:w-auto">
                                                 {editMode && (
                                                     <button
                                                         onClick={cancelEditing}
-                                                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs md:text-sm"
+                                                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
                                                     >
                                                         <FaTimes />
-                                                        Cancel
+                                                        <span className="hidden sm:inline">Cancel</span>
                                                     </button>
                                                 )}
                                                 <button
@@ -616,22 +847,28 @@ export default function AdminAttendance(){
                                                     className={`${editMode 
                                                         ? 'bg-green-600 hover:bg-green-700' 
                                                         : 'bg-primary hover:bg-primary/85'
-                                                    } text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs md:text-sm`}
+                                                    } text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs sm:text-sm`}
                                                 >
                                                     {saving ? (
-                                                        <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
+                                                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
                                                     ) : editMode ? (
                                                         <FaSave />
                                                     ) : (
                                                         <FaEdit />
                                                     )}
-                                                    {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
+                                                    <span className="hidden sm:inline">
+                                                        {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
+                                                    </span>
+                                                    <span className="sm:hidden">
+                                                        {saving ? 'Save...' : editMode ? 'Save' : 'Edit'}
+                                                    </span>
                                                 </button>
                                             </div>
                                         </div>
                                     )}
-                                </>
-                            )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -766,6 +1003,16 @@ export default function AdminAttendance(){
                     </div>
                 </div>
             )}
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                type={alertDialog.type}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+            />
         </div>
+        </>
     );
 }

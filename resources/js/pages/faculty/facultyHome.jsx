@@ -1,11 +1,13 @@
 import React from 'react'
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 
 const FacultyHome = ({ auth }) => {
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Faculty Dashboard" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
@@ -56,6 +58,7 @@ const FacultyHome = ({ auth }) => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

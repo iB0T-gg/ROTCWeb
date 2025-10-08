@@ -25,6 +25,34 @@ class AuthController extends Controller
     protected $redirectTo = '/user/userHome';
 
     /**
+     * Get password validation rules with enhanced security requirements
+     * 
+     * Returns validation rules for password that require:
+     * - Minimum 8 characters
+     * - At least one uppercase letter
+     * - At least one lowercase letter  
+     * - At least one number
+     * - At least one special character
+     * 
+     * @return array Password validation rules and custom messages
+     */
+    private function getPasswordValidationRules()
+    {
+        return [
+            'rules' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]).{8,}$/'
+            ],
+            'messages' => [
+                'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+                'password.min' => 'Password must be at least 8 characters long.',
+            ]
+        ];
+    }
+
+    /**
      * Register a new regular user (student)
      * 
      * Validates registration data, creates a new user with 'pending' status,
@@ -35,6 +63,8 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        $passwordValidation = $this->getPasswordValidationRules();
+        
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
             'student_number' => 'required|string|unique:users',
@@ -46,10 +76,10 @@ class AuthController extends Controller
             'year' => 'required|string|max:10',
             'course' => 'required|string|max:10',
             'section' => 'nullable|string|max:10',
-            'password' => ['required', 'confirmed', 'min:6'],
+            'password' => $passwordValidation['rules'],
             'phone_number' => 'required|string|max:20',
             'cor_file' => 'required|file|mimes:pdf|max:2048',
-        ]);
+        ], $passwordValidation['messages']);
 
         $corFilePath = null;
         if ($request->hasFile('cor_file')) {
@@ -90,6 +120,8 @@ class AuthController extends Controller
      */
     public function registerFaculty(Request $request)
     {
+        $passwordValidation = $this->getPasswordValidationRules();
+        
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
             'employee_id' => 'required|string|unique:users,student_number',
@@ -99,10 +131,10 @@ class AuthController extends Controller
             'gender' => 'required|in:Male,Female',
             'campus' => 'required|string|max:255',
             'department' => 'required|string|max:255',
-            'password' => ['required', 'confirmed', 'min:6'],
+            'password' => $passwordValidation['rules'],
             'phone_number' => 'required|string|max:20',
             'credentials_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-        ]);
+        ], $passwordValidation['messages']);
 
         $credentialsFilePath = null;
         if ($request->hasFile('credentials_file')) {
@@ -287,11 +319,13 @@ class AuthController extends Controller
      */
     public function resetPassword(Request $request)
     {
+        $passwordValidation = $this->getPasswordValidationRules();
+        
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:6|confirmed',
-        ]);
+            'password' => $passwordValidation['rules'],
+        ], $passwordValidation['messages']);
 
         $status = \Illuminate\Support\Facades\Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),

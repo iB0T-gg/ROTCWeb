@@ -6,6 +6,7 @@ import { FaUserCheck } from 'react-icons/fa6'
 import { BiSolidReport } from "react-icons/bi";
 import { TbMessageReportFilled } from "react-icons/tb";
 import { IoMdClose } from "react-icons/io";
+import { FaLock } from "react-icons/fa";
 import { Link, useForm } from '@inertiajs/react'
 import { usePage } from '@inertiajs/react'
 import { GrKey } from "react-icons/gr";
@@ -64,6 +65,11 @@ export default function UserSidebar() {
         icons: <BiSolidReport />,
         label: 'Grades',
         link: '/user/userGrades',
+        },
+        {
+            icons: <FaLock />,
+            label: 'Change Password',
+            link: '/user/change-password',
         },
         {
         icons: <TbMessageReportFilled />,

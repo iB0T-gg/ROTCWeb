@@ -4,7 +4,65 @@ import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
 import { FaChevronDown } from 'react-icons/fa6'
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Confirmation Dialog Component
+const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className="border rounded-lg p-4 mb-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+          <p className="text-gray-700">{message}</p>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors duration-150"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-150"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminUserList({ auth }) {
     const [users, setUsers] = useState([]);
@@ -14,8 +72,24 @@ export default function AdminUserList({ auth }) {
     const [activeTab, setActiveTab] = useState('active'); // 'active' or 'archived'
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all'); // 'all', 'admin', 'faculty', 'user'
-  const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 8;
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 8;
+
+    // Alert dialog state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        type: 'success',
+        title: '',
+        message: ''
+    });
+
+    // Confirmation dialog state
+    const [confirmationDialog, setConfirmationDialog] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null
+    });
 
     useEffect(() => {
         // Fetch users when component mounts
@@ -48,17 +122,42 @@ export default function AdminUserList({ auth }) {
         
         // Prevent archiving if the user is an admin
         if (userToArchive && userToArchive.role === 'admin') {
-            alert('Admin users cannot be archived.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Cannot Archive Admin',
+                message: 'Admin users cannot be archived.'
+            });
             return;
         }
-        
-        try {
-            await axios.post('/api/archive-user', { user_id: userId });
-            fetchUsers(); // Refresh user lists
-        } catch (err) {
-            console.error('Error archiving user:', err);
-            alert('Failed to archive user. Please try again.');
-        }
+
+        // Show confirmation dialog
+        setConfirmationDialog({
+            isOpen: true,
+            title: 'Archive User',
+            message: `Are you sure you want to archive ${userToArchive?.first_name} ${userToArchive?.last_name}?`,
+            onConfirm: async () => {
+                try {
+                    await axios.post('/api/archive-user', { user_id: userId });
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'success',
+                        title: 'Success',
+                        message: 'User has been archived successfully!'
+                    });
+                    fetchUsers(); // Refresh user lists
+                } catch (err) {
+                    console.error('Error archiving user:', err);
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Archive Failed',
+                        message: 'Failed to archive user. Please try again.'
+                    });
+                }
+                setConfirmationDialog({ ...confirmationDialog, isOpen: false });
+            }
+        });
     };
     
     const handleArchiveAll = async () => {
@@ -66,55 +165,103 @@ export default function AdminUserList({ auth }) {
         const nonAdminUsers = filteredUsers.filter(user => user.role !== 'admin');
         
         if (nonAdminUsers.length === 0) {
-            alert('No non-admin users to archive.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No Users to Archive',
+                message: 'No non-admin users to archive.'
+            });
             return;
         }
-        
-        if (!confirm(`Are you sure you want to archive ${nonAdminUsers.length} users? Admin users will not be archived.`)) {
-            return;
-        }
-        
-        setLoading(true);
-        
-        try {
-            let successCount = 0;
-            let errorCount = 0;
-            
-            // Process users one by one
-            for (const user of nonAdminUsers) {
+
+        // Show confirmation dialog
+        setConfirmationDialog({
+            isOpen: true,
+            title: 'Archive All Users',
+            message: `Are you sure you want to archive ${nonAdminUsers.length} users? Admin users will not be archived.`,
+            onConfirm: async () => {
+                setLoading(true);
+                
                 try {
-                    await axios.post('/api/archive-user', { user_id: user.id });
-                    successCount++;
+                    let successCount = 0;
+                    let errorCount = 0;
+                    
+                    // Process users one by one
+                    for (const user of nonAdminUsers) {
+                        try {
+                            await axios.post('/api/archive-user', { user_id: user.id });
+                            successCount++;
+                        } catch (error) {
+                            console.error(`Error archiving user ${user.id}:`, error);
+                            errorCount++;
+                        }
+                    }
+                    
+                    // Refresh the user lists
+                    fetchUsers();
+                    
+                    if (errorCount === 0) {
+                        setAlertDialog({
+                            isOpen: true,
+                            type: 'success',
+                            title: 'Success',
+                            message: `Successfully archived ${successCount} users.`
+                        });
+                    } else {
+                        setAlertDialog({
+                            isOpen: true,
+                            type: 'error',
+                            title: 'Partial Success',
+                            message: `Archived ${successCount} users. Failed to archive ${errorCount} users.`
+                        });
+                    }
                 } catch (error) {
-                    console.error(`Error archiving user ${user.id}:`, error);
-                    errorCount++;
+                    console.error('Error in bulk archive process:', error);
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Archive Failed',
+                        message: 'An error occurred during the bulk archive process.'
+                    });
+                } finally {
+                    setLoading(false);
                 }
+                setConfirmationDialog({ ...confirmationDialog, isOpen: false });
             }
-            
-            // Refresh the user lists
-            fetchUsers();
-            
-            if (errorCount === 0) {
-                alert(`Successfully archived ${successCount} users.`);
-            } else {
-                alert(`Archived ${successCount} users. Failed to archive ${errorCount} users.`);
-            }
-        } catch (error) {
-            console.error('Error in bulk archive process:', error);
-            alert('An error occurred during the bulk archive process.');
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
     const handleRestoreUser = async (userId) => {
-        try {
-            await axios.post('/api/restore-user', { user_id: userId });
-            fetchUsers(); // Refresh user lists
-        } catch (err) {
-            console.error('Error restoring user:', err);
-            alert('Failed to restore user. Please try again.');
-        }
+        // Find the user to get their name for confirmation
+        const userToRestore = archivedUsers.find(user => user.id === userId);
+
+        // Show confirmation dialog
+        setConfirmationDialog({
+            isOpen: true,
+            title: 'Restore User',
+            message: `Are you sure you want to restore ${userToRestore?.first_name} ${userToRestore?.last_name}?`,
+            onConfirm: async () => {
+                try {
+                    await axios.post('/api/restore-user', { user_id: userId });
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'success',
+                        title: 'Success',
+                        message: 'User has been restored successfully!'
+                    });
+                    fetchUsers(); // Refresh user lists
+                } catch (err) {
+                    console.error('Error restoring user:', err);
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Restore Failed',
+                        message: 'Failed to restore user. Please try again.'
+                    });
+                }
+                setConfirmationDialog({ ...confirmationDialog, isOpen: false });
+            }
+        });
     };
 
     // Filter users based on search term and role
@@ -171,7 +318,9 @@ export default function AdminUserList({ auth }) {
     });
 
     return (
-        <div className="w-full min-h-screen bg-backgroundColor">
+        <>
+            <Head title="ROTC Portal - Admin User List" />
+            <div className="w-full min-h-screen bg-backgroundColor">
             <Header auth={auth} />
             <div className="flex flex-col md:flex-row">
                 <AdminSidebar />
@@ -488,5 +637,24 @@ export default function AdminUserList({ auth }) {
                 </div>
             </div>
         </div>
+
+        {/* Alert Dialog */}
+        <AlertDialog
+            isOpen={alertDialog.isOpen}
+            type={alertDialog.type}
+            title={alertDialog.title}
+            message={alertDialog.message}
+            onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        />
+
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+            isOpen={confirmationDialog.isOpen}
+            title={confirmationDialog.title}
+            message={confirmationDialog.message}
+            onConfirm={confirmationDialog.onConfirm}
+            onCancel={() => setConfirmationDialog({ ...confirmationDialog, isOpen: false })}
+        />
+        </>
     );
 }

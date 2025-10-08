@@ -1,4 +1,6 @@
-import { Link, useForm, router } from '@inertiajs/react';
+import { Link, useForm, router, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 
 export default function Login({ status }) {
@@ -6,6 +8,8 @@ export default function Login({ status }) {
         email: '',
         password: '',
     });
+
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -22,7 +26,9 @@ export default function Login({ status }) {
     };
 
     return (
-        <div className='login-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-4'>
+        <>
+            <Head title="ROTC Portal - Login" />
+            <div className='login-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-4'>
             <div 
                 className='absolute inset-0 z-0'
                 style={{
@@ -61,15 +67,24 @@ export default function Login({ status }) {
                             {errors.email && <div className="text-red-500 text-xs sm:text-sm mb-2">{errors.email}</div>}
                             
                             <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password'>Your password</label>
-                            <input
-                                type='password'
-                                id='password'
-                                value={data.password}
-                                onChange={e => setData('password', e.target.value)}
-                                className='w-full p-2 rounded-lg bg-white text-black mb-2 text-xs sm:text-sm pl-3'
-                                placeholder='Enter your password'
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    id='password'
+                                    value={data.password}
+                                    onChange={e => setData('password', e.target.value)}
+                                    className='w-full p-2 pr-10 rounded-lg bg-white text-black mb-2 text-xs sm:text-sm pl-3'
+                                    placeholder='Enter your password'
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                >
+                                    {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                </button>
+                            </div>
                             {errors.password && <div className="text-red-500 text-xs sm:text-sm mb-2">{errors.password}</div>}
                         </div>
                         
@@ -97,6 +112,7 @@ export default function Login({ status }) {
                     </Link>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

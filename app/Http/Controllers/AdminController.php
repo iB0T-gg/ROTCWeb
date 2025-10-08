@@ -32,9 +32,9 @@ class AdminController extends Controller
 
         // Add student number validation only for users (cadets)
         if ($request->role === 'user') {
-            $rules['student_number'] = 'required|string|unique:users,student_number';
+            $rules['student_number'] = 'required|numeric|unique:users,student_number';
         } else {
-            $rules['student_number'] = 'nullable|string|unique:users,student_number';
+            $rules['student_number'] = 'nullable|numeric|unique:users,student_number';
         }
 
         $validator = Validator::make($request->all(), $rules);

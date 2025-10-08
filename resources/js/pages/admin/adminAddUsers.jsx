@@ -1,8 +1,45 @@
+import React, { useState } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { useForm, Link } from '@inertiajs/react';
+import { useForm, Link, Head } from '@inertiajs/react';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AddUsers({ auth, success, error }) {
+    // Alert state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        type: 'success',
+        title: '',
+        message: ''
+    });
+
     const { data, setData, post, processing, errors, reset } = useForm({
         first_name: '',
         middle_name: '',
@@ -19,25 +56,53 @@ export default function AddUsers({ auth, success, error }) {
         
         // Validate student number is required only for cadets
         if (data.role === 'user' && !data.student_number.trim()) {
-            alert('Student number is required for cadets');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Validation Error',
+                message: 'Student number is required for cadets'
+            });
             return;
         }
         
         post('/api/admin/add-user', {
             onSuccess: () => {
                 reset();
-                // Success message will be handled by flash message in the component
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'success',
+                    title: 'Success',
+                    message: 'User has been successfully added!'
+                });
             },
             onError: (errors) => {
-                // Validation errors will be automatically handled by the errors object
-                // and displayed under the respective input fields
+                // Check if there are specific validation errors
+                if (Object.keys(errors).length > 0) {
+                    // Use the first error message
+                    const firstError = Object.values(errors)[0];
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Validation Error',
+                        message: Array.isArray(firstError) ? firstError[0] : firstError
+                    });
+                } else {
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Error',
+                        message: 'An error occurred while adding the user. Please try again.'
+                    });
+                }
                 console.error('Validation errors:', errors);
             }
         });
     };
 
     return (
-        <div className="w-full min-h-screen bg-backgroundColor">
+        <>
+            <Head title="ROTC Portal - Add Users" />
+            <div className="w-full min-h-screen bg-backgroundColor">
             <Header auth={auth} />
             {/* Add margin-top on mobile to account for mobile hamburger menu */}
             <div className="flex mt-0 md:mt-0">
@@ -56,27 +121,6 @@ export default function AddUsers({ auth, success, error }) {
                         </div>
                         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
                             <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-4">Add New User</h2>
-                            
-                            {/* Flash messages */}
-                            {success && (
-                                <div className="bg-green-50 border-l-4 border-green-400 p-3 md:p-4 mb-6">
-                                    <div className="flex">
-                                        <div className="ml-2 md:ml-3">
-                                            <p className="text-xs md:text-sm text-green-700">{success}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {error && (
-                                <div className="bg-red-50 border-l-4 border-red-400 p-3 md:p-4 mb-6">
-                                    <div className="flex">
-                                        <div className="ml-2 md:ml-3">
-                                            <p className="text-xs md:text-sm text-red-700">{error}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                             
                             {/* Information panel */}
                             <div className="bg-blue-50 border-l-4 border-green-400 p-3 md:p-4 mb-6">
@@ -222,5 +266,15 @@ export default function AddUsers({ auth, success, error }) {
                 </div>
             </div>
         </div>
+
+        {/* Alert Dialog */}
+        <AlertDialog
+            isOpen={alertDialog.isOpen}
+            type={alertDialog.type}
+            title={alertDialog.title}
+            message={alertDialog.message}
+            onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        />
+        </>
     );
 }

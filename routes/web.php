@@ -224,6 +224,10 @@ Route::middleware(['auth', UserMiddleware::class])->group(function () {
     });
 
     Route::get('/user/userReportAnIssue', [App\Http\Controllers\IssueController::class, 'userReportForm']);
+    
+    Route::get('/user/change-password', function () {
+        return Inertia::render('user/userChangePassword');
+    });
 });
 
 // Faculty routes - Only accessible to faculty

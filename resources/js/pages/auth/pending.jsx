@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 /**
  * Pending Component
@@ -12,7 +12,9 @@ import { Link } from '@inertiajs/react';
  */
 export default function Pending() {
     return (
-        <div className='pending-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
+        <>
+            <Head title="ROTC Portal - Account Pending" />
+            <div className='pending-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
             <div 
                 className='absolute inset-0 z-0'
                 style={{
@@ -40,6 +42,7 @@ export default function Pending() {
                     </Link>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

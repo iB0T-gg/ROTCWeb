@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
 
 const userReportAnIssue = ({ auth }) => {
@@ -83,7 +83,9 @@ const userReportAnIssue = ({ auth }) => {
   ];
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Report an Issue" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className='flex flex-col md:flex-row'>
         <div className="block">
@@ -198,6 +200,7 @@ const userReportAnIssue = ({ auth }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

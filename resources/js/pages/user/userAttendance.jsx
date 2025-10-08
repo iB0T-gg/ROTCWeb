@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
-import { usePage, Link } from '@inertiajs/react';
+import { usePage, Link, Head } from '@inertiajs/react';
 import axios from 'axios';
 
 const userAttendance = ({ auth }) => {
@@ -101,7 +101,9 @@ const userAttendance = ({ auth }) => {
     };
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Attendance" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className='flex flex-col md:flex-row'>
         <UserSidebar />
@@ -295,6 +297,7 @@ const userAttendance = ({ auth }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

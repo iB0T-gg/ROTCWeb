@@ -1,36 +1,10 @@
 import React, { useState } from 'react';
 import Header from '../../components/header';
-import AdminSidebar from '../../components/adminSidebar';
+import UserSidebar from '../../components/userSidebar';
 import { useForm, Head } from '@inertiajs/react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-
-// Alert Dialog Component
-const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
-    if (!isOpen) return null;
-
-    const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-    const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
-    const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-                <div className={`border rounded-lg p-4 mb-4 ${borderColor}`}>
-                    <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-                    <p className={`${textColor}`}>{message}</p>
-                </div>
-                <div className="flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
-                    >
-                        OK
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 export default function ChangePassword({ auth }) {
     const [passwordError, setPasswordError] = useState('');
@@ -47,14 +21,6 @@ export default function ChangePassword({ auth }) {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
-    // Alert dialog state
-    const [alertDialog, setAlertDialog] = useState({
-        isOpen: false,
-        type: 'success',
-        title: '',
-        message: ''
-    });
     
     const { data, setData, post, processing, errors } = useForm({
         current_password: '',
@@ -149,7 +115,7 @@ export default function ChangePassword({ auth }) {
         });
         
         // Use fetch API with JSON payload
-        fetch('/api/admin/change-password', {
+        fetch('/api/change-password', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -204,12 +170,19 @@ export default function ChangePassword({ auth }) {
             setPasswordError('');
             setIsSubmitting(false);
             
-            // Show success alert dialog
-            setAlertDialog({
-                isOpen: true,
-                type: 'success',
-                title: 'Success!',
-                message: 'Password changed successfully!'
+            // Show success toast
+            toast.success('🎉 Password changed successfully!', {
+                position: "top-center",
+                autoClose: 4000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                style: {
+                    background: "#10B981",
+                    color: "white",
+                    fontWeight: "500"
+                }
             });
         })
         .catch(error => {
@@ -218,32 +191,60 @@ export default function ChangePassword({ auth }) {
             
             // Show specific error messages based on error type
             if (error.message && error.message.includes('CSRF token mismatch')) {
-                setAlertDialog({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'Security Error',
-                    message: 'Security token expired. Please refresh the page and try again.'
+                toast.error('🔒 Security token expired. Please refresh the page and try again.', {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    style: {
+                        background: "#EF4444",
+                        color: "white",
+                        fontWeight: "500"
+                    }
                 });
             } else if (error.message && error.message.includes('Current password is incorrect')) {
-                setAlertDialog({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'Authentication Error',
-                    message: 'Current password is incorrect. Please try again.'
+                toast.error('❌ Current password is incorrect. Please try again.', {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    style: {
+                        background: "#EF4444",
+                        color: "white",
+                        fontWeight: "500"
+                    }
                 });
             } else if (error.message && error.message.includes('Validation failed')) {
-                setAlertDialog({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'Validation Error',
-                    message: 'Password validation failed. Please check the requirements.'
+                toast.error('📝 Password validation failed. Please check the requirements.', {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    style: {
+                        background: "#EF4444",
+                        color: "white",
+                        fontWeight: "500"
+                    }
                 });
             } else {
-                setAlertDialog({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'Error',
-                    message: 'Password change failed. Please try again.'
+                toast.error('⚠️ Password change failed. Please try again.', {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    style: {
+                        background: "#EF4444",
+                        color: "white",
+                        fontWeight: "500"
+                    }
                 });
             }
         });
@@ -253,16 +254,10 @@ export default function ChangePassword({ auth }) {
         <>
             <Head title="ROTC Portal - Change Password" />
             <div className="w-full min-h-screen bg-backgroundColor">
-            <AlertDialog
-                isOpen={alertDialog.isOpen}
-                type={alertDialog.type}
-                title={alertDialog.title}
-                message={alertDialog.message}
-                onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
-            />
+            <ToastContainer />
             <Header auth={auth} />
             <div className="flex flex-col md:flex-row">
-                <AdminSidebar />
+                <UserSidebar />
                 <div className="flex-1 p-3 md:p-6">
                     <div className="font-regular">
                         {/* Breadcrumb */}
@@ -403,7 +398,7 @@ export default function ChangePassword({ auth }) {
                                         <button 
                                             type="submit"
                                             className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md transition-colors text-sm md:text-base ${
-                                                isSubmitting || !passwordValidation.isValid || data.new_password !== data.confirm_password
+                                                processing || !passwordValidation.isValid || data.new_password !== data.confirm_password
                                                     ? 'bg-primary text-white cursor-not-allowed' 
                                                     : 'bg-primary text-white hover:bg-primary-dark'
                                             }`}

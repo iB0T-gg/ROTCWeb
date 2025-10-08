@@ -1,10 +1,39 @@
 import React, { useState, useEffect } from 'react';
 const toast = { info: () => {}, success: () => {}, error: () => {} };
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
+
+// Alert Dialog Component
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ChevronDownIcon = ({ className }) => (
   <svg
@@ -39,6 +68,14 @@ const FacultyFinalGrades = ({ auth }) => {
   const cadetsPerPage = 8;
   const [semesterCache, setSemesterCache] = useState({});
   const [previousSemester, setPreviousSemester] = useState(null);
+
+  // Alert state
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   // Semester options
   const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
@@ -230,7 +267,7 @@ const FacultyFinalGrades = ({ auth }) => {
     const attendance = attendanceMap[cadet.id];
     if (!attendance) return 0;
     
-    const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+    const weekLimit = 15; // Both semesters now use 15 weeks
     
     // For 2nd semester, check if there's a pre-calculated attendance_30 value
     if (selectedSemester === '2025-2026 2nd semester' && attendance.attendance_30 !== undefined && attendance.attendance_30 > 0) {
@@ -287,14 +324,14 @@ const FacultyFinalGrades = ({ auth }) => {
     const demDays = record.demerits_array || record.demerit_days || (record.demerits && (record.demerits.merits_array || record.demerits.days)) || [];
     const weekCountGuess = (Array.isArray(meritDays) && meritDays.length) ? meritDays.length
                             : (Array.isArray(demDays) && demDays.length) ? demDays.length
-                            : (selectedSemester === '2025-2026 1st semester' ? 10 : 15);
+                            : 15; // Both semesters now use 15 weeks
     if ((meritDays && meritDays.length) || (demDays && demDays.length)) {
-      const totalMerits = (meritDays || []).reduce((s, v) => s + (Number(v) || 0), 0);
+      // Updated calculation to match facultyMerits.jsx: total_merits = 150 - total_demerits
       const totalDemerits = (demDays || []).reduce((s, v) => s + (Number(v) || 0), 0);
-      const netScore = totalMerits - totalDemerits;
-      const maxPossible = weekCountGuess * 10;
-      const perc = Math.min(30, Math.round(((maxPossible === 0 ? 0 : netScore / maxPossible) * 30)));
-      console.log('[Aptitude] Computed from array days', { cadetId, totalMerits, totalDemerits, weekCountGuess, maxPossible, perc, record });
+      const maxPossible = weekCountGuess * 10; // 150 for 15 weeks
+      const totalMerits = Math.max(0, maxPossible - totalDemerits);
+      const perc = Math.min(30, Math.max(0, Math.round((totalMerits / 150) * 30)));
+      console.log('[Aptitude] Computed from array days', { cadetId, totalDemerits, totalMerits, weekCountGuess, maxPossible, perc, record });
       return isNaN(perc) ? 0 : perc;
     }
 
@@ -309,7 +346,7 @@ const FacultyFinalGrades = ({ auth }) => {
     }
 
     // As a final fallback, build days from individual keyed fields (week1..week15, merit1.., m1.. etc.)
-    const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+    const weekLimit = 15; // Both semesters now use 15 weeks
     const meritsByWeek = Array(weekLimit).fill(0);
     const demeritsByWeek = Array(weekLimit).fill(0);
     Object.keys(record || {}).forEach(k => {
@@ -325,11 +362,13 @@ const FacultyFinalGrades = ({ auth }) => {
         if (idx >= 1 && idx <= weekLimit) demeritsByWeek[idx - 1] = Number(record[k]) || 0;
       }
     });
-    const totalMerits2 = meritsByWeek.reduce((s, v) => s + (Number(v) || 0), 0);
+    
+    // Updated calculation to match facultyMerits.jsx: total_merits = 150 - total_demerits
     const totalDemerits2 = demeritsByWeek.reduce((s, v) => s + (Number(v) || 0), 0);
-    const net2 = totalMerits2 - totalDemerits2;
-    const perc2 = Math.min(30, Math.round(((weekLimit * 10 === 0 ? 0 : net2 / (weekLimit * 10)) * 30)));
-    console.log('[Aptitude] Computed from keyed fields', { cadetId, meritsByWeek, demeritsByWeek, perc2 });
+    const maxPossible = weekLimit * 10; // 150 for 15 weeks
+    const totalMerits2 = Math.max(0, maxPossible - totalDemerits2);
+    const perc2 = Math.min(30, Math.max(0, Math.round((totalMerits2 / 150) * 30)));
+    console.log('[Aptitude] Computed from keyed fields', { cadetId, meritsByWeek, demeritsByWeek, totalDemerits2, totalMerits2, perc2 });
     return isNaN(perc2) ? 0 : perc2;
   };
 
@@ -441,7 +480,13 @@ const FacultyFinalGrades = ({ auth }) => {
       if (res.ok) {
         setCommonModuleMap(prev => ({ ...prev, ...commonModuleEdited }));
         setIsEditingCommon(false);
-        toast.success('Common Module Grades saved.');
+        
+        setAlertDialog({
+          isOpen: true,
+          type: 'success',
+          title: 'Save Successful',
+          message: 'Common Module Grades have been saved successfully.'
+        });
         
         // Clear the cache for this semester to force fresh data
         setSemesterCache(prev => {
@@ -456,11 +501,21 @@ const FacultyFinalGrades = ({ auth }) => {
         // Clear edited state after successful refresh
         setCommonModuleEdited({});
       } else {
-        toast.error('Failed to save Common Module Grades');
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Save Failed',
+          message: 'Failed to save Common Module Grades.'
+        });
       }
     } catch (e) {
       console.error(e);
-      toast.error('Error saving Common Module Grades');
+      setAlertDialog({
+        isOpen: true,
+        type: 'error',
+        title: 'Save Error',
+        message: 'Error saving Common Module Grades: ' + e.message
+      });
     }
   };
 
@@ -475,7 +530,6 @@ const FacultyFinalGrades = ({ auth }) => {
     setCommonModuleEdited({});
     setCommonModuleMap(commonSnapshot);
     setIsEditingCommon(false);
-    toast.info('Editing cancelled. Changes discarded.');
   };
 
   const handlePostGrades = async (semester) => {
@@ -515,7 +569,13 @@ const FacultyFinalGrades = ({ auth }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Success response:', result);
-        toast.success(`${semester === '2025-2026 1st semester' ? '1st Semester' : '2nd Semester'} grades posted successfully!`);
+        
+        setAlertDialog({
+          isOpen: true,
+          type: 'success',
+          title: 'Grades Posted Successfully',
+          message: `${semester === '2025-2026 1st semester' ? '1st Semester' : '2nd Semester'} grades have been posted successfully!`
+        });
       } else {
         const responseText = await response.text();
         console.error('Error response:', responseText);
@@ -546,11 +606,21 @@ const FacultyFinalGrades = ({ auth }) => {
           }
         }
         
-        toast.error(errorMessage);
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Post Grades Failed',
+          message: errorMessage
+        });
       }
     } catch (error) {
       console.error('Error posting grades:', error);
-      toast.error(`Error posting ${semester === '2025-2026 1st semester' ? '1st semester' : '2nd semester'} grades. Please try again.`);
+      setAlertDialog({
+        isOpen: true,
+        type: 'error',
+        title: 'Post Grades Error',
+        message: `Error posting ${semester === '2025-2026 1st semester' ? '1st semester' : '2nd semester'} grades. Please try again.`
+      });
     } finally {
       setIsPosting(false);
     }
@@ -627,7 +697,9 @@ const FacultyFinalGrades = ({ auth }) => {
   
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Final Grades" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <style>{`
         input.no-spin::-webkit-outer-spin-button,
         input.no-spin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -999,7 +1071,17 @@ const FacultyFinalGrades = ({ auth }) => {
           </div>
         </div>
       </div>
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        type={alertDialog.type}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      />
     </div>
+    </>
   );
 }
 

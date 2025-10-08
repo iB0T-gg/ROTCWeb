@@ -1,9 +1,14 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, Head } from '@inertiajs/react';
+import { useState } from 'react';
 
 /**
  * ForgotPassword Component
- * 
- * This component provides a form for users to request a password reset link.
+ *              </div>
+            </div>
+          </div>
+        </>
+    );
+}his component provides a form for users to request a password reset link.
  * It sends the user's email to the server, which will send a reset link email
  * if the email is associated with a registered account.
  * 
@@ -17,6 +22,9 @@ export default function ForgotPassword({ status }) {
         email: '',  // User's email address for password reset
     });
 
+    // State for submission messages
+    const [submitMessage, setSubmitMessage] = useState({ type: '', message: '' });
+
     /**
      * Handle form submission
      * Prevents default form behavior and posts data to the forgot-password endpoint
@@ -25,11 +33,38 @@ export default function ForgotPassword({ status }) {
      */
     const handleSubmit = (e) => {
         e.preventDefault();
-        post('/forgot-password');
+        
+        // Clear any previous messages
+        setSubmitMessage({ type: '', message: '' });
+        
+        post('/forgot-password', {
+            onSuccess: () => {
+                setSubmitMessage({ 
+                    type: 'success', 
+                    message: 'Password reset link has been sent to your email address. Please check your inbox and spam folder.' 
+                });
+            },
+            onError: (errors) => {
+                // Handle general errors or specific email errors
+                if (errors.email) {
+                    setSubmitMessage({ 
+                        type: 'error', 
+                        message: errors.email 
+                    });
+                } else {
+                    setSubmitMessage({ 
+                        type: 'error', 
+                        message: 'An error occurred while processing your request. Please try again.' 
+                    });
+                }
+            }
+        });
     };
 
     return (
-    <div className='forgotPassword-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
+    <>
+        <Head title="ROTC Portal - Forgot Password" />
+        <div className='forgotPassword-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
           <div 
             className='absolute inset-0 z-0'
             style={{
@@ -47,9 +82,21 @@ export default function ForgotPassword({ status }) {
                     <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
               <h1 className='text-base sm:text-lg font-semibold mb-3 sm:mb-6 text-center'>Forgot Password</h1>
               
+              {/* Display server status message */}
               {status && (
                 <div className="mb-3 sm:mb-4 font-medium text-xs sm:text-sm text-green-600 bg-green-100 p-1.5 sm:p-2 rounded">
                   {status}
+                </div>
+              )}
+
+              {/* Display submission success/error messages */}
+              {submitMessage.message && (
+                <div className={`mb-3 sm:mb-4 font-medium text-xs sm:text-sm p-1.5 sm:p-2 rounded ${
+                  submitMessage.type === 'success' 
+                    ? 'text-green-600 bg-green-100' 
+                    : 'text-red-600 bg-red-100'
+                }`}>
+                  {submitMessage.message}
                 </div>
               )}
               
@@ -84,5 +131,6 @@ export default function ForgotPassword({ status }) {
             </div>
           </div>
         </div>
+        </>
     );
 }

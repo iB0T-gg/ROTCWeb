@@ -3,7 +3,7 @@ import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
 import { FaSort } from 'react-icons/fa6'
 import { FaFileCsv, FaFileExcel } from 'react-icons/fa'
-import { usePage } from '@inertiajs/react';
+import { usePage, Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from '@inertiajs/react';
@@ -196,42 +196,48 @@ export default function AdminMasterlist(){
     };
     
     return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+        <>
+            <Head title="ROTC Portal - Grade Records" />
+            <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
         <AdminSidebar  />
         
-        <div className='flex-1 p-3 md:p-6'>
+        <div className='flex-1 p-2 sm:p-4 md:p-6'>
           <div className='font-regular'>  
-            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-xs sm:text-sm md:text-base">
                 <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
-                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="mx-1 md:mx-2 font-semibold">{">"}</span>
                 <span className="cursor-default font-bold">Cadets Grade Record</span>  
           </div>
-            <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
-                <h1 className='text-xl md:text-2xl font-semibold'>Master Lists</h1>
+            <div className='flex items-center justify-between mt-2 sm:mt-3 md:mt-4 mb-3 sm:mb-4 md:mb-6 pl-3 md:pl-5 py-3 sm:py-4 md:py-7 bg-primary text-white p-2 sm:p-3 md:p-4 rounded-lg'>
+                <h1 className='text-lg sm:text-xl md:text-2xl font-semibold'>Master Lists</h1>
             </div>
 
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
-              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4'>
+            <div className='bg-white p-2 sm:p-4 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
+              <div className='flex flex-col gap-3 sm:gap-4 mb-4 md:mb-6'>
+                {/* Title Section */}
                 <div>
-                  <h1 className='text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
+                  <h1 className='text-sm sm:text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
                   <p className='text-xs md:text-sm text-gray-500 mt-1'>
                     Showing {filteredCadets.length} of {cadets.length} cadets
-                    
                   </p>
                 </div>
 
-                <div className='flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto'>
+                {/* Controls Section - Stacked on mobile */}
+                <div className='flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center'>
                   {/* Semester Selector */}
                   <div className="w-full sm:w-auto">
+                    <label className="block text-xs font-medium text-gray-700 mb-1 sm:hidden">
+                      Select Semester
+                    </label>
                     <select
                       value={selectedSemester}
                       onChange={(e) => setSelectedSemester(e.target.value)}
-                      className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg bg-white text-sm md:text-base"
+                      className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg bg-white text-xs sm:text-sm md:text-base"
                     >
                       <option value="">All Semesters</option>
                       {availableSemesters.map((semester) => (
@@ -242,57 +248,66 @@ export default function AdminMasterlist(){
                     </select>
                   </div>
                   
-                  <div className="relative w-full sm:w-auto">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="search"
-                      placeholder="Search Cadets"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full sm:w-64 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
-                    />
+                  {/* Search Input */}
+                  <div className="w-full sm:w-auto">
+                    <label className="block text-xs font-medium text-gray-700 mb-1 sm:hidden">
+                      Search Cadets
+                    </label>
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
+                      <input
+                        type="search"
+                        placeholder="Search Cadets"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-48 md:w-64 p-2 pl-8 sm:pl-10 border border-gray-300 rounded-lg text-xs sm:text-sm md:text-base"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
               
               
               {loading ? (
-                <div className='text-center py-8 md:py-12 text-gray-500'>
-                  <p className="text-sm md:text-base">Loading cadets...</p>
+                <div className='text-center py-6 sm:py-8 md:py-12 text-gray-500'>
+                  <p className="text-xs sm:text-sm md:text-base">Loading cadets...</p>
                 </div>
               ) : paginatedCadets.length === 0 ? (
-                <div className='text-center py-8 md:py-12 text-gray-500'>
-                  <p className="text-sm md:text-base">
+                <div className='text-center py-6 sm:py-8 md:py-12 text-gray-500'>
+                  <p className="text-xs sm:text-sm md:text-base">
                     {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Mobile Card View */}
-                  <div className="block md:hidden space-y-3">
+                  <div className="block lg:hidden space-y-2 sm:space-y-3">
                     {paginatedCadets.map((cadet) => {
                       const finalGrade = getFinalGrade(cadet);
                       const equivalentGrade = getEquivalentGrade(cadet);
                       const remarks = getRemarks(cadet);
                       
                       return (
-                        <div key={cadet.id} className="bg-gray-50 rounded-lg p-3 border">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="font-semibold text-sm text-gray-900">
+                        <div key={cadet.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border">
+                          {/* Header Row - Name and Grades */}
+                          <div className="flex justify-between items-start mb-2 sm:mb-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-xs sm:text-sm text-gray-900 truncate">
                                 {cadet.last_name}, {cadet.first_name} {cadet.middle_name ? cadet.middle_name.charAt(0) + '.' : ''}
                               </p>
-                              <p className="text-xs text-gray-600">{cadet.student_number || 'N/A'}</p>
+                              <p className="text-xs text-gray-600 mt-0.5">{cadet.student_number || 'N/A'}</p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-xs font-medium text-green-700">{finalGrade}</p>
+                            <div className="text-right ml-2">
+                              <p className="text-xs sm:text-sm font-medium text-green-700">{finalGrade}</p>
                               <p className="text-xs text-gray-500">{equivalentGrade}</p>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
+                          
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                             <div>
                               <span className="text-gray-500">Course:</span>
-                              <p className="font-medium">{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</p>
+                              <p className="font-medium truncate">{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</p>
                             </div>
                             <div>
                               <span className="text-gray-500">Gender:</span>
@@ -300,11 +315,11 @@ export default function AdminMasterlist(){
                             </div>
                             <div>
                               <span className="text-gray-500">Campus:</span>
-                              <p className="font-medium">{cadet.campus || 'N/A'}</p>
+                              <p className="font-medium truncate">{cadet.campus || 'N/A'}</p>
                             </div>
                             <div>
                               <span className="text-gray-500">Remarks:</span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-0.5 ${
                                 remarks === 'Passed' ? 'bg-green-100 text-green-800' :
                                 remarks === 'Failed' ? 'bg-red-100 text-red-800' :
                                 remarks === 'Not Calculated' ? 'bg-gray-100 text-gray-800' :
@@ -320,18 +335,18 @@ export default function AdminMasterlist(){
                   </div>
 
                   {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-y-auto">
+                  <div className="hidden lg:block overflow-x-auto">
                     <table className='w-full border-collapse'>
                       <thead className='text-gray-600'>
                         <tr>
-                          <th className='p-2 border-b font-medium text-left'>Student Number</th>
-                          <th className='p-2 border-b font-medium text-left'>Name</th>
-                          <th className='p-2 border-b font-medium text-left'>CY&S</th>
-                          <th className='p-2 border-b font-medium text-left'>Gender</th>
-                          <th className='p-2 border-b font-medium text-left'>Campus</th>
-                          <th className='p-2 border-b font-medium text-left'>Final Grade</th>
-                          <th className='p-2 border-b font-medium text-left'>Equivalent</th>
-                          <th className='p-2 border-b font-medium text-left'>Remarks</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Student Number</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Name</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>CY&S</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Gender</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Campus</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Final Grade</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Equivalent</th>
+                          <th className='p-2 border-b font-medium text-left text-sm'>Remarks</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -342,15 +357,15 @@ export default function AdminMasterlist(){
                           
                           return (
                             <tr key={cadet.id} className='hover:bg-gray-50'>
-                              <td className='p-2 border-b text-left'>{cadet.student_number || 'N/A'}</td>
-                              <td className='p-2 border-b text-left'>
+                              <td className='p-2 border-b text-left text-sm'>{cadet.student_number || 'N/A'}</td>
+                              <td className='p-2 border-b text-left text-sm'>
                                 {cadet.last_name}, {cadet.first_name} {cadet.middle_name ? cadet.middle_name.charAt(0) + '.' : ''}
                               </td>
-                              <td className='p-2 border-b text-left'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
-                              <td className='p-2 border-b text-left'>{cadet.gender || 'N/A'}</td>
-                              <td className='p-2 border-b text-left'>{cadet.campus || 'N/A'}</td>
-                              <td className='p-2 border-b text-left font-medium'>{finalGrade}</td>
-                              <td className='p-2 border-b text-left'>{equivalentGrade}</td>
+                              <td className='p-2 border-b text-left text-sm'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
+                              <td className='p-2 border-b text-left text-sm'>{cadet.gender || 'N/A'}</td>
+                              <td className='p-2 border-b text-left text-sm'>{cadet.campus || 'N/A'}</td>
+                              <td className='p-2 border-b text-left font-medium text-sm'>{finalGrade}</td>
+                              <td className='p-2 border-b text-left text-sm'>{equivalentGrade}</td>
                               <td className='p-2 border-b text-left'>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                   remarks === 'Passed' ? 'bg-green-100 text-green-800' :
@@ -371,51 +386,57 @@ export default function AdminMasterlist(){
               )}
               
               {/* Pagination Controls */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-4 w-full gap-3">
-                <div className="text-gray-600 text-sm md:text-base justify-self-start">
-                  Showing data {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
+              <div className="flex flex-col space-y-3 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-3 items-center mt-4 w-full gap-3">
+                {/* Results Info */}
+                <div className="text-gray-600 text-xs sm:text-sm md:text-base text-center sm:text-left lg:justify-self-start">
+                  Showing {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                 </div>
-                <div className="flex justify-center justify-self-center w-full sm:w-auto">
-                  {currentPage > 1 && (
-                    <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      {'<'}
-                    </button>
-                  )}
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                    if (pageNum > totalPages) return null;
-                    return (
-                      <button
-                        key={pageNum}
-                        className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
-                        onClick={() => setCurrentPage(pageNum)}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  {currentPage < totalPages && (
-                    <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      &gt;
-                    </button>
+                
+                {/* Pagination Buttons */}
+                <div className="flex justify-center lg:justify-self-center w-full lg:w-auto">
+                  {totalPages > 1 && (
+                    <>
+                      {currentPage > 1 && (
+                        <button
+                          className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm md:text-base"
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                        >
+                          {'<'}
+                        </button>
+                      )}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                        if (pageNum > totalPages) return null;
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`mx-1 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      {currentPage < totalPages && (
+                        <button
+                          className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm md:text-base"
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                        >
+                          &gt;
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
                 
                 {/* Export Button */}
-                <div className="justify-self-end w-full sm:w-auto">
+                <div className="w-full sm:w-auto lg:justify-self-end">
                   <button 
                     onClick={exportToExcel}
-                    className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 text-xs md:text-sm w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 sm:px-4 py-2 rounded transition-colors duration-150 text-xs sm:text-sm w-full lg:w-auto"
                   >
-                    <FaFileExcel />
-                    <span className="hidden sm:inline">Export to Excel</span>
-                    <span className="sm:hidden">Export</span>
+                    <FaFileExcel className="text-xs sm:text-sm" />
+                    <span>Export to Excel</span>
                   </button>
                 </div>
               </div>
@@ -424,5 +445,6 @@ export default function AdminMasterlist(){
         </div>
       </div>
     </div>
-  )
+        </>
+    )
 }

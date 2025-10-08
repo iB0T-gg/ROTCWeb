@@ -1,11 +1,38 @@
 import React, { useState, useEffect } from 'react';
-const toast = { info: () => {}, success: () => {}, error: () => {} };
 import axios from 'axios';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ChevronDownIcon = ({ className }) => (
   <svg
@@ -20,6 +47,7 @@ const ChevronDownIcon = ({ className }) => (
 
 const FacultyExams = ({ auth }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [cadets, setCadets] = useState([]);
   const [originalCadets, setOriginalCadets] = useState([]);
   const [semesterData, setSemesterData] = useState({}); // Cache data for each semester
@@ -33,6 +61,15 @@ const FacultyExams = ({ auth }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const cadetsPerPage = 8;
   const [showFilterPicker, setShowFilterPicker] = useState(false);
+  
+  // Alert state
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
   const [maxFinal, setMaxFinal] = useState(() => {
     try {
       const raw = sessionStorage.getItem('facultyExamsMaxFinal_v2');
@@ -222,7 +259,7 @@ const FacultyExams = ({ auth }) => {
       // If currently editing, cancel editing and discard changes
       if (isEditing) {
         resetEditState();
-        toast.info('Switching semesters. Unsaved changes discarded.');
+        console.log('Switching semesters. Unsaved changes discarded.');
       }
 
       // Clear any local edits by resetting cadets to original state
@@ -255,10 +292,13 @@ const FacultyExams = ({ auth }) => {
   const handleEdit = () => {
     setOriginalCadets([...cadets]); // Store current state as original before editing
     setIsEditing(true);
-    toast.info('Edit mode enabled. You can now modify exam scores.');
   };
 
   const handleSave = async () => {
+    if (isSaving) return; // Prevent multiple saves
+    
+    setIsSaving(true);
+    
     try {
       const scores = cadets.map(cadet => {
         const final = cadet.final_exam === '' || cadet.final_exam === null ? '' : Number(cadet.final_exam) || 0;
@@ -292,22 +332,40 @@ const FacultyExams = ({ auth }) => {
         };
       });
       // CSRF: try meta tag first, then fall back to XSRF-TOKEN cookie
-      const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
       const cookieToken = (() => {
         try {
-          const raw = document.cookie.split('; ').find(r => r.startsWith('XSRF-TOKEN='));
-          return raw ? decodeURIComponent(raw.split('=')[1]) : undefined;
-        } catch { return undefined; }
+          const cookies = document.cookie.split(';');
+          const xsrfCookie = cookies.find(cookie => cookie.trim().startsWith('XSRF-TOKEN='));
+          return xsrfCookie ? decodeURIComponent(xsrfCookie.split('=')[1]) : null;
+        } catch { 
+          return null; 
+        }
       })();
       const csrfToken = metaToken || cookieToken;
+      
+      if (!csrfToken) {
+        console.error('Security token not found. Please refresh the page and try again.');
+        return;
+      }
+
       const response = await axios.post(`/api/exams/save`, { 
         scores,
         semester: selectedSemester,
         max_final: Number(maxFinal) || 100,
         max_midterm: Number(maxMidterm) || 100,
-      }, { headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, withCredentials: true });
+      }, { 
+        headers: { 
+          'X-CSRF-TOKEN': csrfToken, 
+          'Accept': 'application/json', 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest' 
+        }, 
+        withCredentials: true 
+      });
+      
       if (response.status === 200) {
-        toast.success('Successfully saved exam scores.');
+        console.log('Successfully saved exam scores!');
         setIsEditing(false);
         // Update original data to current state after successful save
         setOriginalCadets([...cadets]);
@@ -321,14 +379,78 @@ const FacultyExams = ({ auth }) => {
         stored[selectedSemester] = [...cadets];
         setStoredCache(stored);
         
+        // Show success alert
+        setAlertDialog({
+          isOpen: true,
+          type: 'success',
+          title: 'Success!',
+          message: 'Exam scores have been saved successfully.'
+        });
+        
         // Sync with server to ensure what shows next time is the persisted data
         await fetchDataForSemester(selectedSemester);
       } else {
-        toast.error('Failed to save exam scores.');
+        console.error('Failed to save exam scores. Please try again.');
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Save Failed',
+          message: 'Failed to save exam scores. Please try again.'
+        });
       }
     } catch (error) {
       console.error('Error saving exam scores:', error);
-      toast.error('Error saving exam scores.');
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || 'Unknown error occurred';
+        
+        let errorMessage = '';
+        if (status === 419) {
+          errorMessage = 'Session expired. Please refresh the page and try again.';
+          console.error('Session expired. Please refresh the page and try again.');
+        } else if (status === 422) {
+          errorMessage = `Validation error: ${message}`;
+          console.error('Validation error: ' + message);
+        } else if (status === 403) {
+          errorMessage = 'Access denied. You may not have permission to save exam scores.';
+          console.error('Access denied. You may not have permission to save exam scores.');
+        } else if (status === 500) {
+          errorMessage = 'Server error. Please try again or contact support.';
+          console.error('Server error. Please try again or contact support.');
+        } else {
+          errorMessage = `Error ${status}: ${message}`;
+          console.error(`Error ${status}: ${message}`);
+        }
+        
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Error Saving',
+          message: errorMessage
+        });
+      } else if (error.request) {
+        // Network error
+        console.error('Network error. Please check your connection and try again.');
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Network Error',
+          message: 'Network error. Please check your connection and try again.'
+        });
+      } else {
+        // Other error
+        console.error('An unexpected error occurred. Please try again.');
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Unexpected Error',
+          message: 'An unexpected error occurred. Please try again.'
+        });
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -352,7 +474,7 @@ const FacultyExams = ({ auth }) => {
     stored[selectedSemester] = resetCadets;
     setStoredCache(stored);
     
-    toast.info('Editing cancelled. Changes discarded.');
+    console.log('Editing cancelled. Changes discarded.');
   };
 
   // Handle input change for midterm/final
@@ -415,7 +537,9 @@ const FacultyExams = ({ auth }) => {
   );
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Exams" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
@@ -447,7 +571,7 @@ const FacultyExams = ({ auth }) => {
                         resetEditState();
                         setCurrentPage(1);
                         setSelectedSemester(semester);
-                        toast.info(`Switched to ${semester}. Edit mode disabled.`);
+                        console.log(`Switched to ${semester}. Edit mode disabled.`);
                       }}
                       disabled={loading}
                       className={`w-full sm:w-auto py-2 px-3 md:px-4 rounded-lg transition-colors duration-150 text-sm md:text-base ${
@@ -631,9 +755,12 @@ const FacultyExams = ({ auth }) => {
                         </button>
                         <button 
                           onClick={handleSave}
-                          className="bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-primary transition-colors duration-150 flex-1 text-sm md:text-base"
+                          disabled={isSaving}
+                          className={`bg-primary text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 flex-1 text-sm md:text-base ${
+                            isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary'
+                          }`}
                         >
-                          Save
+                          {isSaving ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     )}
@@ -807,9 +934,12 @@ const FacultyExams = ({ auth }) => {
 
                       <button 
                         onClick={handleSave}
-                        className="bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-primary transition-colors duration-150 text-sm md:text-base"
+                        disabled={isSaving}
+                        className={`bg-primary text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 text-sm md:text-base ${
+                          isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary'
+                        }`}
                       >
-                        Save
+                        {isSaving ? 'Saving...' : 'Save'}
                       </button>
                     </>
                   )}
@@ -819,7 +949,17 @@ const FacultyExams = ({ auth }) => {
           </div>
         </div>
       </div>
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        type={alertDialog.type}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      />
     </div>
+    </>
   );
 };
 

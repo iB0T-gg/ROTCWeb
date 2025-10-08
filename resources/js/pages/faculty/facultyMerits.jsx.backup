@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Head } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 const toast = { info: () => {}, success: () => {}, error: () => {} };
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
@@ -653,9 +653,7 @@ const FacultyMerits = ({ auth }) => {
 
 
   return (
-    <>
-      <Head title="ROTC Portal - Aptitude" />
-      <div className='w-full min-h-screen bg-backgroundColor'>
+    <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className="flex flex-col md:flex-row">
         <FacultySidebar />
@@ -843,26 +841,26 @@ const FacultyMerits = ({ auth }) => {
                {/* Current Semester Content */}
                {activeTab === 'current' && (
                  <>
-                   <div className="overflow-x-auto">
-                     <div className="min-w-full">
-                       <table key={renderKey} className="w-full border-collapse min-w-[1400px]">
-                         <thead className="text-gray-600">
-                           <tr>
-                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
+                    <div className="overflow-x-auto">
+                      <div className="min-w-full">
+                   <table key={renderKey} className="w-full border-collapse min-w-[1200px]">
+                <thead className="text-gray-600">
+                  <tr>
+                    <th className="p-2 md:p-3 border-b font-medium text-left text-sm md:text-base">Cadet Names</th>
                     {/* Dynamically render week columns with M/D subheaders */}
                     {getCurrentWeeks().map((week) => (
-                      <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[80px]">
+                      <th key={week} className="p-2 md:p-3 border-b font-medium text-center">
                         <div className="flex flex-col items-center">
-                          <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
-                          <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5">
-                            <span className="bg-green-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">M</span>
-                            <span className="bg-red-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">D</span>
+                          <span className="text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">{week}</span>
+                          <div className="flex justify-center gap-1 md:gap-2">
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                           </div>
                         </div>
                       </th>
                     ))}
-                    <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Total Merits</th>
-                    <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Aptitude (30%)</th>
+                    <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Total Merits</th>
+                    <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Aptitude (30%)</th>
                   </tr>
                 </thead>
                   <tbody>
@@ -880,27 +878,21 @@ const FacultyMerits = ({ auth }) => {
                     
                     return (
                       <tr key={cadet.id} className="border-b border-gray-200">
-                        <td className="p-1 sm:p-2 md:p-3 text-gray-900 text-xs sm:text-sm md:text-base sticky left-0 bg-white z-10 min-w-[120px]">{formatCadetName(cadet)}</td>
+                        <td className="p-2 md:p-3 text-gray-900 text-sm md:text-base">{formatCadetName(cadet)}</td>
                         {getCurrentWeeks().map((week, j) => {
                           const weekIndex = j; // Direct index for both semesters
                           return (
-                            <td key={j} className="p-1 sm:p-2 md:p-3 text-center">
-                              <div className="flex gap-0.5 sm:gap-1 justify-center">
+                            <td key={j} className="p-2 md:p-3 text-center">
+                              <div className="flex gap-1 md:gap-2 justify-center">
                                 {/* Merits input (Green) */}
                                 <input
                                   type="number"
                                   min="0"
                                   max="10"
-                                  value={(() => {
-                                    if (meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-') {
-                                      const demeritVal = Number(demeritValues[weekIndex]) || 0;
-                                      const calculatedMerit = Math.max(0, 10 - demeritVal);
-                                      return isNaN(calculatedMerit) ? 10 : calculatedMerit;
-                                    }
-                                    const meritVal = Number(meritValues[weekIndex]);
-                                    return isNaN(meritVal) ? 10 : meritVal;
-                                  })()}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  value={(meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-')
+                                    ? Math.max(0, 10 - (Number(demeritValues[weekIndex]) || 0))
+                                    : meritValues[weekIndex]}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -910,15 +902,9 @@ const FacultyMerits = ({ auth }) => {
                                   type="number"
                                   min="0"
                                   max="10"
-                                  value={(() => {
-                                    if (demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-') {
-                                      return '';
-                                    }
-                                    const demeritVal = Number(demeritValues[weekIndex]);
-                                    return isNaN(demeritVal) ? '' : demeritVal;
-                                  })()}
+                                  value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />
@@ -926,11 +912,11 @@ const FacultyMerits = ({ auth }) => {
                             </td>
                           );
                         })}
-                        <td className="p-1 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                        <td className="p-2 md:p-3 text-center text-sm md:text-base">
                           {/* Display total merit score */}
                           {totalMerits}
                         </td>
-                        <td className="p-1 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                        <td className="p-2 md:p-3 text-center text-sm md:text-base">
                           {/* Display calculated aptitude score, not an input */}
                           {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                         </td>
@@ -1017,26 +1003,26 @@ const FacultyMerits = ({ auth }) => {
                {/* Previous Semester Content */}
                {activeTab === 'previous' && (
                  <>
-                   <div className="overflow-x-auto">
-                     <div className="min-w-full">
-                       <table className="w-full border-collapse min-w-[1400px]">
-                         <thead className="text-gray-600">
-                           <tr>
-                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
+                    <div className="overflow-x-auto">
+                      <div className="min-w-full">
+                    <table className="w-full border-collapse min-w-[1200px]">
+                 <thead className="text-gray-600">
+                   <tr>
+                     <th className="p-2 md:p-3 border-b font-medium text-left text-sm md:text-base">Cadet Names</th>
                      {/* Dynamically render week columns with M/D subheaders */}
                      {getCurrentWeeks().map((week) => (
-                       <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[80px]">
+                       <th key={week} className="p-2 md:p-3 border-b font-medium text-center">
                          <div className="flex flex-col items-center">
-                           <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
-                          <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5">
-                            <span className="bg-green-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">M</span>
-                            <span className="bg-red-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">D</span>
+                           <span className="text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">{week}</span>
+                          <div className="flex justify-center gap-1 md:gap-2">
+                            <span className="bg-green-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">M</span>
+                            <span className="bg-red-100 text-gray-700 text-[10px] md:text-xs font-medium px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                            </div>
                          </div>
                        </th>
                      ))}
-                     <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Total Merits</th>
-                     <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Aptitude (30%)</th>
+                     <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Total Merits</th>
+                     <th className="p-2 md:p-3 border-b font-medium text-center text-sm md:text-base">Aptitude (30%)</th>
                    </tr>
                  </thead>
                 <tbody>
@@ -1053,7 +1039,7 @@ const FacultyMerits = ({ auth }) => {
                      
                      return (
                        <tr key={cadet.id} className="hover:bg-gray-50 border-b border-gray-200">
-                         <td className="p-1 sm:p-2 md:p-3 border-b text-xs sm:text-sm md:text-base sticky left-0 bg-white z-10 min-w-[120px]">
+                         <td className="p-2 md:p-3 border-b text-sm md:text-base">
                            <div className="text-gray-900">
                              {formatCadetName(cadet)}
                            </div>
@@ -1061,21 +1047,15 @@ const FacultyMerits = ({ auth }) => {
                         {getCurrentWeeks().map((week, j) => {
                           const weekIndex = j; // Direct index for both semesters
                           return (
-                            <td key={j} className="p-1 sm:p-2 md:p-3 text-center border-b">
-                              <div className="flex gap-0.5 sm:gap-1 justify-center">
+                            <td key={j} className="p-2 md:p-3 text-center border-b">
+                              <div className="flex gap-1 md:gap-2 justify-center">
                                 {/* Merits input (Green) */}
                                 <input
                                   type="number"
                                   min="0"
                                   max="10"
-                                  value={(() => {
-                                    if (meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-') {
-                                      return '';
-                                    }
-                                    const meritVal = Number(meritValues[weekIndex]);
-                                    return isNaN(meritVal) ? '' : meritVal;
-                                  })()}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  value={meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-' ? '' : meritValues[weekIndex]}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -1085,15 +1065,9 @@ const FacultyMerits = ({ auth }) => {
                                   type="number"
                                   min="0"
                                   max="10"
-                                  value={(() => {
-                                    if (demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-') {
-                                      return '';
-                                    }
-                                    const demeritVal = Number(demeritValues[weekIndex]);
-                                    return isNaN(demeritVal) ? '' : demeritVal;
-                                  })()}
+                                  value={demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-' ? '' : demeritValues[weekIndex]}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-8 md:w-10 lg:w-12 h-6 md:h-8 text-center border border-gray-300 rounded text-xs md:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
                                   disabled={!isEditing}
                                 />
@@ -1101,11 +1075,11 @@ const FacultyMerits = ({ auth }) => {
                             </td>
                           );
                         })}
-                         <td className="p-1 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                         <td className="p-2 md:p-3 text-center text-sm md:text-base">
                            {/* Display total merit score */}
                            {totalMerits}
                          </td>
-                         <td className="p-1 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                         <td className="p-2 md:p-3 text-center text-sm md:text-base">
                            {/* Display calculated aptitude score, not an input */}
                            {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}
                          </td>
@@ -1241,7 +1215,6 @@ const FacultyMerits = ({ auth }) => {
         onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
       />
     </div>
-    </>
   );
 };
 

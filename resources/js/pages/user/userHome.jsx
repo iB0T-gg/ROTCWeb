@@ -1,4 +1,4 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, Head } from '@inertiajs/react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
 
@@ -10,7 +10,9 @@ export default function UserHome({ auth }) {
     };
 
     return (
-        <div className='w-full min-h-screen bg-backgroundColor'>
+        <>
+            <Head title="ROTC Portal - Home" />
+            <div className='w-full min-h-screen bg-backgroundColor'>
             <Header auth={auth} onLogout={handleLogout} />
             
             <div className='flex flex-col md:flex-row'>
@@ -25,7 +27,7 @@ export default function UserHome({ auth }) {
                         </div>
                         
                         <div className='flex items-center justify-between mt-4 mb-6 px-4 md:pl-5 py-5 md:py-7 bg-primary text-white rounded-lg shadow-md'>
-                            <h1 className='text-xl md:text-2xl font-semibold'>Welcome User!</h1>
+                            <h1 className='text-xl md:text-2xl font-semibold'>Welcome {auth.user.first_name}!</h1>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -52,5 +54,6 @@ export default function UserHome({ auth }) {
                 </div>
             </div>
         </div>
+        </>
     )
 }

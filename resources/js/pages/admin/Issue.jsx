@@ -2,7 +2,35 @@ import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import axios from 'axios';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ChevronDownIcon component for dropdowns
 const ChevronDownIcon = ({ className }) => (
@@ -24,6 +52,14 @@ export default function Issue({ issues = [] }) {
     const [response, setResponse] = useState('');
     const [status, setStatus] = useState('pending');
     const [filter, setFilter] = useState('all');
+    
+    // Alert state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        type: 'success',
+        title: '',
+        message: ''
+    });
     
     // Fetch issues from API if not provided via props
     useEffect(() => {
@@ -70,13 +106,22 @@ export default function Issue({ issues = [] }) {
             setSelectedIssue(null);
             setStatus('pending');
             
-            // Show success message (you can add a toast notification here if needed)
-            console.log('Issue updated successfully');
+            // Show success message
+            setAlertDialog({
+                isOpen: true,
+                type: 'success',
+                title: 'Success',
+                message: 'Issue updated successfully!'
+            });
             
         } catch (error) {
             console.error('Error updating issue:', error);
-            // You can add error handling/notification here
-            alert('Failed to update issue. Please try again.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Update Failed',
+                message: 'Failed to update issue. Please try again.'
+            });
         }
     };
     
@@ -124,7 +169,9 @@ export default function Issue({ issues = [] }) {
     };
     
     return (
-        <div className='w-full min-h-screen bg-backgroundColor'>
+        <>
+            <Head title="ROTC Portal - Issues" />
+            <div className='w-full min-h-screen bg-backgroundColor'>
           <Header />
           
           <div className='flex flex-col md:flex-row'>
@@ -371,9 +418,19 @@ export default function Issue({ issues = [] }) {
                         </div>
                     </div>
                 )}
+
+                {/* Alert Dialog */}
+                <AlertDialog
+                    isOpen={alertDialog.isOpen}
+                    type={alertDialog.type}
+                    title={alertDialog.title}
+                    message={alertDialog.message}
+                    onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+                />
               </div>
             </div>
           </div>
         </div>
+        </>
       )
 }

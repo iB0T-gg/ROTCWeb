@@ -6,7 +6,7 @@ import { FaFileExcel } from 'react-icons/fa'
 import { usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 
 export default function AdminCadetsProfile(){
@@ -174,177 +174,243 @@ export default function AdminCadetsProfile(){
     };
     
     return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Cadets Profile" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
         <AdminSidebar  />
         
-        <div className='flex-1 p-3 md:p-6'>
+        <div className='flex-1 p-2 sm:p-4 md:p-6'>
           <div className='font-regular'>
-            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+            <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-xs sm:text-sm md:text-base">
                 <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
-                <span className="mx-2 font-semibold">{">"}</span>
+                <span className="mx-1 md:mx-2 font-semibold">{">"}</span>
                 <span className="cursor-default font-bold">Cadets Profile Record</span>  
           </div>
-            <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
-                <h1 className='text-xl md:text-2xl font-semibold'>Master Lists</h1>
+            <div className='flex items-center justify-between mt-2 sm:mt-3 md:mt-4 mb-3 sm:mb-4 md:mb-6 pl-3 md:pl-5 py-3 sm:py-4 md:py-7 bg-primary text-white p-2 sm:p-3 md:p-4 rounded-lg'>
+                <h1 className='text-lg sm:text-xl md:text-2xl font-semibold'>Cadet Profiles</h1>
             </div>
 
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
-              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4'>
+            <div className='bg-white p-2 sm:p-4 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
+              <div className='flex flex-col gap-3 sm:gap-4 mb-4 md:mb-6'>
+                {/* Title Section */}
                 <div>
-                  <h1 className='text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
+                  <h1 className='text-sm sm:text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
                   <p className='text-xs md:text-sm text-gray-500 mt-1'>
                     Showing {filteredCadets.length} of {cadets.length} cadets
                   </p>
                 </div>
 
-                <div className='flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto'>
-                  <div className="relative w-full sm:w-auto">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="search"
-                      placeholder="Search Cadets"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full sm:w-64 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
-                    />
+                {/* Search Section */}
+                <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3'>
+                  <div className="w-full sm:w-auto">
+                    <label className="block text-xs font-medium text-gray-700 mb-1 sm:hidden">
+                      Search Cadets
+                    </label>
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
+                      <input
+                        type="search"
+                        placeholder="Search Cadets"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-48 md:w-64 p-2 pl-8 sm:pl-10 border border-gray-300 rounded-lg text-xs sm:text-sm md:text-base"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className='overflow-x-auto -mx-3 md:mx-0'>
-                <div className="min-w-full">
-                  <table className='w-full border-collapse min-w-[1200px]'>
-                    <thead className='text-gray-600'>
-                      <tr className=''>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Student No.</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>First Name</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Middle Name</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Last Name</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>CY&S</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Birthday</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Blood Type</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Address</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Region</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Height</th>
-                        <th className='p-2 md:p-3 border-b font-medium text-left text-sm md:text-base'>Contact No.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading ? (
+              {loading ? (
+                <div className='text-center py-6 sm:py-8 md:py-12 text-gray-500'>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+                    <span className="text-xs sm:text-sm md:text-base">Loading cadets...</span>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="text-center py-6 sm:py-8 md:py-12">
+                  <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+                    <p className="font-semibold text-sm sm:text-base">Error Loading Data</p>
+                    <p className="text-xs sm:text-sm mt-1">{error}</p>
+                    <button 
+                      onClick={() => window.location.reload()} 
+                      className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs sm:text-sm"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              ) : paginatedCadets.length === 0 ? (
+                <div className='text-center py-6 sm:py-8 md:py-12 text-gray-500'>
+                  <p className="text-xs sm:text-sm md:text-base">
+                    {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="block lg:hidden space-y-3 mb-4">
+                    {paginatedCadets.map((cadet) => (
+                      <div key={cadet.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border">
+                        {/* Header Row - Name and Student Number */}
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                              {cadet.last_name}, {cadet.first_name} {cadet.middle_name ? cadet.middle_name.charAt(0) + '.' : ''}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-gray-600">{cadet.student_number || 'N/A'}</p>
+                          </div>
+                          <div className="text-right ml-2">
+                            <p className="text-xs font-medium text-primary">
+                              {`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                          <div>
+                            <span className="text-gray-500">Birthday:</span>
+                            <p className="font-medium">{getBirthdayFromDatabase(cadet.birthday)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Blood Type:</span>
+                            <p className="font-medium">{cadet.blood_type || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Height:</span>
+                            <p className="font-medium">{cadet.height || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Region:</span>
+                            <p className="font-medium">{cadet.region || 'N/A'}</p>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="text-gray-500">Address:</span>
+                            <p className="font-medium break-words">{cadet.address || 'N/A'}</p>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="text-gray-500">Contact:</span>
+                            <p className="font-medium">{cadet.phone_number || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className='w-full border-collapse'>
+                      <thead className='text-gray-600'>
                         <tr>
-                          <td colSpan="11" className="p-4 text-center text-gray-500">
-                            <div className="flex items-center justify-center space-x-2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
-                              <span>Loading cadets...</span>
-                            </div>
-                          </td>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Student No.</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>First Name</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Middle Name</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Last Name</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>CY&S</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Birthday</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Blood Type</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Address</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Region</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Height</th>
+                          <th className='p-2 md:p-3 border-b font-medium text-left text-sm'>Contact No.</th>
                         </tr>
-                      ) : error ? (
-                        <tr>
-                          <td colSpan="11" className="p-4 text-center">
-                            <div className="text-red-600 bg-red-50 p-4 rounded-lg">
-                              <p className="font-semibold">Error Loading Data</p>
-                              <p className="text-sm mt-1">{error}</p>
-                              <button 
-                                onClick={() => window.location.reload()} 
-                                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                              >
-                                Retry
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : paginatedCadets.length === 0 ? (
-                        <tr>
-                          <td colSpan="11" className="p-4 text-center text-gray-500">
-                            {searchTerm ? 'No cadets found matching your search.' : 'No cadets found.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        paginatedCadets.map((cadet) => (
+                      </thead>
+                      <tbody>
+                        {paginatedCadets.map((cadet) => (
                           <tr key={cadet.id} className='hover:bg-gray-50 border-b border-gray-100'>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.student_number || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.first_name || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.middle_name || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.last_name || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.student_number || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.first_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.middle_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.last_name || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{`${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>
                               {getBirthdayFromDatabase(cadet.birthday)}
                             </td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.blood_type || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.blood_type || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>
                               {cadet.address ? (
-                                <div className="min-w-[260px] whitespace-nowrap">
+                                <div className="max-w-[200px] truncate">
                                   {cadet.address}
                                 </div>
                               ) : 'N/A'}
                             </td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.region || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.height || 'N/A'}</td>
-                            <td className='p-2 md:p-3 text-left text-sm md:text-base'>{cadet.phone_number || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.region || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.height || 'N/A'}</td>
+                            <td className='p-2 md:p-3 text-left text-sm'>{cadet.phone_number || 'N/A'}</td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
                 
                 {/* Pagination Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 items-center mt-4 w-full gap-4">
-                  <div className="text-gray-600 text-sm md:text-base justify-self-start">
-                    Showing data {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
+                <div className="flex flex-col space-y-3 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-3 items-center mt-4 w-full gap-3">
+                  {/* Results Info */}
+                  <div className="text-gray-600 text-xs sm:text-sm text-center sm:text-left lg:justify-self-start">
+                    Showing {filteredCadets.length > 0 ? (currentPage - 1) * cadetsPerPage + 1 : 0} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                   </div>
-                  <div className="flex justify-center justify-self-center w-full sm:w-auto">
-                    {currentPage > 1 && (
-                      <button
-                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                      >
-                        {'<'}
-                      </button>
-                    )}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                      if (pageNum > totalPages) return null;
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
-                          onClick={() => setCurrentPage(pageNum)}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    {currentPage < totalPages && (
-                      <button
-                        className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                      >
-                        &gt;
-                      </button>
+                  
+                  {/* Pagination Buttons */}
+                  <div className="flex justify-center lg:justify-self-center w-full lg:w-auto">
+                    {totalPages > 1 && (
+                      <>
+                        {currentPage > 1 && (
+                          <button
+                            className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm"
+                            onClick={() => setCurrentPage(currentPage - 1)}
+                          >
+                            {'<'}
+                          </button>
+                        )}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                          if (pageNum > totalPages) return null;
+                          return (
+                            <button
+                              key={pageNum}
+                              className={`mx-1 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                              onClick={() => setCurrentPage(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        {currentPage < totalPages && (
+                          <button
+                            className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm"
+                            onClick={() => setCurrentPage(currentPage + 1)}
+                          >
+                            &gt;
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
-                  <div className="justify-self-end w-full sm:w-auto">
+                  
+                  {/* Export Button */}
+                  <div className="w-full lg:w-auto lg:justify-self-end">
                     <button 
                       onClick={exportToExcel}
-                      className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 md:px-4 py-2 rounded transition-colors duration-150 w-full sm:w-auto text-sm md:text-base"
+                      className="flex items-center justify-center gap-2 bg-primary hover:bg-olive-700 text-white px-3 sm:px-4 py-2 rounded transition-colors duration-150 w-full lg:w-auto text-xs sm:text-sm"
                     >
-                      <FaFileExcel />
-                      Export to Excel
+                      <FaFileExcel className="text-xs sm:text-sm" />
+                      <span>Export to Excel</span>
                     </button>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   )
 }

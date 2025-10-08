@@ -1,11 +1,39 @@
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
-import { Link } from '@inertiajs/react';
-import { FaSort, FaFingerprint } from 'react-icons/fa6'
+import { Link, Head } from '@inertiajs/react';
+import { FaSort, FaEye } from 'react-icons/fa6'
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
 import axios from 'axios';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminPermission(){
     const { auth } = usePage().props;
@@ -17,12 +45,18 @@ export default function AdminPermission(){
     const [processingUser, setProcessingUser] = useState(null);
     const [processingBulk, setProcessingBulk] = useState(false);
     
-    // Fingerprint registration state
-    const [showFingerprintModal, setShowFingerprintModal] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [fingerprintStatus, setFingerprintStatus] = useState('');
-    const [processingFingerprint, setProcessingFingerprint] = useState(false);
-    const [scannerConnected, setScannerConnected] = useState(false);
+    // Alert state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        type: 'success',
+        title: '',
+        message: ''
+    });
+    
+    // Certificate viewing state
+    const [showCertificateModal, setShowCertificateModal] = useState(false);
+    const [selectedUserCertificate, setSelectedUserCertificate] = useState(null);
+    const [loadingCertificate, setLoadingCertificate] = useState(false);
 
     // Fetch pending users
     useEffect(() => {
@@ -30,6 +64,23 @@ export default function AdminPermission(){
             try {
                 setLoading(true);
                 const response = await axios.get('/api/pending-users');
+                console.log('Fetched pending users:', response.data);
+                
+                // Debug: Log each user's certificate fields
+                response.data.forEach((user, index) => {
+                    console.log(`User ${index + 1} (${user.first_name} ${user.last_name}):`, {
+                        id: user.id,
+                        creation_method: user.creation_method,
+                        cor_file_path: user.cor_file_path, // Primary certificate field
+                        certificate_of_registration: user.certificate_of_registration,
+                        certificate: user.certificate,
+                        cor: user.cor,
+                        registration_certificate: user.registration_certificate,
+                        // Log all fields to see what's available
+                        allFields: Object.keys(user)
+                    });
+                });
+                
                 setPendingUsers(response.data);
             } catch (error) {
                 console.error('Error fetching pending users:', error);
@@ -40,6 +91,35 @@ export default function AdminPermission(){
         
         fetchPendingUsers();
     }, []);
+
+    // Helper function to get certificate from user (checking multiple possible field names)
+    const getUserCertificate = (user) => {
+        // Check various possible field names for the certificate
+        const possibleFields = [
+            'cor_file_path', // Primary field name based on user feedback
+            'certificate_of_registration',
+            'certificate',
+            'cor',
+            'registration_certificate',
+            'certificate_file',
+            'certificate_path'
+        ];
+        
+        for (const field of possibleFields) {
+            if (user[field] && user[field].trim() !== '') {
+                console.log(`Found certificate in field '${field}':`, user[field]);
+                return user[field];
+            }
+        }
+        
+        console.log('No certificate found for user:', user.first_name, user.last_name);
+        return null;
+    };
+
+    // Helper function to check if user has a certificate
+    const userHasCertificate = (user) => {
+        return getUserCertificate(user) !== null;
+    };
 
     // Filter and sort users
     const filteredAndSortedUsers = () => {
@@ -77,10 +157,20 @@ export default function AdminPermission(){
             // Remove user from pending list
             setPendingUsers(prev => prev.filter(user => user.id !== userId));
             
-            alert('User approved successfully!');
+            setAlertDialog({
+                isOpen: true,
+                type: 'success',
+                title: 'Success',
+                message: 'User approved successfully!'
+            });
         } catch (error) {
             console.error('Error approving user:', error);
-            alert('Error approving user. Please try again.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: 'Error approving user. Please try again.'
+            });
         } finally {
             setProcessingUser(null);
         }
@@ -99,10 +189,20 @@ export default function AdminPermission(){
             // Remove user from pending list
             setPendingUsers(prev => prev.filter(user => user.id !== userId));
             
-            alert('User rejected successfully!');
+            setAlertDialog({
+                isOpen: true,
+                type: 'success',
+                title: 'Success',
+                message: 'User rejected successfully!'
+            });
         } catch (error) {
             console.error('Error rejecting user:', error);
-            alert('Error rejecting user. Please try again.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: 'Error rejecting user. Please try again.'
+            });
         } finally {
             setProcessingUser(null);
         }
@@ -112,7 +212,12 @@ export default function AdminPermission(){
     const handleApproveAll = async () => {
         const filteredUsers = filteredAndSortedUsers();
         if (filteredUsers.length === 0) {
-            alert('No pending users to approve.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No Users',
+                message: 'No pending users to approve.'
+            });
             return;
         }
         
@@ -143,13 +248,28 @@ export default function AdminPermission(){
             ));
             
             if (errorCount === 0) {
-                alert(`Successfully approved all ${successCount} users.`);
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'success',
+                    title: 'Success',
+                    message: `Successfully approved all ${successCount} users.`
+                });
             } else {
-                alert(`Approved ${successCount} users. Failed to approve ${errorCount} users.`);
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Partial Success',
+                    message: `Approved ${successCount} users. Failed to approve ${errorCount} users.`
+                });
             }
         } catch (error) {
             console.error('Error in bulk approval process:', error);
-            alert('An error occurred during the bulk approval process.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: 'An error occurred during the bulk approval process.'
+            });
         } finally {
             setProcessingBulk(false);
         }
@@ -159,7 +279,12 @@ export default function AdminPermission(){
     const handleRejectAll = async () => {
         const filteredUsers = filteredAndSortedUsers();
         if (filteredUsers.length === 0) {
-            alert('No pending users to reject.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No Users',
+                message: 'No pending users to reject.'
+            });
             return;
         }
         
@@ -190,96 +315,62 @@ export default function AdminPermission(){
             ));
             
             if (errorCount === 0) {
-                alert(`Successfully rejected all ${successCount} users.`);
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'success',
+                    title: 'Success',
+                    message: `Successfully rejected all ${successCount} users.`
+                });
             } else {
-                alert(`Rejected ${successCount} users. Failed to reject ${errorCount} users.`);
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Partial Success',
+                    message: `Rejected ${successCount} users. Failed to reject ${errorCount} users.`
+                });
             }
         } catch (error) {
             console.error('Error in bulk rejection process:', error);
-            alert('An error occurred during the bulk rejection process.');
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: 'An error occurred during the bulk rejection process.'
+            });
         } finally {
             setProcessingBulk(false);
         }
     };
     
-    // Handle fingerprint registration
-    const handleFingerprintRegistration = (user) => {
-        setSelectedUser(user);
-        setShowFingerprintModal(true);
-        setFingerprintStatus('');
-        setScannerConnected(false);
-        // Check scanner connection when modal opens
-        checkScannerConnection();
-    };
-
-    // Check if fingerprint scanner is connected
-    const checkScannerConnection = async () => {
+    // Handle view certificate
+    const handleViewCertificate = async (user) => {
         try {
-            setFingerprintStatus('Checking scanner connection...');
-            const response = await axios.get('/api/fingerprint/check-connection');
-            setScannerConnected(response.data.connected);
-            if (response.data.connected) {
-                setFingerprintStatus('Scanner connected. Ready to scan fingerprint.');
-            } else {
-                setFingerprintStatus('⚠️ Fingerprint scanner not detected. Please connect the Deli scanner and try again.');
-            }
-        } catch (error) {
-            setScannerConnected(false);
-            setFingerprintStatus('⚠️ Unable to detect fingerprint scanner. Please ensure it is connected and try again.');
-        }
-    };
-
-    // Register fingerprint with Deli scanner
-    const registerFingerprint = async () => {
-        if (!selectedUser) return;
-        
-        if (!scannerConnected) {
-            setFingerprintStatus('⚠️ Scanner not connected. Please connect the Deli fingerprint scanner first.');
-            return;
-        }
-        
-        try {
-            setProcessingFingerprint(true);
-            setFingerprintStatus('Place your finger on the scanner now...');
+            setLoadingCertificate(true);
+            setSelectedUserCertificate(user);
+            setShowCertificateModal(true);
             
-            // Call the fingerprint registration API
-            const response = await axios.post('/api/fingerprint/register', {
-                user_id: selectedUser.id,
-                student_number: selectedUser.student_number,
-                first_name: selectedUser.first_name,
-                last_name: selectedUser.last_name
-            });
-            
-            if (response.data.success) {
-                setFingerprintStatus('✅ Fingerprint registered successfully!');
-                setTimeout(() => {
-                    setShowFingerprintModal(false);
-                    setSelectedUser(null);
-                    setFingerprintStatus('');
-                    setScannerConnected(false);
-                }, 2000);
-            } else {
-                setFingerprintStatus('❌ ' + (response.data.message || 'Failed to register fingerprint'));
-            }
+            // Fetch the certificate data if needed
+            // This assumes the certificate path/URL is stored in the user object
+            // If you need to fetch it separately, you can make an API call here
         } catch (error) {
-            console.error('Error registering fingerprint:', error);
-            setFingerprintStatus('❌ ' + (error.response?.data?.message || 'Error connecting to fingerprint scanner'));
+            console.error('Error viewing certificate:', error);
+            alert('Error loading certificate. Please try again.');
         } finally {
-            setProcessingFingerprint(false);
+            setLoadingCertificate(false);
         }
     };
     
-    // Close fingerprint modal
-    const closeFingerprintModal = () => {
-        setShowFingerprintModal(false);
-        setSelectedUser(null);
-        setFingerprintStatus('');
-        setProcessingFingerprint(false);
-        setScannerConnected(false);
+    // Close certificate modal
+    const closeCertificateModal = () => {
+        setShowCertificateModal(false);
+        setSelectedUserCertificate(null);
+        setLoadingCertificate(false);
     };
     
     return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+        <>
+            <Head title="ROTC Portal - Permissions" />
+            <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
@@ -406,7 +497,7 @@ export default function AdminPermission(){
                     <tr>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-left text-xs md:text-sm'>Cadet Name</th>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Registration Type</th>
-                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Fingerprint</th>
+                      <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Certificate</th>
                       <th className='py-2 md:py-3 px-2 md:px-3 border-b font-medium text-center text-xs md:text-sm'>Actions</th>
                     </tr>
                   </thead>
@@ -429,13 +520,20 @@ export default function AdminPermission(){
                             </span>
                           </td>
                           <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center'>
-                            <button 
-                              onClick={() => handleFingerprintRegistration(user)}
-                              className='text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors duration-200'
-                              title="Register Fingerprint"
-                            >
-                              <FaFingerprint className="text-lg md:text-xl" />
-                            </button>
+                            {user.creation_method !== 'admin_created' && userHasCertificate(user) ? (
+                              <button 
+                                onClick={() => handleViewCertificate(user)}
+                                className='text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors duration-200'
+                                title="View Certificate of Registration"
+                                disabled={loadingCertificate}
+                              >
+                                <FaEye className="text-lg md:text-xl text-primary" />
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-xs">
+                                {user.creation_method === 'admin_created' ? 'N/A' : 'No Certificate'}
+                              </span>
+                            )}
                           </td>
                           <td className='py-2 md:py-3 px-2 md:px-3 border-b text-center'>
                             <div className='flex justify-center gap-2 md:gap-4'>
@@ -488,103 +586,126 @@ export default function AdminPermission(){
         </div>
       </div>
       
-      {/* Fingerprint Registration Modal */}
-      {showFingerprintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
+      {/* Certificate Viewing Modal */}
+      {showCertificateModal && selectedUserCertificate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-semibold flex items-center gap-2">
-                <FaFingerprint className="text-blue-600" />
-                Fingerprint Registration
+                <FaEye className="text-primary" />
+                Certificate of Registration
               </h2>
               <button
-                onClick={closeFingerprintModal}
-                className="text-gray-500 hover:text-gray-700 text-xl"
-                disabled={processingFingerprint}
+                onClick={closeCertificateModal}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                disabled={loadingCertificate}
               >
                 &times;
               </button>
             </div>
             
-            {selectedUser && (
-              <div className="mb-6">
+            <div className="p-4">
+              <div className="mb-4">
                 <h3 className="font-medium text-gray-800 mb-2">Cadet Information:</h3>
                 <div className="bg-gray-50 p-3 rounded">
-                  <p><span className="font-medium">Name:</span> {selectedUser.last_name}, {selectedUser.first_name}</p>
-                  <p><span className="font-medium">Student Number:</span> {selectedUser.student_number}</p>
+                  <p><span className="font-medium">Name:</span> {selectedUserCertificate.last_name}, {selectedUserCertificate.first_name}</p>
+                  <p><span className="font-medium">Student Number:</span> {selectedUserCertificate.student_number}</p>
+                  <p><span className="font-medium">Registration Type:</span> Self Registered</p>
                 </div>
               </div>
-            )}
-            
-            <div className="mb-6">
-              <div className={`flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg ${
-                scannerConnected ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
-              }`}>
-                <FaFingerprint className={`text-4xl mb-2 ${
-                  scannerConnected ? 'text-green-600' : 'text-red-600'
-                }`} />
-                <div className="text-center">
-                  <p className={`mb-1 ${scannerConnected ? 'text-green-600' : 'text-red-600'}`}>
-                    {scannerConnected ? 'Scanner Ready' : 'Scanner Not Connected'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {scannerConnected 
-                      ? 'Place finger on the Deli fingerprint scanner'
-                      : 'Please connect the Deli scanner and try again'
-                    }
-                  </p>
-                </div>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                {loadingCertificate ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-gray-600">Loading certificate...</span>
+                  </div>
+                ) : selectedUserCertificate && getUserCertificate(selectedUserCertificate) ? (
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <h4 className="font-medium text-gray-800 mb-2">Certificate of Registration</h4>
+                    </div>
+                    <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-auto">
+                      <img 
+                        src={getUserCertificate(selectedUserCertificate).startsWith('http') 
+                          ? getUserCertificate(selectedUserCertificate)
+                          : `/storage/${getUserCertificate(selectedUserCertificate)}`} 
+                        alt="Certificate of Registration"
+                        className="max-w-full h-auto mx-auto rounded border shadow"
+                        onError={(e) => {
+                          console.error('Failed to load certificate image:', getUserCertificate(selectedUserCertificate));
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                        onLoad={() => {
+                          console.log('Certificate image loaded successfully:', getUserCertificate(selectedUserCertificate));
+                        }}
+                      />
+                      <div className="text-center text-primary-20 mt-4 hidden">
+                        <p>Unable to load certificate image</p>
+                        <p className="text-sm">File: {getUserCertificate(selectedUserCertificate)}</p>
+                        <p className="text-xs mt-2">
+                          Full path: {getUserCertificate(selectedUserCertificate).startsWith('http') 
+                            ? getUserCertificate(selectedUserCertificate)
+                            : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-center gap-3">
+                      <a 
+                        href={getUserCertificate(selectedUserCertificate).startsWith('http') 
+                          ? getUserCertificate(selectedUserCertificate)
+                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                      >
+                        Open in New Tab
+                      </a>
+                      <a 
+                        href={getUserCertificate(selectedUserCertificate).startsWith('http') 
+                          ? getUserCertificate(selectedUserCertificate)
+                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                        download
+                        className="px-4 py-2 bg-primary/90 text-white rounded hover:bg-primary transition-colors"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">
+                      <FaEye className="mx-auto text-4xl mb-2" />
+                    </div>
+                    <p className="text-gray-600">No certificate of registration available</p>
+                    <p className="text-sm text-gray-500 mt-1">This cadet did not upload a certificate during registration</p>
+                  </div>
+                )}
               </div>
             </div>
             
-            {fingerprintStatus && (
-              <div className={`mb-4 p-3 rounded text-center ${
-                fingerprintStatus.includes('successfully') 
-                  ? 'bg-green-100 text-green-800' 
-                  : fingerprintStatus.includes('Error') || fingerprintStatus.includes('Failed')
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-blue-100 text-blue-800'
-              }`}>
-                {fingerprintStatus}
-              </div>
-            )}
-            
-            <div className="flex gap-3 justify-end">
+            <div className="flex justify-end p-4 border-t bg-gray-50">
               <button
-                onClick={closeFingerprintModal}
-                disabled={processingFingerprint}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:opacity-50"
+                onClick={closeCertificateModal}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
               >
-                Cancel
-              </button>
-              <button
-                onClick={checkScannerConnection}
-                disabled={processingFingerprint}
-                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
-              >
-                Check Scanner
-              </button>
-              <button
-                onClick={registerFingerprint}
-                disabled={processingFingerprint || !scannerConnected}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-              >
-                {processingFingerprint ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <FaFingerprint />
-                    Register Fingerprint
-                  </>
-                )}
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        type={alertDialog.type}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      />
     </div>
-  )
+        </>
+    )
 }

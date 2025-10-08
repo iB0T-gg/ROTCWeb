@@ -263,11 +263,11 @@ class FinalGradesController extends Controller
             
         if (!$aptitude) return 0;
         
-        // Get weekly merit and demerit data
+        // Get weekly merit and demerit data - now using 15 weeks for 1st semester
         $merits = [];
         $demerits = [];
         
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 15; $i++) {
             $merit = $aptitude->{"merits_week_$i"};
             $demerit = $aptitude->{"demerits_week_$i"};
             
@@ -275,16 +275,15 @@ class FinalGradesController extends Controller
             $demerits[] = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
         }
         
-        // Calculate like frontend: sum merits, subtract demerits, convert to percentage
-        $totalMerits = array_sum($merits);
+        // Calculate like frontend: total merits = 150 - total demerits, then scale to 30 points
         $totalDemerits = array_sum($demerits);
-        $netScore = max(0, $totalMerits - $totalDemerits); // Don't allow negative
+        $maxPossible = 15 * 10; // 150 for 15 weeks
+        $totalMerits = max(0, $maxPossible - $totalDemerits);
         
-        // Calculate percentage (assuming max possible is around 100, can be adjusted)
-        $percentage = min(100, ($netScore / 70) * 100); // 70 is rough max expected (10 weeks * 7 avg merit)
+        // Convert to 30-point scale using (total/150)*30 formula like frontend
+        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
         
-        // Convert to 30-point scale
-        return min(30, round($percentage * 0.30));
+        return $aptitude30;
     }
     
     /**
@@ -299,9 +298,9 @@ class FinalGradesController extends Controller
             
         if (!$attendance) return 0;
         
-        // Count present weeks from weekly columns (week_1 to week_10 for first semester)
+        // Count present weeks from weekly columns (week_1 to week_15 for first semester now)
         $presentCount = 0;
-        $weekLimit = 10; // First semester has 10 weeks
+        $weekLimit = 15; // First semester now has 15 weeks like second semester
         
         for ($i = 1; $i <= $weekLimit; $i++) {
             $weekColumn = "week_{$i}";
@@ -351,27 +350,21 @@ class FinalGradesController extends Controller
             
         if (!$aptitude) return 0;
         
-        // Calculate from weekly data like frontend does
-        $totalMerits = 0;
+        // Calculate like frontend: start with max possible (150), subtract total demerits
         $totalDemerits = 0;
         
         for ($i = 1; $i <= 15; $i++) {
-            $merit = $aptitude->{"merits_week_$i"} ?? 0;
             $demerit = $aptitude->{"demerits_week_$i"} ?? 0;
-            
-            $merit = ($merit === null || $merit === '' || $merit === '-') ? 0 : (int) $merit;
             $demerit = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
-            
-            $totalMerits += $merit;
             $totalDemerits += $demerit;
         }
         
-        // Calculate like frontend: net score, convert to percentage, scale to 30
-        $netScore = max(0, $totalMerits - $totalDemerits);
-        $maxPossible = 15 * 10; // 15 weeks * 10 max points per week
-        $aptitude30 = $maxPossible > 0 ? ($netScore / $maxPossible) * 30 : 0;
+        // Calculate exactly like frontend: total_merits = 150 - total_demerits, then scale to 30
+        $maxPossible = 15 * 10; // 150 for 15 weeks
+        $totalMerits = max(0, $maxPossible - $totalDemerits);
+        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
         
-        return min(30, round($aptitude30));
+        return $aptitude30;
     }
     
     /**
@@ -450,9 +443,9 @@ class FinalGradesController extends Controller
                 ];
             }
             
-            // Build weekly attendance data (week_1 to week_10 for first semester)
+            // Build weekly attendance data (week_1 to week_15 for first semester now)
             $weeklyAttendance = [];
-            $weekLimit = 10;
+            $weekLimit = 15; // First semester now has 15 weeks
             $presentCount = 0;
             
             for ($i = 1; $i <= $weekLimit; $i++) {
@@ -598,7 +591,6 @@ class FinalGradesController extends Controller
         // Build weekly merit and demerit arrays for 15 weeks
         $meritsArray = [];
         $demeritsArray = [];
-        $totalMerits = 0;
         $totalDemerits = 0;
         
         for ($i = 1; $i <= 15; $i++) {
@@ -611,15 +603,13 @@ class FinalGradesController extends Controller
             $meritsArray[] = $merit;
             $demeritsArray[] = $demerit;
             
-            $totalMerits += $merit;
             $totalDemerits += $demerit;
         }
         
-        // Calculate aptitude_30 using the same logic as frontend
-        $netScore = max(0, $totalMerits - $totalDemerits);
-        $maxPossible = 15 * 10; // 15 weeks * 10 max points per week
-        $aptitude30 = $maxPossible > 0 ? ($netScore / $maxPossible) * 30 : 0;
-        $aptitude30 = min(30, round($aptitude30));
+        // Calculate aptitude_30 using the same logic as frontend: total_merits = 150 - total_demerits
+        $maxPossible = 15 * 10; // 150 for 15 weeks
+        $totalMerits = max(0, $maxPossible - $totalDemerits);
+        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
         
         return [
             'aptitude_30' => $aptitude30,

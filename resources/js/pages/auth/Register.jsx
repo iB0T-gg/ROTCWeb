@@ -1,10 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, Head } from '@inertiajs/react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function Register() {
     const containerRef = useRef(null);
     const [isScrolling, setIsScrolling] = useState(false);
     const [fileName, setFileName] = useState('Choose file');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -50,7 +53,9 @@ export default function Register() {
     };
 
     return (
-        <div className='registration-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
+        <>
+            <Head title="ROTC Portal - Register" />
+            <div className='registration-page relative mx-auto flex flex-col items-center justify-center min-h-screen font-poppins p-3 sm:p-4'>
             <div 
                 className='absolute inset-0 z-0'
                 style={{
@@ -224,29 +229,47 @@ export default function Register() {
 
                                 <div className="mb-3 sm:mb-4">
                                     <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password'>Enter password</label>
-                                    <input
-                                        type='password'
-                                        id='password'
-                                        value={data.password}
-                                        onChange={e => setData('password', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
-                                        placeholder='Enter your password (min. 6 characters)'
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            id='password'
+                                            value={data.password}
+                                            onChange={e => setData('password', e.target.value)}
+                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            placeholder='Enter your password (min. 8 characters)'
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     {errors.password && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password}</div>}
                                 </div>
 
                                 <div className="mb-3 sm:mb-4">
                                     <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password_confirmation'>Confirm password</label>
-                                    <input
-                                        type='password'
-                                        id='password_confirmation'
-                                        value={data.password_confirmation}
-                                        onChange={e => setData('password_confirmation', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
-                                        placeholder='Confirm your password'
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswordConfirmation ? 'text' : 'password'}
+                                            id='password_confirmation'
+                                            value={data.password_confirmation}
+                                            onChange={e => setData('password_confirmation', e.target.value)}
+                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            placeholder='Confirm your password'
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showPasswordConfirmation ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password_confirmation}</div>}
                                 </div>
 
@@ -333,6 +356,7 @@ export default function Register() {
                     </div>
                 </div>           
             </div>
-        </div>
+            </div>
+        </>
     )
 }

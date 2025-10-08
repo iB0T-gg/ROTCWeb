@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 const userGrades = ({ auth, user }) => {
   const [userGrades, setUserGrades] = useState(null);
@@ -53,7 +53,9 @@ const userGrades = ({ auth, user }) => {
   };
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Grades" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className='flex flex-col md:flex-row'>
         {/* Sidebar - always visible */}
@@ -88,7 +90,7 @@ const userGrades = ({ auth, user }) => {
                 </div>
               ) : (
                 <>
-                  {/* Profile picture - match userAttendance layout */}
+                  {/* Profile picture - match userProfile layout */}
                   <div className="flex items-center mb-4">
                     {user?.profile_pic_url ? (
                       <img 
@@ -101,8 +103,8 @@ const userGrades = ({ auth, user }) => {
                         }}
                       />
                     ) : null}
-                    <div className={`w-24 h-24 rounded-full mr-4 bg-gray-200 flex items-center justify-center text-gray-400 text-lg font-semibold ${user?.profile_pic_url ? 'hidden' : ''}`}>
-                      No Image
+                    <div className={`w-24 h-24 rounded-full mr-4 bg-gray-300 flex items-center justify-center text-gray-600 text-2xl font-semibold ${user?.profile_pic_url ? 'hidden' : ''}`}>
+                      {(userGrades?.first_name || user?.first_name || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-black">{userGrades ? `${userGrades.last_name || 'Name'}, ${userGrades.first_name || 'User'}` : `${user?.last_name || 'Name'}, ${user?.first_name || 'User'}`}</h2>
@@ -174,6 +176,7 @@ const userGrades = ({ auth, user }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

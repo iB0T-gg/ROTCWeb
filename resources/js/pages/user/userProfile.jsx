@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { router, Link } from '@inertiajs/react';
+import { router, Link, Head } from '@inertiajs/react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import Header from "../../components/header";
@@ -427,7 +427,9 @@ const UserProfile = ({ auth, user }) => {
   const profilePic = user?.profile_pic_url ? user.profile_pic_url : null;
 
   return (
-    <div className="relative w-full min-h-screen">
+    <>
+      <Head title="ROTC Portal - Profile" />
+      <div className="relative w-full min-h-screen">
       <div className="fixed inset-0 bg-backgroundColor -z-10" />
       <Header auth={auth} />
       <div className="flex flex-col lg:flex-row">
@@ -1085,6 +1087,7 @@ const UserProfile = ({ auth, user }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

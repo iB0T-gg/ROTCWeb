@@ -1,9 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const bgColor = type === 'success' ? 'bg-green-100' : 'bg-red-100';
+  const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
+  const borderColor = type === 'success' ? 'border-green-300' : 'border-red-300';
+  const buttonColor = type === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div className={`${bgColor} ${borderColor} border rounded-lg p-4 mb-4`}>
+          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
+          <p className={`${textColor}`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 ${buttonColor} text-white rounded hover:opacity-90 transition-colors duration-150`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ChevronDownIcon = ({ className }) => (
   <svg
@@ -28,6 +57,14 @@ const FacultyAttendance = ({ auth }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const cadetsPerPage = 8;
+
+  // Alert state (for future save functionality)
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   // Semester options
   const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
@@ -110,7 +147,9 @@ const FacultyAttendance = ({ auth }) => {
   );
 
   return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+    <>
+      <Head title="ROTC Portal - Faculty Attendance" />
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
@@ -372,7 +411,17 @@ const FacultyAttendance = ({ auth }) => {
           </div>
         </div>
       </div>
+
+      {/* Alert Dialog (for future save functionality) */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        type={alertDialog.type}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      />
     </div>
+    </>
   );
 }
 

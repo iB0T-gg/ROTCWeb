@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
             
             // Create a robust test set of cadet users (>= 111 cadets) with realistic-looking data
             $faker = \Faker\Factory::create();
-            $totalCadets = 150;
+            $totalCadets = 200;
             // Supporting lists mirroring dropdowns
             $heightOptions = [
                 '4\'0"', '4\'1"', '4\'2"', '4\'3"', '4\'4"', '4\'5"', '4\'6"', '4\'7"', '4\'8"', '4\'9"', '4\'10"', '4\'11"',
@@ -56,7 +56,7 @@ class UserSeeder extends Seeder
                 $gender = $genderBool ? 'Male' : 'Female';
                 $firstName = $genderBool ? $faker->firstNameMale() : $faker->firstNameFemale();
                 $lastName = $faker->lastName();
-                $middleInitial = strtoupper($faker->randomLetter());
+                $middleName = $faker->lastName(); // Use full last name as middle name
                 $email = strtolower($firstName . '.' . $lastName . $i . '@example.com');
                 $course = $faker->randomElement(['BSIT','BSCS','BSEE','BSA','BSED','BSCpE','BSBA']);
                 $year = $faker->randomElement(['1G','2G','3G']);
@@ -77,7 +77,7 @@ class UserSeeder extends Seeder
 
                 User::create([
                     'first_name' => $firstName,
-                    'middle_name' => $middleInitial,
+                    'middle_name' => $middleName,
                     'last_name' => $lastName,
                     'email' => $email,
                     'password' => Hash::make('password'),

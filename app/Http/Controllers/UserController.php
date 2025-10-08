@@ -606,12 +606,26 @@ class UserController extends Controller
                 'request_data' => $request->all()
             ]);
 
+            // Debug: Log first cadet's weeks 11-15 data specifically
+            if ($request->has('merits') && count($request->merits) > 0) {
+                $firstMerit = $request->merits[0];
+                \Log::info('DEBUG: First cadet weeks 11-15 data received', [
+                    'cadet_id' => $firstMerit['cadet_id'] ?? 'MISSING',
+                    'days_length' => count($firstMerit['days'] ?? []),
+                    'demerits_length' => count($firstMerit['demerits'] ?? []),
+                    'has_demerits_key' => isset($firstMerit['demerits']),
+                    'weeks_11_15_days' => array_slice($firstMerit['days'] ?? [], 10, 5),
+                    'weeks_11_15_demerits' => array_slice($firstMerit['demerits'] ?? [], 10, 5),
+                    'demerits_type' => gettype($firstMerit['demerits'] ?? null)
+                ]);
+            }
+
             $request->validate([
                 'merits' => 'required|array',
                 'merits.*.cadet_id' => 'required|exists:users,id',
-                'merits.*.days' => 'required|array|size:10',
+                'merits.*.days' => 'required|array|size:15', // Updated to 15 weeks
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
-                'merits.*.demerits' => 'nullable|array|size:10',
+                'merits.*.demerits' => 'nullable|array|size:15', // Updated to 15 weeks
                 'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
             ]);
 
@@ -628,14 +642,14 @@ class UserController extends Controller
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
                 foreach ($request->merits as $meritData) {
                     try {
-                        // Compute totals using merits only (10 weeks)
-                        $weekCount = 10; // First semester has 10 weeks
+                        // Compute totals using merits only (15 weeks)
+                        $weekCount = 15; // First semester now has 15 weeks
                         $meritValues = [];
                         for ($i = 0; $i < $weekCount; $i++) {
                             $meritValues[] = $meritData['days'][$i] ?? 0;
                         }
                         $sum = array_sum($meritValues); // total_merits
-                        $aptitude30 = round($sum * 0.30, 2);
+                        $aptitude30 = min(30, max(0, round(($sum / 150) * 30))); // Updated calculation for 150 max points
 
                         $merit = $meritModel::updateOrCreate(
                             [
@@ -647,35 +661,104 @@ class UserController extends Controller
                                 'merits_array' => $meritData['days'],
                                 'total_merits' => max(0, $sum),
                                 'aptitude_30' => $aptitude30,
-                                'faculty_id' => $faculty->id,
+                                'updated_by' => $faculty->id,
                                 'updated_at' => now()
                             ]
                         );
 
-                        // Update week scores - preserve empty strings instead of converting to null
+                        // Debug: Log the first cadet's processing details
+                        if ($savedCount === 0) {
+                            \Log::info('DEBUG: Processing first cadet in save loop', [
+                                'cadet_id' => $meritData['cadet_id'],
+                                'merit_record_id' => $merit->id,
+                                'weekCount' => $weekCount,
+                                'has_demerits_in_request' => isset($meritData['demerits']),
+                                'demerits_array_content' => $meritData['demerits'] ?? null
+                            ]);
+                        }
+
+                        // Update week scores - preserve legitimate 0 values
                         for ($i = 1; $i <= $weekCount; $i++) {
                             $weekValue = $meritData['days'][$i - 1] ?? '';
-                            // Keep empty strings as empty strings, convert 0 to empty string for consistency
-                            $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
+                            // Only convert empty strings and null to empty, preserve 0 as legitimate value
+                            if ($weekValue === '' || $weekValue === null) {
+                                $merit->{"merits_week_$i"} = '';
+                            } else {
+                                $merit->{"merits_week_$i"} = $weekValue;
+                            }
                         }
 
                         // Update demerits week scores if provided
                         if (isset($meritData['demerits'])) {
-                            for ($i = 1; $i <= $weekCount; $i++) {
-                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
-                                // Keep empty strings as empty strings, convert 0 to empty string for consistency
-                                $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
+                            // Debug: Log weeks 11-15 demerit processing for first cadet
+                            if ($savedCount === 0) {
+                                \Log::info('DEBUG: Processing demerits for first cadet', [
+                                    'cadet_id' => $meritData['cadet_id'],
+                                    'demerits_array_length' => count($meritData['demerits']),
+                                    'weeks_11_15_raw_values' => [
+                                        'week_11' => $meritData['demerits'][10] ?? 'MISSING',
+                                        'week_12' => $meritData['demerits'][11] ?? 'MISSING',
+                                        'week_13' => $meritData['demerits'][12] ?? 'MISSING',
+                                        'week_14' => $meritData['demerits'][13] ?? 'MISSING',
+                                        'week_15' => $meritData['demerits'][14] ?? 'MISSING'
+                                    ]
+                                ]);
                             }
                             
-                            // Save demerits array
+                            for ($i = 1; $i <= $weekCount; $i++) {
+                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
+                                // Only convert empty strings and null to empty, preserve 0 as legitimate value
+                                if ($demeritValue === '' || $demeritValue === null) {
+                                    $merit->{"demerits_week_$i"} = '';
+                                } else {
+                                    $merit->{"demerits_week_$i"} = $demeritValue;
+                                }
+                                
+                                // Debug: Log processing for weeks 11-15 for first cadet
+                                if ($savedCount === 0 && $i >= 11 && $i <= 15) {
+                                    \Log::info("DEBUG: Processing week $i demerit for first cadet", [
+                                        'original_value' => $demeritValue,
+                                        'processed_value' => $merit->{"demerits_week_$i"},
+                                        'column_name' => "demerits_week_$i"
+                                    ]);
+                                }
+                            }
+                            
+                            // Save demerits array - preserve 0 values
                             $processedDemerits = array_map(function($demerit) {
-                                return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
+                                return ($demerit === '' || $demerit === null) ? '' : $demerit;
                             }, $meritData['demerits']);
+                            
+                            // Debug: Log demerits array processing for first cadet
+                            if ($savedCount === 0) {
+                                \Log::info('DEBUG: Demerits array processing for first cadet', [
+                                    'original_demerits_weeks_11_15' => array_slice($meritData['demerits'], 10, 5),
+                                    'processed_demerits_weeks_11_15' => array_slice($processedDemerits, 10, 5),
+                                    'full_processed_array_length' => count($processedDemerits)
+                                ]);
+                            }
+                            
                             $merit->demerits_array = $processedDemerits;
                         }
 
                         $merit->total_merits = max(0, $sum);
                         $merit->aptitude_30 = $aptitude30;
+                        
+                        // Debug: Log final values before save for first cadet
+                        if ($savedCount === 0) {
+                            \Log::info('DEBUG: Final values before save for first cadet', [
+                                'cadet_id' => $meritData['cadet_id'],
+                                'final_demerits_weeks_11_15_columns' => [
+                                    'demerits_week_11' => $merit->demerits_week_11,
+                                    'demerits_week_12' => $merit->demerits_week_12,
+                                    'demerits_week_13' => $merit->demerits_week_13,
+                                    'demerits_week_14' => $merit->demerits_week_14,
+                                    'demerits_week_15' => $merit->demerits_week_15
+                                ],
+                                'final_demerits_array' => $merit->demerits_array
+                            ]);
+                        }
+                        
                         $merit->save();
                         $savedCount++;
                     } catch (\Exception $e) {

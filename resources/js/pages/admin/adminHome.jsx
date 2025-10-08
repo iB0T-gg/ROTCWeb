@@ -1,6 +1,6 @@
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { usePage, Link } from '@inertiajs/react';
+import { usePage, Link, Head } from '@inertiajs/react';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -78,7 +78,9 @@ export default function AdminHome(){
     };
     
     return (
-    <div className='w-full min-h-screen bg-backgroundColor'>
+        <>
+            <Head title="ROTC Portal - Admin Dashboard" />
+            <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
@@ -195,5 +197,6 @@ export default function AdminHome(){
         </div>
       </div>
     </div>
-  )
+        </>
+    )
 }

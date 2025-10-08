@@ -23,8 +23,16 @@ class PasswordController extends Controller
                     $fail('The current password is incorrect.');
                 }
             }],
-            'new_password' => ['required', 'min:6', 'different:current_password'],
+            'new_password' => [
+                'required', 
+                'min:8', 
+                'different:current_password',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
             'confirm_password' => ['required', 'same:new_password'],
+        ], [
+            'new_password.min' => 'The new password must be at least 8 characters long.',
+            'new_password.regex' => 'The new password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).',
         ]);
 
         $user = Auth::user();
