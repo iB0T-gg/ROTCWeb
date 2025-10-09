@@ -40,6 +40,17 @@ class FinalGradesController extends Controller
                 
                 // Get ROTC Grade (sum of aptitude_30 + attendance_30 + subject_prof_score)
                 $rotcGrade = $this->getROTCGrade($cadet->id, $semester);
+
+                // Also compute a component breakdown for transparency/debugging in UI
+                if ($semester === '2025-2026 1st semester') {
+                    $aptitudeScoreDbg = $this->calculateAptitudePercentage($cadet->id, $semester);
+                    $attendanceScoreDbg = $this->calculateAttendancePercentage($cadet->id, $semester);
+                    $examScoreDbg = $this->calculateExamPercentage($cadet->id, $semester);
+                } else {
+                    $aptitudeScoreDbg = $this->calculateSecondSemesterAptitude($cadet->id, $semester);
+                    $attendanceScoreDbg = $this->calculateSecondSemesterAttendance($cadet->id, $semester);
+                    $examScoreDbg = $this->calculateSecondSemesterExam($cadet->id, $semester);
+                }
                 
                 // Get attendance data for this cadet
                 $attendanceData = $this->getAttendanceData($cadet->id, $semester);
@@ -79,6 +90,12 @@ class FinalGradesController extends Controller
                     'role' => $cadet->role,
                     'common_module_grade' => $commonModuleGrade,
                     'rotc_grade' => $rotcGrade,
+                    'rotc_breakdown' => [
+                        'aptitude_30' => $aptitudeScoreDbg,
+                        'attendance_30' => $attendanceScoreDbg,
+                        'subject_prof_40' => $examScoreDbg,
+                        'sum' => ($aptitudeScoreDbg + $attendanceScoreDbg + $examScoreDbg)
+                    ],
                     'final_grade' => $finalGrade,
                     'equivalent_grade' => $equivalentGrade,
                     'remarks' => $remarks,
@@ -263,11 +280,11 @@ class FinalGradesController extends Controller
             
         if (!$aptitude) return 0;
         
-        // Get weekly merit and demerit data - now using 15 weeks for 1st semester
+        // Get weekly merit and demerit data - 1st semester uses 10 weeks
         $merits = [];
         $demerits = [];
         
-        for ($i = 1; $i <= 15; $i++) {
+        for ($i = 1; $i <= 10; $i++) {
             $merit = $aptitude->{"merits_week_$i"};
             $demerit = $aptitude->{"demerits_week_$i"};
             
@@ -275,13 +292,13 @@ class FinalGradesController extends Controller
             $demerits[] = ($demerit === null || $demerit === '' || $demerit === '-') ? 0 : (int) $demerit;
         }
         
-        // Calculate like frontend: total merits = 150 - total demerits, then scale to 30 points
+        // Calculate like frontend: total merits = maxPossible - total demerits, then scale to 30 points
         $totalDemerits = array_sum($demerits);
-        $maxPossible = 15 * 10; // 150 for 15 weeks
+        $maxPossible = 10 * 10; // 100 for 10 weeks
         $totalMerits = max(0, $maxPossible - $totalDemerits);
         
-        // Convert to 30-point scale using (total/150)*30 formula like frontend
-        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
+        // Convert to 30-point scale using (total/100)*30 formula like frontend
+        $aptitude30 = min(30, max(0, round(($totalMerits / 100) * 30)));
         
         return $aptitude30;
     }
@@ -298,9 +315,9 @@ class FinalGradesController extends Controller
             
         if (!$attendance) return 0;
         
-        // Count present weeks from weekly columns (week_1 to week_15 for first semester now)
+        // Count present weeks from weekly columns (week_1 to week_10 for first semester)
         $presentCount = 0;
-        $weekLimit = 15; // First semester now has 15 weeks like second semester
+        $weekLimit = 10; // First semester has 10 weeks
         
         for ($i = 1; $i <= $weekLimit; $i++) {
             $weekColumn = "week_{$i}";
@@ -326,14 +343,15 @@ class FinalGradesController extends Controller
             
         if (!$exam) return 0;
         
-        $midterm = $exam->midterm_exam ? (float) $exam->midterm_exam : 0;
+        // First semester no longer uses midterm; only final exam is considered
         $final = $exam->final_exam ? (float) $exam->final_exam : 0;
         
         // If no final exam score, return 0
         if ($final == 0) return 0;
         
-        // For 1st semester: Final Exam * 2, then convert to 40-point scale
-        $average = $final * 2;
+        // For 1st semester: use final exam directly (assumed out of 100), then convert to 40-point scale
+        // Aligns with facultyExams: subject_prof = round((final / maxFinal) * 100 * 0.40); with default maxFinal=100
+        $average = $final; // out of 100
         return min(40, round($average * 0.40));
     }
     
@@ -443,9 +461,9 @@ class FinalGradesController extends Controller
                 ];
             }
             
-            // Build weekly attendance data (week_1 to week_15 for first semester now)
+            // Build weekly attendance data (week_1 to week_10 for first semester)
             $weeklyAttendance = [];
-            $weekLimit = 15; // First semester now has 15 weeks
+            $weekLimit = 10; // First semester has 10 weeks
             $presentCount = 0;
             
             for ($i = 1; $i <= $weekLimit; $i++) {

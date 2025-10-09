@@ -20,6 +20,9 @@ export default function ChangePassword({ auth }) {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isCurrentFocused, setIsCurrentFocused] = useState(false);
+    const [isNewFocused, setIsNewFocused] = useState(false);
+    const [isConfirmFocused, setIsConfirmFocused] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const { data, setData, post, processing, errors } = useForm({
@@ -271,14 +274,18 @@ export default function ChangePassword({ auth }) {
                                                 value={data.current_password}
                                                 onChange={e => setData('current_password', e.target.value)}
                                                 required
+                                                onFocus={() => setIsCurrentFocused(true)}
+                                                onBlur={() => setIsCurrentFocused(false)}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {showCurrentPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                            </button>
+                                            {data.current_password && data.current_password.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                >
+                                                    {showCurrentPassword ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
+                                                </button>
+                                            )}
                                         </div>
                                         {errors.current_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.current_password}</div>}
                                     </div>
@@ -297,17 +304,20 @@ export default function ChangePassword({ auth }) {
                                                 }`}
                                                 value={data.new_password}
                                                 onChange={handleNewPasswordChange}
-                                                onFocus={() => setShowPasswordRequirements(true)}
+                                                onFocus={() => { setShowPasswordRequirements(true); setIsNewFocused(true); }}
+                                                onBlur={() => setIsNewFocused(false)}
                                                 placeholder="Enter a strong password (min. 8 characters)"
                                                 required
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowNewPassword(!showNewPassword)}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {showNewPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                            </button>
+                                            {data.new_password && data.new_password.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                >
+                                                    {showNewPassword ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
+                                                </button>
+                                            )}
                                         </div>
                                         {errors.new_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.new_password}</div>}
                                         
@@ -365,14 +375,18 @@ export default function ChangePassword({ auth }) {
                                                 }}
                                                 placeholder="Confirm your new password"
                                                 required
+                                                onFocus={() => setIsConfirmFocused(true)}
+                                                onBlur={() => setIsConfirmFocused(false)}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {showConfirmPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                            </button>
+                                            {data.confirm_password && data.confirm_password.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                >
+                                                    {showConfirmPassword ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
+                                                </button>
+                                            )}
                                         </div>
                                         {errors.confirm_password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.confirm_password}</div>}
                                         {passwordError && <div className="text-red-500 text-xs md:text-sm mt-1">{passwordError}</div>}

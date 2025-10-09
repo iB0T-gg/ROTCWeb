@@ -8,6 +8,8 @@ export default function Register() {
     const [fileName, setFileName] = useState('Choose file');
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const [isPasswordConfirmationFocused, setIsPasswordConfirmationFocused] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -238,14 +240,18 @@ export default function Register() {
                                             className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             placeholder='Enter your password (min. 8 characters)'
                                             required
+                                            onFocus={() => setIsPasswordFocused(true)}
+                                            onBlur={() => setIsPasswordFocused(false)}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                        >
-                                            {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                        </button>
+                                        {(data.password && data.password.length > 0) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                            >
+                                                {showPassword ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
+                                            </button>
+                                        )}
                                     </div>
                                     {errors.password && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password}</div>}
                                 </div>
@@ -261,14 +267,18 @@ export default function Register() {
                                             className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
                                             placeholder='Confirm your password'
                                             required
+                                            onFocus={() => setIsPasswordConfirmationFocused(true)}
+                                            onBlur={() => setIsPasswordConfirmationFocused(false)}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                        >
-                                            {showPasswordConfirmation ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                                        </button>
+                                        {(data.password_confirmation && data.password_confirmation.length > 0) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                            >
+                                                {showPasswordConfirmation ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
+                                            </button>
+                                        )}
                                     </div>
                                     {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password_confirmation}</div>}
                                 </div>

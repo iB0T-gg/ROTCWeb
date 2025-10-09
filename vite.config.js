@@ -7,6 +7,9 @@ export default defineConfig({
         laravel({
             input: 'resources/js/app.jsx',
             refresh: true,
+            // Ensure Laravel searches the correct manifest path for Vite 6
+            // Vite writes manifest under public/build/.vite/manifest.json
+            buildDirectory: 'build/.vite',
         }),
         react(),
     ],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, Head } from '@inertiajs/react';
 const toast = { info: () => {}, success: () => {}, error: () => {} };
 import Header from '../../components/header';
@@ -45,8 +45,8 @@ const ChevronDownIcon = ({ className }) => (
   </svg>
 );
 
-// Both first and second semester now have 15 weeks
-const firstSemesterWeeks = Array.from({ length: 15 }, (_, i) => `Week ${i + 1}`);
+// Weeks configuration (15 total weeks available in data for both semesters)
+const firstSemesterWeeks = Array.from({ length: 10 }, (_, i) => `Week ${i + 1}`);
 const secondSemesterWeeks = Array.from({ length: 15 }, (_, i) => `Week ${i + 1}`);
 
 const FacultyMerits = ({ auth }) => {
@@ -68,6 +68,10 @@ const FacultyMerits = ({ auth }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('current'); // 'current' or 'previous'
+  // Desktop horizontal scrollbar sync for 2nd semester (keep content fully visible)
+  const previousTableScrollRef = useRef(null);
+  const previousBottomScrollRef = useRef(null);
+  const [previousContentWidth, setPreviousContentWidth] = useState(0);
   
   // Alert state
   const [alertDialog, setAlertDialog] = useState({
@@ -101,7 +105,7 @@ const FacultyMerits = ({ auth }) => {
     try {
       // Determine which API endpoint to use based on semester
       let meritsEndpoint;
-      const weekCount = 15; // Both semesters now use 15 weeks
+      const weekCount = semester === '2025-2026 1st semester' ? 10 : 15;
       
       if (semester === '2025-2026 1st semester') {
         meritsEndpoint = '/api/first_semester_aptitude';
@@ -169,7 +173,7 @@ const FacultyMerits = ({ auth }) => {
                 demeritDays = Array(weekCount).fill(0);
               }
               
-              // Ensure arrays are exactly 15 weeks long by padding if needed
+              // Ensure arrays are exactly the expected weeks long by padding if needed
               if (meritDays.length < weekCount) {
                 console.log(`Padding meritDays from ${meritDays.length} to ${weekCount} weeks for cadet ${cadet.id}`);
                 meritDays = [...meritDays, ...Array(weekCount - meritDays.length).fill(10)];
@@ -220,7 +224,7 @@ const FacultyMerits = ({ auth }) => {
                 demeritDays = Array(weekCount).fill(0);
               }
               
-              // Ensure demerit array is exactly 15 weeks long by padding if needed
+              // Ensure demerit array is exactly expected weeks long by padding if needed
               if (demeritDays.length < weekCount) {
                 console.log(`Padding demeritDays from ${demeritDays.length} to ${weekCount} weeks for cadet ${cadet.id} (demerits section)`);
                 demeritDays = [...demeritDays, ...Array(weekCount - demeritDays.length).fill(0)];
@@ -265,6 +269,37 @@ const FacultyMerits = ({ auth }) => {
       fetchDataForSemester(selectedSemester);
     }
   }, [selectedSemester]);
+
+  // Setup synced horizontal scrollbar above pagination for 2nd semester
+  useEffect(() => {
+    const tableDiv = previousTableScrollRef.current;
+    const bottomDiv = previousBottomScrollRef.current;
+    const updateWidths = () => {
+      if (tableDiv) setPreviousContentWidth(tableDiv.scrollWidth);
+    };
+    updateWidths();
+    window.addEventListener('resize', updateWidths);
+    let isSyncing = false;
+    const onTableScroll = () => {
+      if (!bottomDiv || isSyncing) return;
+      isSyncing = true;
+      bottomDiv.scrollLeft = tableDiv.scrollLeft;
+      isSyncing = false;
+    };
+    const onBottomScroll = () => {
+      if (!tableDiv || isSyncing) return;
+      isSyncing = true;
+      tableDiv.scrollLeft = bottomDiv.scrollLeft;
+      isSyncing = false;
+    };
+    tableDiv && tableDiv.addEventListener('scroll', onTableScroll);
+    bottomDiv && bottomDiv.addEventListener('scroll', onBottomScroll);
+    return () => {
+      window.removeEventListener('resize', updateWidths);
+      tableDiv && tableDiv.removeEventListener('scroll', onTableScroll);
+      bottomDiv && bottomDiv.removeEventListener('scroll', onBottomScroll);
+    };
+  }, [renderKey, activeTab, selectedSemester]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -370,19 +405,19 @@ const FacultyMerits = ({ auth }) => {
         return;
       }
       
-      const weekCount = 15; // Both semesters now use 15 weeks
+      const weekCount = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
       
       const meritsData = cadets.map((cadet, index) => {
-        // Ensure arrays are exactly 15 weeks long, padding with defaults if needed
+        // Ensure arrays are exactly the expected weeks long, padding with defaults if needed
         let daysMerit = merits[index]?.days || [];
         let daysDemerit = demerits[index]?.days || [];
         
-        // Pad merit array to 15 weeks with default value of 10
+        // Pad merit array to expected weeks with default value of 10
         if (daysMerit.length < weekCount) {
           daysMerit = [...daysMerit, ...Array(weekCount - daysMerit.length).fill(10)];
         }
         
-        // Pad demerit array to 15 weeks with default value of 0  
+        // Pad demerit array to expected weeks with default value of 0  
         if (daysDemerit.length < weekCount) {
           daysDemerit = [...daysDemerit, ...Array(weekCount - daysDemerit.length).fill(0)];
         }
@@ -628,25 +663,40 @@ const FacultyMerits = ({ auth }) => {
     }
   };
 
-  // Get current weeks to display based on semester
+  // Get current weeks to display based on semester (UI-only)
   const getCurrentWeeks = () => {
-    // Both semesters now show all 15 weeks
-    return firstSemesterWeeks; // or secondSemesterWeeks, they're the same now
+    if (selectedSemester === '2025-2026 1st semester') {
+      // Show only Weeks 1-10 in the UI for 2025-2026 1st semester
+      return firstSemesterWeeks.slice(0, 10);
+    }
+    // 2026-2027 2nd semester: show all 15 weeks
+    return secondSemesterWeeks;
   };
 
   // Calculate total merits: start with max possible, deduct demerits
   const calculateTotalMerits = (meritValues = [], demeritValues = []) => {
-    const weeks = 15; // Both semesters now use 15 weeks
-    const maxPossible = weeks * 10; // 150 for both semesters
+    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+    const maxPossible = weeks * 10; // 100 for first sem; 150 for second sem
     const totalDemerits = (demeritValues || []).reduce((sum, d) => sum + (Number(d) || 0), 0);
     return Math.max(0, maxPossible - totalDemerits);
   };
 
-  // Calculate aptitude 30% as (total_merits / 150) × 30
+  // Calculate total merits for the currently displayed weeks only (UI display)
+  const calculateDisplayedTotalMerits = (demeritValues = []) => {
+    const displayWeeks = getCurrentWeeks().length; // 10 for 2025-2026 1st sem; otherwise 15
+    const totalDemerits = (demeritValues || [])
+      .slice(0, displayWeeks)
+      .reduce((sum, d) => sum + (Number(d) || 0), 0);
+    return Math.max(0, displayWeeks * 10 - totalDemerits);
+  };
+
+  // Calculate aptitude 30% as (total_merits / maxPossible) × 30
   const calculateAptitudeScore = (meritValues, demeritValues = []) => {
     const total = calculateTotalMerits(meritValues, demeritValues);
-    // Calculate aptitude as percentage of maximum possible (150) scaled to 30 points
-    const aptitudeScore = Math.round((total / 150) * 30);
+    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+    const maxPossible = weeks * 10;
+    // Calculate aptitude as percentage of maximum possible (100 for first, 150 for second) scaled to 30 points
+    const aptitudeScore = Math.round((total / maxPossible) * 30);
     // Cap at 30 (maximum aptitude score)
     return Math.min(30, Math.max(0, aptitudeScore));
   };
@@ -843,9 +893,10 @@ const FacultyMerits = ({ auth }) => {
                {/* Current Semester Content */}
                {activeTab === 'current' && (
                  <>
+                   {/* Desktop/Tablet Table */}
                    <div className="overflow-x-auto">
                      <div className="min-w-full">
-                       <table key={renderKey} className="w-full border-collapse min-w-[1400px]">
+                       <table key={renderKey} className="w-full border-collapse min-w-[1200px]">
                          <thead className="text-gray-600">
                            <tr>
                              <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
@@ -868,14 +919,14 @@ const FacultyMerits = ({ auth }) => {
                   <tbody>
                   {paginatedCadets.map((cadet, i) => {
                     const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
-                    const weeks = 15; // Both semesters now use 15 weeks
+                    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
                     let meritValues = merits[cadetIndex]?.days ?? [];
                     let demeritValues = demerits[cadetIndex]?.days ?? [];
                     // Pad missing weeks: merits should default to 10 (full merit) for weeks
                     // with no data yet, so totals include all 15 weeks by default.
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
+                    const totalMerits = calculateDisplayedTotalMerits(demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                     
                     return (
@@ -941,6 +992,122 @@ const FacultyMerits = ({ auth }) => {
                 </table>
                       </div>
             </div>
+                    {/* Mobile Card List */}
+                    <div className="sm:hidden space-y-3">
+                      {paginatedCadets.map((cadet) => {
+                        const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
+                        const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                        let meritValues = merits[cadetIndex]?.days ?? [];
+                        let demeritValues = demerits[cadetIndex]?.days ?? [];
+                        if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
+                        if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
+                        const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                        const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
+
+                        return (
+                          <div key={cadet.id} className="border rounded-lg p-3 bg-white shadow-sm">
+                            <div className="font-semibold text-gray-900 mb-2">{formatCadetName(cadet)}</div>
+                            <div className="grid grid-cols-3 gap-2 text-[11px] text-gray-600 mb-2">
+                              <div><span className="font-medium">Total Merits:</span> {totalMerits}</div>
+                              <div className="col-span-2"><span className="font-medium">Aptitude (30%):</span> {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}</div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              {getCurrentWeeks().map((week, j) => {
+                                const weekIndex = j;
+                                return (
+                                  <div key={j} className="border rounded p-2">
+                                    <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
+                                    <div className="flex items-center justify-center gap-1">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="10"
+                                        value={(() => {
+                                          if (meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-') {
+                                            const demeritVal = Number(demeritValues[weekIndex]) || 0;
+                                            const calculatedMerit = Math.max(0, 10 - demeritVal);
+                                            return isNaN(calculatedMerit) ? 10 : calculatedMerit;
+                                          }
+                                          const meritVal = Number(meritValues[weekIndex]);
+                                          return isNaN(meritVal) ? 10 : meritVal;
+                                        })()}
+                                        className={`w-10 h-7 text-center border border-gray-300 rounded text-[11px] font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                        placeholder="10"
+                                        disabled={true}
+                                        readOnly
+                                      />
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="10"
+                                        value={(() => {
+                                          if (demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-') {
+                                            return '';
+                                          }
+                                          const demeritVal = Number(demeritValues[weekIndex]);
+                                          return isNaN(demeritVal) ? '' : demeritVal;
+                                        })()}
+                                        onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
+                                        className={`${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'} w-10 h-7 text-center border border-gray-300 rounded text-[11px] font-medium`}
+                                        placeholder="0"
+                                        disabled={!isEditing}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+            {/* Horizontal Scrollbar (currently unused for 2nd semester since all 15 weeks are shown, keep for future use) */}
+            {false && selectedSemester === '2026-2027 2nd semester' && (
+              <div className="w-full mt-3 md:mt-4">
+                <div className="flex items-center gap-2 w-full">
+                  <button
+                    className="text-gray-600 hover:text-gray-800 text-lg p-2 rounded hover:bg-gray-100"
+                    onClick={() => handleSliderChange(Math.max(0, scrollPosition - 1))}
+                    aria-label="Scroll weeks left"
+                    title="Scroll weeks left"
+                    disabled={scrollPosition === 0}
+                  >
+                    ‹
+                  </button>
+                  <div className="flex-1 relative max-w-full">
+                    <div className="w-full h-2 bg-gray-200 rounded-full relative overflow-hidden">
+                      <div 
+                        className="absolute top-0 h-full bg-gray-500 rounded-full transition-all duration-200"
+                        style={{ 
+                          width: '25%',
+                          left: `${(scrollPosition / 5) * 75}%`
+                        }}
+                      ></div>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="1"
+                      value={scrollPosition}
+                      onChange={(e) => handleSliderChange(Number(e.target.value))}
+                      className="absolute top-0 left-0 w-full h-6 opacity-0 cursor-pointer"
+                      aria-label="Week range"
+                    />
+                  </div>
+                  <button
+                    className="text-gray-600 hover:text-gray-800 text-lg p-2 rounded hover:bg-gray-100"
+                    onClick={() => handleSliderChange(Math.min(5, scrollPosition + 1))}
+                    aria-label="Scroll weeks right"
+                    title="Scroll weeks right"
+                    disabled={scrollPosition === 5}
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 w-full gap-4">
               <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
                 Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
@@ -1017,9 +1184,10 @@ const FacultyMerits = ({ auth }) => {
                {/* Previous Semester Content */}
                {activeTab === 'previous' && (
                  <>
-                   <div className="overflow-x-auto">
+                   {/* Desktop/Tablet Table */}
+                   <div className="overflow-x-auto hidden sm:block" ref={previousTableScrollRef}>
                      <div className="min-w-full">
-                       <table className="w-full border-collapse min-w-[1400px]">
+                       <table className="w-full border-collapse min-w-[1200px]">
                          <thead className="text-gray-600">
                            <tr>
                              <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
@@ -1042,13 +1210,13 @@ const FacultyMerits = ({ auth }) => {
                 <tbody>
                   {paginatedCadets.map((cadet) => {
                     const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
-                    const weeks = 15; // Both semesters now use 15 weeks
+                    const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
                     let meritValues = merits[cadetIndex]?.days ?? [];
                     let demeritValues = demerits[cadetIndex]?.days ?? [];
                     // Ensure arrays cover all weeks; pad with defaults when shorter
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
+                    const totalMerits = calculateDisplayedTotalMerits(demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                      
                      return (
@@ -1115,6 +1283,86 @@ const FacultyMerits = ({ auth }) => {
                    </tbody>
                  </table>
                       </div>
+             </div>
+            {/* Desktop bottom synced scrollbar for 2nd semester (above pagination) */}
+            {activeTab === 'previous' && (
+              <div className="hidden sm:block w-full mt-2">
+                <div
+                  ref={previousBottomScrollRef}
+                  className="w-full overflow-x-auto"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div style={{ width: Math.max(previousContentWidth, 1200) }} className="h-2"></div>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Card List */}
+             <div className="sm:hidden space-y-3">
+               {paginatedCadets.map((cadet) => {
+                 const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
+                 const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                 let meritValues = merits[cadetIndex]?.days ?? [];
+                 let demeritValues = demerits[cadetIndex]?.days ?? [];
+                 if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
+                 if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
+                 const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                 const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
+
+                 return (
+                   <div key={cadet.id} className="border rounded-lg p-3 bg-white shadow-sm">
+                     <div className="font-semibold text-gray-900 mb-2">{formatCadetName(cadet)}</div>
+                     <div className="grid grid-cols-3 gap-2 text-[11px] text-gray-600 mb-2">
+                       <div><span className="font-medium">Total Merits:</span> {totalMerits}</div>
+                       <div className="col-span-2"><span className="font-medium">Aptitude (30%):</span> {isNaN(Number(aptitudeScore)) ? 0 : aptitudeScore}</div>
+                     </div>
+                     <div className="grid grid-cols-3 gap-2">
+                       {getCurrentWeeks().map((week, j) => {
+                         const weekIndex = j;
+                         return (
+                           <div key={j} className="border rounded p-2">
+                             <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
+                             <div className="flex items-center justify-center gap-1">
+                               <input
+                                 type="number"
+                                 min="0"
+                                 max="10"
+                                 value={(() => {
+                                   if (meritValues[weekIndex] === null || meritValues[weekIndex] === undefined || meritValues[weekIndex] === '' || meritValues[weekIndex] === '-') {
+                                     return '';
+                                   }
+                                   const meritVal = Number(meritValues[weekIndex]);
+                                   return isNaN(meritVal) ? '' : meritVal;
+                                 })()}
+                                 className={`w-10 h-7 text-center border border-gray-300 rounded text-[11px] font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                 placeholder="10"
+                                 disabled={true}
+                                 readOnly
+                               />
+                               <input
+                                 type="number"
+                                 min="0"
+                                 max="10"
+                                 value={(() => {
+                                   if (demeritValues[weekIndex] === null || demeritValues[weekIndex] === undefined || demeritValues[weekIndex] === '' || demeritValues[weekIndex] === '-') {
+                                     return '';
+                                   }
+                                   const demeritVal = Number(demeritValues[weekIndex]);
+                                   return isNaN(demeritVal) ? '' : demeritVal;
+                                 })()}
+                                 onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
+                                 className={`${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'} w-10 h-7 text-center border border-gray-300 rounded text-[11px] font-medium`}
+                                 placeholder="0"
+                                 disabled={!isEditing}
+                               />
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 );
+               })}
              </div>
              
              {/* Horizontal Scrollbar for Second Semester - Hidden since showing all weeks */}

@@ -42,38 +42,53 @@ class AssignPlatoonCompanyBattalion extends Command
 
         $companies = ['Alpha','Beta','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliet','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu'];
 
+        // Separate by battalion (gender) while preserving sorted order
+        $males = $cadets->filter(function ($c) {
+            $g = is_string($c->gender) ? strtolower(trim($c->gender)) : '';
+            return $g === 'male' || $g === 'm' || $c->battalion === '1st Battalion';
+        })->values();
+        $females = $cadets->filter(function ($c) {
+            $g = is_string($c->gender) ? strtolower(trim($c->gender)) : '';
+            return $g === 'female' || $g === 'f' || $c->battalion === '2nd Battalion';
+        })->values();
+        $others = $cadets->diff($males)->diff($females)->values(); // any unknowns
+
         $updated = 0;
-        foreach ($cadets as $index => $cadet) {
-            $groupIndex = intdiv($index, 37); // 0-based groups of 37
-            $cycle = $groupIndex % 3; // platoon cycle: 0,1,2 => 1st/2nd/3rd
-            $platoon = $cycle === 0 ? '1st Platoon' : ($cycle === 1 ? '2nd Platoon' : '3rd Platoon');
-            // Company advances only after a full cycle of three platoons (every 111 cadets)
-            $companyIndex = intdiv($groupIndex, 3);
-            $company = $companies[$companyIndex % count($companies)];
-            // Battalion by gender (case-insensitive; supports short forms 'M'/'F')
-            $gender = is_string($cadet->gender) ? strtolower(trim($cadet->gender)) : '';
-            if ($gender === 'male' || $gender === 'm') {
-                $battalion = '1st Battalion';
-            } elseif ($gender === 'female' || $gender === 'f') {
-                $battalion = '2nd Battalion';
-            } else {
-                $battalion = $cadet->battalion; // leave as is if unknown
-            }
 
-            if ($dryRun) {
-                $this->line(sprintf('%s, %s -> %s | %s | %s', $cadet->last_name, $cadet->first_name, $platoon, $company, $battalion ?? '-'));
+        // Helper to assign platoon/company cycling every 37 and 111 respectively, starting from Alpha each phase
+        $assignPhase = function ($list, $forcedBattalion) use (&$updated, $dryRun, $companies) {
+            foreach ($list as $index => $cadet) {
+                $groupIndex = intdiv($index, 37); // 0-based groups of 37 per phase
+                $cycle = $groupIndex % 3; // 0,1,2 => 1st/2nd/3rd platoon
+                $platoon = $cycle === 0 ? '1st Platoon' : ($cycle === 1 ? '2nd Platoon' : '3rd Platoon');
+                // Company advances only after a full cycle of three platoons (every 111 cadets)
+                $companyIndex = intdiv($groupIndex, 3);
+                $company = $companies[$companyIndex % count($companies)];
+
+                $battalion = $forcedBattalion; // '1st Battalion' or '2nd Battalion'
+
+                if ($dryRun) {
+                    $this->line(sprintf('%s, %s -> %s | %s | %s', $cadet->last_name, $cadet->first_name, $platoon, $company, $battalion ?? '-'));
+                    $updated++;
+                    continue;
+                }
+
+                $cadet->platoon = $platoon;
+                $cadet->company = $company;
+                if ($battalion !== null) {
+                    $cadet->battalion = $battalion;
+                }
+                $cadet->save();
                 $updated++;
-                continue;
             }
+        };
 
-            $cadet->platoon = $platoon;
-            $cadet->company = $company;
-            if ($battalion !== null) {
-                $cadet->battalion = $battalion;
-            }
-            $cadet->save();
-            $updated++;
-        }
+        // Phase 1: all males (1st Battalion), starting from Alpha
+        $assignPhase($males, '1st Battalion');
+        // Phase 2: all females (2nd Battalion), starting from Alpha
+        $assignPhase($females, '2nd Battalion');
+        // Phase 3: any unknown gender/battalion - keep existing battalion, still cycle from Alpha
+        $assignPhase($others, null);
 
         $this->info(($dryRun ? 'Would update ' : 'Updated ') . $updated . ' cadets.');
 

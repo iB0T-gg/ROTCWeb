@@ -623,9 +623,10 @@ class UserController extends Controller
             $request->validate([
                 'merits' => 'required|array',
                 'merits.*.cadet_id' => 'required|exists:users,id',
-                'merits.*.days' => 'required|array|size:15', // Updated to 15 weeks
+                // Accept any array length from the UI; we will slice to 10 for first semester
+                'merits.*.days' => 'required|array',
                 'merits.*.days.*' => 'nullable|numeric|min:0|max:10',
-                'merits.*.demerits' => 'nullable|array|size:15', // Updated to 15 weeks
+                'merits.*.demerits' => 'nullable|array',
                 'merits.*.demerits.*' => 'nullable|numeric|min:0|max:10',
             ]);
 
@@ -642,14 +643,17 @@ class UserController extends Controller
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
                 foreach ($request->merits as $meritData) {
                     try {
-                        // Compute totals using merits only (15 weeks)
-                        $weekCount = 15; // First semester now has 15 weeks
-                        $meritValues = [];
-                        for ($i = 0; $i < $weekCount; $i++) {
-                            $meritValues[] = $meritData['days'][$i] ?? 0;
+                        // Enforce 10 weeks for first semester
+                        $weekCount = 10;
+                        // Normalize incoming arrays: slice or pad to 10
+                        $incomingDays = is_array($meritData['days'] ?? null) ? $meritData['days'] : [];
+                        $days = array_slice($incomingDays, 0, $weekCount);
+                        if (count($days) < $weekCount) {
+                            $days = array_merge($days, array_fill(0, $weekCount - count($days), 10));
                         }
-                        $sum = array_sum($meritValues); // total_merits
-                        $aptitude30 = min(30, max(0, round(($sum / 150) * 30))); // Updated calculation for 150 max points
+                        $meritValues = array_map(function($v){ return (int)($v === '' || $v === null ? 0 : $v); }, $days);
+                        $sum = array_sum($meritValues); // total_merits (max 100)
+                        $aptitude30 = min(30, max(0, round(($sum / 100) * 30)));
 
                         $merit = $meritModel::updateOrCreate(
                             [
@@ -658,7 +662,7 @@ class UserController extends Controller
                                 'semester' => $semester
                             ],
                             [
-                                'merits_array' => $meritData['days'],
+                                'merits_array' => $meritValues,
                                 'total_merits' => max(0, $sum),
                                 'aptitude_30' => $aptitude30,
                                 'updated_by' => $faculty->id,
@@ -679,7 +683,7 @@ class UserController extends Controller
 
                         // Update week scores - preserve legitimate 0 values
                         for ($i = 1; $i <= $weekCount; $i++) {
-                            $weekValue = $meritData['days'][$i - 1] ?? '';
+                            $weekValue = $meritValues[$i - 1] ?? '';
                             // Only convert empty strings and null to empty, preserve 0 as legitimate value
                             if ($weekValue === '' || $weekValue === null) {
                                 $merit->{"merits_week_$i"} = '';
@@ -694,47 +698,36 @@ class UserController extends Controller
                             if ($savedCount === 0) {
                                 \Log::info('DEBUG: Processing demerits for first cadet', [
                                     'cadet_id' => $meritData['cadet_id'],
-                                    'demerits_array_length' => count($meritData['demerits']),
-                                    'weeks_11_15_raw_values' => [
-                                        'week_11' => $meritData['demerits'][10] ?? 'MISSING',
-                                        'week_12' => $meritData['demerits'][11] ?? 'MISSING',
-                                        'week_13' => $meritData['demerits'][12] ?? 'MISSING',
-                                        'week_14' => $meritData['demerits'][13] ?? 'MISSING',
-                                        'week_15' => $meritData['demerits'][14] ?? 'MISSING'
-                                    ]
+                                    'demerits_array_length' => count($meritData['demerits'])
                                 ]);
                             }
                             
+                            // Normalize demerits to 10 (pad with 0s) so demerits_array shows numeric zeros
+                            $incomingDems = is_array($meritData['demerits']) ? $meritData['demerits'] : [];
+                            $demerits10 = array_slice($incomingDems, 0, $weekCount);
+                            if (count($demerits10) < $weekCount) {
+                                $demerits10 = array_merge($demerits10, array_fill(0, $weekCount - count($demerits10), 0));
+                            }
+
                             for ($i = 1; $i <= $weekCount; $i++) {
-                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
+                                $demeritValue = $demerits10[$i - 1] ?? '';
                                 // Only convert empty strings and null to empty, preserve 0 as legitimate value
                                 if ($demeritValue === '' || $demeritValue === null) {
                                     $merit->{"demerits_week_$i"} = '';
                                 } else {
                                     $merit->{"demerits_week_$i"} = $demeritValue;
                                 }
-                                
-                                // Debug: Log processing for weeks 11-15 for first cadet
-                                if ($savedCount === 0 && $i >= 11 && $i <= 15) {
-                                    \Log::info("DEBUG: Processing week $i demerit for first cadet", [
-                                        'original_value' => $demeritValue,
-                                        'processed_value' => $merit->{"demerits_week_$i"},
-                                        'column_name' => "demerits_week_$i"
-                                    ]);
-                                }
                             }
                             
-                            // Save demerits array - preserve 0 values
+                            // Save demerits array (10) - preserve 0 values as 0
                             $processedDemerits = array_map(function($demerit) {
-                                return ($demerit === '' || $demerit === null) ? '' : $demerit;
-                            }, $meritData['demerits']);
+                                return ($demerit === '' || $demerit === null) ? 0 : (int)$demerit;
+                            }, $demerits10);
                             
                             // Debug: Log demerits array processing for first cadet
                             if ($savedCount === 0) {
                                 \Log::info('DEBUG: Demerits array processing for first cadet', [
-                                    'original_demerits_weeks_11_15' => array_slice($meritData['demerits'], 10, 5),
-                                    'processed_demerits_weeks_11_15' => array_slice($processedDemerits, 10, 5),
-                                    'full_processed_array_length' => count($processedDemerits)
+                                'full_processed_array_length' => count($processedDemerits)
                                 ]);
                             }
                             
@@ -838,12 +831,16 @@ class UserController extends Controller
                     try {
                         // Use 15 weeks for the second semester
                         $weekCount = 15;
-                        // Sum demerits (treat missing as 0)
+                        // Normalize demerits to exactly 15 and sum (treat missing as 0)
+                        $incomingDemerits = is_array($meritData['demerits'] ?? null) ? $meritData['demerits'] : [];
+                        $normDemerits = array_slice($incomingDemerits, 0, $weekCount);
+                        if (count($normDemerits) < $weekCount) {
+                            $normDemerits = array_merge($normDemerits, array_fill(0, $weekCount - count($normDemerits), ''));
+                        }
                         $demeritValues = [];
                         for ($i = 0; $i < $weekCount; $i++) {
-                            $demeritValues[] = isset($meritData['demerits'][$i]) && $meritData['demerits'][$i] !== ''
-                                ? (float)$meritData['demerits'][$i]
-                                : 0.0;
+                            $val = $normDemerits[$i] ?? '';
+                            $demeritValues[] = ($val === '' || $val === null) ? 0.0 : (float)$val;
                         }
                         $sumDemerits = array_sum($demeritValues);
 
@@ -875,19 +872,17 @@ class UserController extends Controller
                             $merit->{"merits_week_$i"} = ($weekValue === 0 || $weekValue === '0') ? '' : $weekValue;
                         }
 
-                        // Update demerits week scores if provided
-                        if (isset($meritData['demerits'])) {
-                            for ($i = 1; $i <= $weekCount; $i++) {
-                                $demeritValue = $meritData['demerits'][$i - 1] ?? '';
-                                $merit->{"demerits_week_$i"} = ($demeritValue === 0 || $demeritValue === '0') ? '' : $demeritValue;
-                            }
-
-                            // Save demerits array
-                            $processedDemerits = array_map(function($demerit) {
-                                return ($demerit === 0 || $demerit === '0') ? '' : $demerit;
-                            }, $meritData['demerits']);
-                            $merit->demerits_array = $processedDemerits;
+                        // Update demerits week scores and array from normalized input
+                        for ($i = 1; $i <= $weekCount; $i++) {
+                            $demeritValue = $normDemerits[$i - 1] ?? '';
+                            // Only store empty string for truly empty inputs; keep 0 as 0
+                            $merit->{"demerits_week_$i"} = ($demeritValue === '' || $demeritValue === null) ? '' : $demeritValue;
                         }
+
+                        $processedDemerits = array_map(function($demerit) {
+                            return ($demerit === '' || $demerit === null) ? 0 : (int)$demerit;
+                        }, $normDemerits);
+                        $merit->demerits_array = $processedDemerits;
 
                         $merit->total_merits = $totalMerits;
                         $merit->aptitude_30 = $aptitude30;
