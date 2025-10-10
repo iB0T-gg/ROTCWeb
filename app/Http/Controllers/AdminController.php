@@ -213,9 +213,7 @@ class AdminController extends Controller
             return response()->json(['error' => 'User is not pending approval'], 400);
         }
 
-        $user->update(['status' => 'rejected']);
-
-        // Send rejection notification email
+        // Send rejection notification email before deleting
         try {
             $user->notify(new UserApprovalNotification('rejected', $user));
         } catch (\Exception $e) {
@@ -223,7 +221,10 @@ class AdminController extends Controller
             \Log::error('Failed to send rejection email: ' . $e->getMessage());
         }
 
-        return response()->json(['message' => 'User rejected successfully', 'user' => $user]);
+        // Delete the user to free up email and student_number for re-registration
+        $user->delete();
+
+        return response()->json(['message' => 'User rejected and removed successfully. They can now re-register with the same email and student number.']);
     }
     
     /**
