@@ -64,7 +64,7 @@ const userGrades = ({ auth, user }) => {
         </div>
         
         <div className='flex-1 p-3 md:p-6'>
-          <div className='font-regular'>
+          <div className='font-regular animate-fade-in-up'>
             {/* Breadcrumb */}
             <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
               <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
@@ -75,12 +75,12 @@ const userGrades = ({ auth, user }) => {
             </div>
             
             {/* Page Header */}
-            <div className='flex items-center justify-between mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+            <div className='flex items-center justify-between mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
               <h1 className='text-xl md:text-2xl font-semibold'>Grades</h1>
             </div>
             
             {/* Main Card */}
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto h-auto md:h-[650px] overflow-y-auto'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto h-auto md:h-[650px] overflow-y-auto animate-scale-in-up'>
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">

@@ -2,9 +2,33 @@ import React, { useState } from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
 import { useForm, Head } from '@inertiajs/react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 rounded text-white transition-colors ${buttonColor}`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function ChangePassword({ auth }) {
     const [passwordError, setPasswordError] = useState('');
@@ -24,6 +48,14 @@ export default function ChangePassword({ auth }) {
     const [isNewFocused, setIsNewFocused] = useState(false);
     const [isConfirmFocused, setIsConfirmFocused] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // AlertDialog state
+    const [alertDialog, setAlertDialog] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
     
     const { data, setData, post, processing, errors } = useForm({
         current_password: '',
@@ -173,19 +205,12 @@ export default function ChangePassword({ auth }) {
             setPasswordError('');
             setIsSubmitting(false);
             
-            // Show success toast
-            toast.success('🎉 Password changed successfully!', {
-                position: "top-center",
-                autoClose: 4000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                style: {
-                    background: "#10B981",
-                    color: "white",
-                    fontWeight: "500"
-                }
+            // Show success AlertDialog
+            setAlertDialog({
+                isOpen: true,
+                title: 'Success',
+                message: 'Password changed successfully!',
+                type: 'success'
             });
         })
         .catch(error => {
@@ -194,60 +219,32 @@ export default function ChangePassword({ auth }) {
             
             // Show specific error messages based on error type
             if (error.message && error.message.includes('CSRF token mismatch')) {
-                toast.error('🔒 Security token expired. Please refresh the page and try again.', {
-                    position: "top-center",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    style: {
-                        background: "#EF4444",
-                        color: "white",
-                        fontWeight: "500"
-                    }
+                setAlertDialog({
+                    isOpen: true,
+                    title: 'Security Token Expired',
+                    message: 'Security token expired. Please refresh the page and try again.',
+                    type: 'error'
                 });
             } else if (error.message && error.message.includes('Current password is incorrect')) {
-                toast.error('❌ Current password is incorrect. Please try again.', {
-                    position: "top-center",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    style: {
-                        background: "#EF4444",
-                        color: "white",
-                        fontWeight: "500"
-                    }
+                setAlertDialog({
+                    isOpen: true,
+                    title: 'Incorrect Password',
+                    message: 'Current password is incorrect. Please try again.',
+                    type: 'error'
                 });
             } else if (error.message && error.message.includes('Validation failed')) {
-                toast.error('📝 Password validation failed. Please check the requirements.', {
-                    position: "top-center",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    style: {
-                        background: "#EF4444",
-                        color: "white",
-                        fontWeight: "500"
-                    }
+                setAlertDialog({
+                    isOpen: true,
+                    title: 'Validation Failed',
+                    message: 'Password validation failed. Please check the requirements.',
+                    type: 'error'
                 });
             } else {
-                toast.error('⚠️ Password change failed. Please try again.', {
-                    position: "top-center",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    style: {
-                        background: "#EF4444",
-                        color: "white",
-                        fontWeight: "500"
-                    }
+                setAlertDialog({
+                    isOpen: true,
+                    title: 'Password Change Failed',
+                    message: 'Password change failed. Please try again.',
+                    type: 'error'
                 });
             }
         });
@@ -257,24 +254,23 @@ export default function ChangePassword({ auth }) {
         <>
             <Head title="ROTC Portal - Change Password" />
             <div className="w-full min-h-screen bg-backgroundColor">
-            <ToastContainer />
             <Header auth={auth} />
             <div className="flex flex-col md:flex-row">
                 <UserSidebar />
                 <div className="flex-1 p-3 md:p-6">
-                    <div className="font-regular">
+                    <div className="font-regular animate-fade-in-up">
                         {/* Breadcrumb */}
                         <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base">
                             Home {">"} Change Password
                         </div>
                         
                         {/* Page Header */}
-                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7">
+                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
                             <h1 className="text-xl md:text-2xl font-semibold">Change Password</h1>
                         </div>
                         
                         {/* Main Content */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow">
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow animate-scale-in-up">
                             <div className="pl-2 md:pl-4">
                                 <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-6">Update Your Password</h2>
                                 <form onSubmit={handleSubmit} className="w-full max-w-lg">
@@ -428,6 +424,15 @@ export default function ChangePassword({ auth }) {
                 </div>
             </div>
         </div>
+        
+        {/* AlertDialog */}
+        <AlertDialog
+            isOpen={alertDialog.isOpen}
+            onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+            title={alertDialog.title}
+            message={alertDialog.message}
+            type={alertDialog.type}
+        />
         </>
     );
 }

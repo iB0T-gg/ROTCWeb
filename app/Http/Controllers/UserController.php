@@ -33,7 +33,8 @@ class UserController extends Controller
     public function getCadets(Request $request)
     {
         $query = User::where('role', 'user')
-                     ->where('status', 'approved');
+                     ->where('status', 'approved')
+                     ->where('archived', false);
         
         // Filter by semester if provided
         if ($request->has('semester')) {
@@ -367,7 +368,10 @@ class UserController extends Controller
 
     public function filterCadets(Request $request)
     {
-        $query = \App\Models\User::query()->where('role', 'user')->where('status', 'approved');
+        $query = \App\Models\User::query()
+            ->where('role', 'user')
+            ->where('status', 'approved')
+            ->where('archived', false);
 
         if ($request->filled('platoon')) {
             $query->where('platoon', $request->platoon);

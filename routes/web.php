@@ -144,6 +144,14 @@ Route::post('/test-upload', function (Request $request) {
     ]);
 })->middleware('auth');
 
+// CSRF token refresh endpoint
+Route::get('/csrf-token', function (Request $request) {
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId(),
+    ]);
+});
+
 // Refresh CSRF token route
 Route::post('/refresh-csrf', function (Request $request) {
     $request->session()->regenerateToken();
@@ -312,6 +320,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/reject-user', [AdminController::class, 'rejectUser']);
         Route::post('/archive-user', [AdminController::class, 'archiveUser']);
         Route::post('/restore-user', [AdminController::class, 'restoreUser']);
+        Route::post('/restore-all-users', [AdminController::class, 'restoreAllUsers']);
         Route::get('/archived-users', [AdminController::class, 'getArchivedUsers']);
     });
     

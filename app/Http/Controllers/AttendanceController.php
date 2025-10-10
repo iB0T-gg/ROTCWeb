@@ -22,6 +22,7 @@ class AttendanceController extends Controller
             // Get all cadets (role 'user' only) ordered alphabetically by last name, then first name
             $cadets = User::where('role', 'user')
                 ->where('status', 'approved')
+                ->where('archived', false)
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section', 'platoon', 'company', 'battalion']);
@@ -36,7 +37,7 @@ class AttendanceController extends Controller
                         ->first();
                         
                     if (!$attendance) {
-                        // Create new attendance record with 15 weeks
+                        // Create new attendance record with 10 weeks for 1st semester
                         $attendanceData = [
                             'user_id' => $cadet->id,
                             'semester' => $semester,
@@ -45,8 +46,8 @@ class AttendanceController extends Controller
                             'attendance_date' => now()->toDateString(),
                         ];
                         
-                        // Initialize all weekly columns to false
-                        for ($i = 1; $i <= 15; $i++) {
+                        // Initialize all weekly columns to false (only first 10 weeks for 1st semester)
+                        for ($i = 1; $i <= 10; $i++) {
                             $attendanceData["week_{$i}"] = false;
                         }
                         
@@ -76,9 +77,10 @@ class AttendanceController extends Controller
                     }
                 }
                 
-                // Get weekly attendance data from the database
+                // Get weekly attendance data from the database based on semester
                 $weeklyAttendance = [];
-                for ($week = 1; $week <= 15; $week++) {
+                $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                for ($week = 1; $week <= $maxWeeks; $week++) {
                     $weeklyAttendance[$week] = (bool) $attendance->{"week_{$week}"};
                 }
                 
@@ -103,7 +105,7 @@ class AttendanceController extends Controller
                 'success' => true,
                 'data' => $attendanceData,
                 'semester' => $semester,
-                'max_weeks' => 15
+                'max_weeks' => strpos($semester, '1st semester') !== false ? 10 : 15
             ]);
             
         } catch (\Exception $e) {
@@ -148,8 +150,9 @@ class AttendanceController extends Controller
                         'attendance_date' => now()->toDateString(),
                     ];
                     
-                    // Initialize all weekly columns to false
-                    for ($i = 1; $i <= 15; $i++) {
+                    // Initialize weekly columns based on semester (10 weeks for 1st, 15 for 2nd)
+                    $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                    for ($i = 1; $i <= $maxWeeks; $i++) {
                         $attendanceData["week_{$i}"] = false;
                     }
                     
@@ -190,7 +193,7 @@ class AttendanceController extends Controller
                 'data' => [
                     'weeks_present' => $attendance->weeks_present,
                     'attendance_30' => $attendance->attendance_30,
-                    'percentage' => round(($attendance->weeks_present / 15) * 100, 2)
+                    'percentage' => round(($attendance->weeks_present / 10) * 100, 2) // 1st semester uses 10 weeks
                 ]
             ]);
             
@@ -240,8 +243,9 @@ class AttendanceController extends Controller
                             'attendance_date' => now()->toDateString(),
                         ];
                         
-                        // Initialize all weekly columns to false
-                        for ($i = 1; $i <= 15; $i++) {
+                        // Initialize weekly columns based on semester (10 weeks for 1st, 15 for 2nd)
+                        $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                        for ($i = 1; $i <= $maxWeeks; $i++) {
                             $attendanceData["week_{$i}"] = false;
                         }
                         
@@ -270,8 +274,9 @@ class AttendanceController extends Controller
                     }
                 }
                 
-                // Update weekly attendance
-                for ($week = 1; $week <= 15; $week++) {
+                // Update weekly attendance based on semester
+                $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                for ($week = 1; $week <= $maxWeeks; $week++) {
                     $attendance->{"week_{$week}"} = isset($weeklyAttendance[$week]) ? (bool) $weeklyAttendance[$week] : false;
                 }
                 
@@ -1062,8 +1067,9 @@ class AttendanceController extends Controller
                                 'attendance_date' => now()->toDateString(),
                             ];
                             
-                            // Initialize all weekly columns
-                            for ($i = 1; $i <= 15; $i++) {
+                            // Initialize weekly columns based on semester (10 weeks for 1st, 15 for 2nd)
+                            $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                            for ($i = 1; $i <= $maxWeeks; $i++) {
                                 $attendanceData["week_{$i}"] = false;
                             }
                             
@@ -1204,7 +1210,7 @@ class AttendanceController extends Controller
                     ->first();
                     
                 if (!$attendance) {
-                    // Create new attendance record with 15 weeks (all absent)
+                    // Create new attendance record with appropriate weeks based on semester
                     $attendanceData = [
                         'user_id' => $userId,
                         'semester' => $semester,
@@ -1213,8 +1219,9 @@ class AttendanceController extends Controller
                         'attendance_date' => now()->toDateString(),
                     ];
                     
-                    // Initialize all weekly columns to false
-                    for ($i = 1; $i <= 15; $i++) {
+                    // Initialize weekly columns based on semester (10 weeks for 1st, 15 for 2nd)
+                    $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+                    for ($i = 1; $i <= $maxWeeks; $i++) {
                         $attendanceData["week_{$i}"] = false;
                     }
                     
@@ -1244,9 +1251,10 @@ class AttendanceController extends Controller
                 }
             }
             
-            // Get weekly attendance data from the database
+            // Get weekly attendance data from the database based on semester
             $weeklyAttendance = [];
-            for ($week = 1; $week <= 15; $week++) {
+            $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
+            for ($week = 1; $week <= $maxWeeks; $week++) {
                 $weeklyAttendance[$week] = (bool) $attendance->{"week_{$week}"};
             }
             
@@ -1267,7 +1275,7 @@ class AttendanceController extends Controller
                 'success' => true,
                 'data' => $userAttendanceData,
                 'semester' => $semester,
-                'max_weeks' => 15
+                'max_weeks' => strpos($semester, '1st semester') !== false ? 10 : 15
             ]);
             
         } catch (\Exception $e) {

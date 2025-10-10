@@ -10,16 +10,14 @@ import { Link, Head } from '@inertiajs/react';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -41,20 +39,20 @@ const ConfirmationDialog = ({ isOpen, title, message, onConfirm, onCancel }) => 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className="border rounded-lg p-4 mb-4">
+        <div className="p-4 mb-4">
           <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
           <p className="text-gray-700">{message}</p>
         </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors duration-150"
+            className="px-4 py-2 text-gray-700 rounded hover:text-gray-800 transition-colors duration-150"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-150"
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors duration-150"
           >
             Confirm
           </button>
@@ -264,6 +262,45 @@ export default function AdminUserList({ auth }) {
         });
     };
 
+    const handleRestoreAll = async () => {
+        if (archivedUsers.length === 0) {
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No Archived Users',
+                message: 'There are no archived users to restore.'
+            });
+            return;
+        }
+
+        setConfirmationDialog({
+            isOpen: true,
+            title: 'Restore All Users',
+            message: `Are you sure you want to restore ${archivedUsers.length} users?`,
+            onConfirm: async () => {
+                try {
+                    await axios.post('/api/restore-all-users');
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'success',
+                        title: 'Success',
+                        message: 'All archived users have been restored successfully!'
+                    });
+                    fetchUsers();
+                } catch (err) {
+                    console.error('Error restoring all users:', err);
+                    setAlertDialog({
+                        isOpen: true,
+                        type: 'error',
+                        title: 'Restore Failed',
+                        message: 'Failed to restore all users. Please try again.'
+                    });
+                }
+                setConfirmationDialog({ ...confirmationDialog, isOpen: false });
+            }
+        });
+    };
+
     // Filter users based on search term and role
     const filteredUsers = users.filter(user => {
         const nameMatches = `${user.first_name} ${user.middle_name} ${user.last_name}`
@@ -325,9 +362,9 @@ export default function AdminUserList({ auth }) {
             <div className="flex flex-col md:flex-row">
                 <AdminSidebar />
                 <div className="flex-1 p-3 md:p-6">
-                    <div className="font-regular">
+                    <div className="font-regular animate-fade-in-up">
                         {/* Breadcrumb */}
-                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up">
                         <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
                              Dashboard
                         </Link>
@@ -336,12 +373,12 @@ export default function AdminUserList({ auth }) {
                     </div>
                         
                         {/* Page Header */}
-                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7">
+                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
                             <h1 className="text-xl md:text-2xl font-semibold">User List</h1>
                         </div>
 
                         {/* Filters and Search */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6 animate-scale-in-up">
                             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 items-start sm:items-center justify-between">
                                 {/* Tabs */}
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto">
@@ -399,7 +436,7 @@ export default function AdminUserList({ auth }) {
                         </div>
 
                         {/* User List */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow">
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow animate-scale-in-up">
                             {loading ? (
                                 <div className="flex justify-center items-center h-32 md:h-40">
                                     <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
@@ -625,7 +662,14 @@ export default function AdminUserList({ auth }) {
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <div className="justify-self-end"></div>
+                                                    <div className="justify-self-end">
+                                                        <button
+                                                            onClick={handleRestoreAll}
+                                                            className="bg-primary hover:bg-primary/85 text-white font-medium py-1.5 md:py-2 px-3 md:px-4 rounded shadow text-xs md:text-sm"
+                                                        >
+                                                            Restore All
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </>

@@ -81,18 +81,18 @@ export default function ResetPassword({ token, email }) {
             ></div>
             
             <div className='container mx-auto flex flex-col items-center justify-center h-full z-10 relative'>
-                <div className='w-full max-w-[30rem] bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg'>
-                    <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
-                    <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>Reset Password</h1>
+                <div className='w-full max-w-[30rem] bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg animate-scale-in-up'>
+                    <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 animate-fade-in-up animate-stagger-1' />
+                    <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center animate-fade-in-up animate-stagger-2'>Reset Password</h1>
                     
                     {/* Display submission success messages only */}
                     {submitMessage.message && submitMessage.type === 'success' && (
-                        <div className="mb-3 sm:mb-4 font-medium text-xs sm:text-sm p-1.5 sm:p-2 rounded text-green-600 bg-green-100">
+                        <div className="mb-3 sm:mb-4 font-medium text-xs sm:text-sm p-1.5 sm:p-2 rounded text-green-600 bg-green-100 animate-fade-in-up animate-stagger-3">
                             {submitMessage.message}
                         </div>
                     )}
                     
-                    <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular'>
+                    <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular animate-fade-in-up animate-stagger-3'>
                         <div>
                             <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='password'>New Password</label>
                             <input
@@ -100,11 +100,11 @@ export default function ResetPassword({ token, email }) {
                                 id='password'
                                 value={data.password}
                                 onChange={e => setData('password', e.target.value)}
-                                className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3'
+                                className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                 placeholder='Enter new password'
                                 required
                             />
-                            {errors.password && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2">{errors.password}</div>}
+                            {errors.password && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2 animate-shake">{errors.password}</div>}
                         </div>
                         
                         <div>
@@ -114,17 +114,17 @@ export default function ResetPassword({ token, email }) {
                                 id='password_confirmation'
                                 value={data.password_confirmation}
                                 onChange={e => setData('password_confirmation', e.target.value)}
-                                className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3'
+                                className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                 placeholder='Confirm your new password'
                                 required
                             />
-                            {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2">{errors.password_confirmation}</div>}
+                            {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2 animate-shake">{errors.password_confirmation}</div>}
                         </div>
                         
                         <button 
                             type="submit"
                             disabled={processing}
-                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-3 sm:mt-4 disabled:opacity-50 text-sm sm:text-base'
+                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-3 sm:mt-4 disabled:opacity-50 text-sm sm:text-base hover-scale'
                         >
                             {processing ? 'Processing...' : 'Reset Password'}
                         </button>

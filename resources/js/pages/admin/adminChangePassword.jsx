@@ -8,16 +8,14 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
     if (!isOpen) return null;
 
-    const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-    const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
     const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-                <div className={`border rounded-lg p-4 mb-4 ${borderColor}`}>
-                    <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-                    <p className={`${textColor}`}>{message}</p>
+                <div>
+                    <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+                    <p className={`text-black`}>{message}</p>
                 </div>
                 <div className="flex justify-end">
                     <button
@@ -267,22 +265,22 @@ export default function ChangePassword({ auth }) {
             <div className="flex flex-col md:flex-row">
                 <AdminSidebar />
                 <div className="flex-1 p-3 md:p-6">
-                    <div className="font-regular">
+                    <div className="font-regular animate-fade-in-up">
                         {/* Breadcrumb */}
-                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base">
+                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base animate-fade-in-up">
                             Home {">"} Change Password
                         </div>
                         
                         {/* Page Header */}
-                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7">
+                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
                             <h1 className="text-xl md:text-2xl font-semibold">Change Password</h1>
                         </div>
                         
                         {/* Main Content */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow">
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow animate-scale-in-up">
                             <div className="pl-2 md:pl-4">
-                                <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-6">Update Your Password</h2>
-                                <form onSubmit={handleSubmit} className="w-full max-w-lg">
+                                <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-6 animate-fade-in-up">Update Your Password</h2>
+                                <form onSubmit={handleSubmit} className="w-full max-w-lg animate-fade-in-up">
                                     <div className="mb-4 md:mb-5">
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Current Password</label>
                                         <div className="relative">

@@ -78,13 +78,13 @@ export default function ForgotPassword({ status }) {
           ></div>
     
           <div className='container mx-auto flex flex-col items-center justify-center h-full z-10 relative'>
-            <div className='w-full max-w-[30rem] bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg'>
-                    <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
-              <h1 className='text-base sm:text-lg font-semibold mb-3 sm:mb-6 text-center'>Forgot Password</h1>
+            <div className='w-full max-w-[30rem] bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg animate-scale-in-up'>
+                    <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 animate-fade-in-up animate-stagger-1' />
+              <h1 className='text-base sm:text-lg font-semibold mb-3 sm:mb-6 text-center animate-fade-in-up animate-stagger-2'>Forgot Password</h1>
               
               {/* Display server status message */}
               {status && (
-                <div className="mb-3 sm:mb-4 font-medium text-xs sm:text-sm text-green-600 bg-green-100 p-1.5 sm:p-2 rounded">
+                <div className="mb-3 sm:mb-4 font-medium text-xs sm:text-sm text-green-600 bg-green-100 p-1.5 sm:p-2 rounded animate-fade-in-up animate-stagger-3">
                   {status}
                 </div>
               )}
@@ -95,12 +95,12 @@ export default function ForgotPassword({ status }) {
                   submitMessage.type === 'success' 
                     ? 'text-green-600 bg-green-100' 
                     : 'text-red-600 bg-red-100'
-                }`}>
+                } animate-fade-in-up animate-stagger-4`}>
                   {submitMessage.message}
                 </div>
               )}
               
-              <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular'>
+              <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular animate-fade-in-up animate-stagger-4'>
                 <div>
                   <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='email'>Enter your email address to reset your password</label>
                   <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='email'>Your email</label>
@@ -109,23 +109,23 @@ export default function ForgotPassword({ status }) {
                     id='email'
                     value={data.email}
                     onChange={e => setData('email', e.target.value)}
-                    className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3'
+                    className='w-full p-2 rounded-lg bg-white text-black mb-1 sm:mb-2 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                     placeholder='Enter your email address'
                     required
                   />
-                  {errors.email && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2">{errors.email}</div>}
+                  {errors.email && <div className="text-red-500 text-xs sm:text-sm mb-1 sm:mb-2 animate-shake">{errors.email}</div>}
                 </div>
                         
                 <button 
                   type="submit"
                   disabled={processing}
-                  className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-2 sm:mt-4 disabled:opacity-50 text-sm sm:text-base'
+                  className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-2 sm:mt-4 disabled:opacity-50 text-sm sm:text-base hover-scale'
                 >
                   {processing ? 'Processing...' : 'Submit'}
                 </button>
               </form>
                     
-              <Link href='/' className='block text-center text-xs sm:text-sm mt-3 sm:mt-4 text-textColor hover:underline'>
+              <Link href='/' className='block text-center text-xs sm:text-sm mt-3 sm:mt-4 text-textColor hover:underline hover-scale transition-all'>
                 Back to Login
               </Link>
             </div>

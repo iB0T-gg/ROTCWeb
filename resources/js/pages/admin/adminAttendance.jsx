@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch, FaEdit, FaSave, FaTimes, FaUpload, FaFileUpload, FaSpinner } from 'react-icons/fa';
+import { FaSort } from 'react-icons/fa6';
 import { usePage } from '@inertiajs/react';
 import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
@@ -10,16 +11,14 @@ import axios from 'axios';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -54,6 +53,7 @@ export default function AdminAttendance(){
     const [selectedBattalion, setSelectedBattalion] = useState('');
     const [selectedCompany, setSelectedCompany] = useState('');
     const [selectedPlatoon, setSelectedPlatoon] = useState('');
+    const [showFilterPicker, setShowFilterPicker] = useState(false);
     const cadetsPerPage = 8;
 
     // Alert state
@@ -90,17 +90,19 @@ export default function AdminAttendance(){
                     
                     // Ensure weekly_attendance is properly formatted
                     const weeklyData = {};
+                    const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                    
                     if (cadet.weekly_attendance && typeof cadet.weekly_attendance === 'object') {
                         Object.keys(cadet.weekly_attendance).forEach(week => {
                             const weekNum = parseInt(week);
-                            if (weekNum >= 1 && weekNum <= 15) {
+                            if (weekNum >= 1 && weekNum <= maxWeeks) {
                                 weeklyData[weekNum] = Boolean(cadet.weekly_attendance[week]);
                             }
                         });
                     }
                     
                     // Initialize missing weeks to false
-                    for (let week = 1; week <= 15; week++) {
+                    for (let week = 1; week <= maxWeeks; week++) {
                         if (!(week in weeklyData)) {
                             weeklyData[week] = false;
                         }
@@ -530,7 +532,8 @@ export default function AdminAttendance(){
     const calculateAttendancePercentage = (userId) => {
         const weeklyData = attendanceData[userId] || {};
         const presentWeeks = Object.values(weeklyData).filter(Boolean).length;
-        return ((presentWeeks / 15) * 30).toFixed(2);
+        const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+        return ((presentWeeks / maxWeeks) * 30).toFixed(2);
     };
 
     // Calculate weeks present
@@ -546,10 +549,10 @@ export default function AdminAttendance(){
             <Header auth={auth} />
             <div className="flex flex-col md:flex-row">
                 <AdminSidebar />
-                <div className="flex-1 p-3 md:p-6 md:ml-0 max-w-full overflow-hidden">
+                <div className="flex-1 p-3 md:p-6 md:ml-0 max-w-full overflow-hidden animate-fade-in-up">
                     <div className="font-regular max-w-full">
                         {/* Breadcrumb */}
-                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up">
                             <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
                                 Dashboard
                             </Link>
@@ -558,142 +561,151 @@ export default function AdminAttendance(){
                         </div>
                         
                         {/* Page Header */}
-                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7">
+                        <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
                             <h1 className="text-xl md:text-2xl font-semibold">Attendance Managements</h1>
                         </div>
 
                         {/* Filters and Search */}
-                        <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
-                            <div className="flex flex-col gap-3 md:gap-4">
-                                {/* Top Row - Search, Semester, and Actions */}
-                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-between">
-                                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                                        {/* Semester Tabs */}
-                                        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full sm:w-auto">
-                                            {semesterOptions.map((semester) => (
-                                                <button
-                                                    key={semester}
-                                                    onClick={() => setSelectedSemester(semester)}
-                                                    disabled={editMode}
-                                                    className={`py-1.5 md:py-2 px-3 md:px-4 rounded-lg transition-colors duration-150 text-xs md:text-sm ${
-                                                        selectedSemester === semester
-                                                            ? 'bg-primary text-white'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    } ${editMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                >
-                                                    {semester}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-stretch sm:items-center">
-                                        
-                                        {/* Search */}
-                                        <div className="relative w-full sm:w-48 md:w-64">
-                                            <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm" />
-                                            <input
-                                                type="text"
-                                                placeholder="Search cadets..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="w-full py-1.5 md:py-2 px-2 md:px-4 pl-7 md:pl-10 border rounded-lg text-xs md:text-sm"
-                                            />
-                                        </div>
-                                        
-                                        {/* Import Button (stays beside search) */}
+                        <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6 animate-scale-in-up">
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                {/* Semester Selection Tabs */}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                                    {semesterOptions.map((semester) => (
                                         <button
-                                            onClick={() => setShowImportModal(true)}
-                                            className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
+                                            key={semester}
+                                            onClick={() => setSelectedSemester(semester)}
+                                            disabled={editMode}
+                                            className={`py-1.5 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-150 text-sm md:text-base ${
+                                                selectedSemester === semester
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            } ${editMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                         >
-                                            <FaUpload />
-                                            Import Deli Data
+                                            {semester}
                                         </button>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Bottom Row - Organizational Filters */}
-                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                                    <div className="text-xs md:text-sm font-medium text-gray-700 flex items-center">
-                                        Filters:
+                                <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                                    {/* Import Deli Data Button - moved to left */}
+                                    <button
+                                        onClick={() => setShowImportModal(true)}
+                                        className="bg-primary hover:bg-primary/85 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
+                                    >
+                                        <FaUpload />
+                                        Import Deli Data
+                                    </button>
+                                    
+                                    {/* Search */}
+                                    <div className="relative flex-grow sm:flex-grow-0">
+                                        <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="search"
+                                            placeholder="Search"
+                                            className="w-full sm:w-48 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                        />
                                     </div>
                                     
-                                    {/* Battalion Filter */}
-                                    <div className="w-full sm:w-auto">
-                                        <select
-                                            value={selectedBattalion}
-                                            onChange={(e) => {
-                                                setSelectedBattalion(e.target.value);
-                                                // Reset company and platoon when battalion changes
-                                                setSelectedCompany('');
-                                                setSelectedPlatoon('');
-                                            }}
-                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
+                                    {/* Sort/Filter Dropdown - moved to right */}
+                                    <div className="relative w-full sm:w-auto">
+                                        <div
+                                            className="bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 cursor-pointer w-full text-sm md:text-base"
+                                            onClick={() => setShowFilterPicker(!showFilterPicker)}
                                         >
-                                            <option value="">All Battalions</option>
-                                            {battalions.map((battalion) => (
-                                                <option key={battalion} value={battalion}>
-                                                    {battalion}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                            <span className="text-gray-600">
+                                                {selectedPlatoon || selectedCompany || selectedBattalion
+                                                    ? `Filters: ${[
+                                                        selectedPlatoon || '',
+                                                        selectedCompany || '',
+                                                        selectedBattalion || ''
+                                                    ].filter(Boolean).join(', ')}`
+                                                    : 'Sort by : All'}
+                                            </span>
+                                            <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                        </div>
 
-                                    {/* Company Filter */}
-                                    <div className="w-full sm:w-auto">
-                                        <select
-                                            value={selectedCompany}
-                                            onChange={(e) => {
-                                                setSelectedCompany(e.target.value);
-                                                // Reset platoon when company changes
-                                                setSelectedPlatoon('');
-                                            }}
-                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
-                                        >
-                                            <option value="">All Companies</option>
-                                            {companies.map((company) => (
-                                                <option key={company} value={company}>
-                                                    {company}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {showFilterPicker && (
+                                            <>
+                                                <div 
+                                                    className="fixed inset-0 bg-black bg-opacity-30 z-40"
+                                                    onClick={() => setShowFilterPicker(false)}
+                                                ></div>
+                                                <div
+                                                    className="fixed sm:absolute inset-x-0 sm:inset-auto z-50 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-[90%] sm:w-64 left-1/2 sm:left-auto right-0 sm:right-0 -translate-x-1/2 sm:translate-x-0 mx-auto sm:mx-0"
+                                                    style={{ maxWidth: '400px' }}
+                                                >
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">Platoon</label>
+                                                            <select
+                                                                className="w-full bg-gray-100 p-2 rounded border"
+                                                                value={selectedPlatoon}
+                                                                onChange={e => setSelectedPlatoon(e.target.value)}
+                                                            >
+                                                                <option value="">Select Platoon</option>
+                                                                <option value="1st Platoon">1st Platoon</option>
+                                                                <option value="2nd Platoon">2nd Platoon</option>
+                                                                <option value="3rd Platoon">3rd Platoon</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                                                            <select
+                                                                className="w-full bg-gray-100 p-2 rounded border"
+                                                                value={selectedCompany}
+                                                                onChange={e => setSelectedCompany(e.target.value)}
+                                                            >
+                                                                <option value="">Select Company</option>
+                                                                <option value="Alpha">Alpha</option>
+                                                                <option value="Beta">Beta</option>
+                                                                <option value="Charlie">Charlie</option>
+                                                                <option value="Delta">Delta</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">Battalion</label>
+                                                            <select
+                                                                className="w-full bg-gray-100 p-2 rounded border"
+                                                                value={selectedBattalion}
+                                                                onChange={e => setSelectedBattalion(e.target.value)}
+                                                            >
+                                                                <option value="">Select Battalion</option>
+                                                                <option value="1st Battalion">1st Battalion</option>
+                                                                <option value="2nd Battalion">2nd Battalion</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex gap-2 mt-4">
+                                                            <button
+                                                                className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
+                                                                onClick={() => {
+                                                                    setSelectedPlatoon('');
+                                                                    setSelectedCompany('');
+                                                                    setSelectedBattalion('');
+                                                                    setShowFilterPicker(false);
+                                                                }}
+                                                            >
+                                                                Clear
+                                                            </button>
+                                                            <button
+                                                                className="flex-1 px-4 py-2 bg-primary rounded text-sm md:text-base text-white hover:bg-opacity-90"
+                                                                onClick={() => setShowFilterPicker(false)}
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-
-                                    {/* Platoon Filter */}
-                                    <div className="w-full sm:w-auto">
-                                        <select
-                                            value={selectedPlatoon}
-                                            onChange={(e) => setSelectedPlatoon(e.target.value)}
-                                            className="w-full py-1.5 md:py-2 px-2 md:px-4 border rounded-lg text-xs md:text-sm"
-                                        >
-                                            <option value="">All Platoons</option>
-                                            {platoons.map((platoon) => (
-                                                <option key={platoon} value={platoon}>
-                                                    {platoon}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Clear Filters Button */}
-                                    {(selectedBattalion || selectedCompany || selectedPlatoon) && (
-                                        <button
-                                            onClick={() => {
-                                                setSelectedBattalion('');
-                                                setSelectedCompany('');
-                                                setSelectedPlatoon('');
-                                            }}
-                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm transition-colors"
-                                        >
-                                            Clear Filters
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Attendance Table */}
-                        <div className="bg-white rounded-lg shadow max-w-full overflow-hidden">
+                        <div className="bg-white rounded-lg shadow max-w-full overflow-hidden animate-scale-in-up">
                             <div className="p-3 md:p-6">
                                 {loading ? (
                                     <div className="flex justify-center items-center h-32 md:h-40">
@@ -703,8 +715,8 @@ export default function AdminAttendance(){
                                     <div className="text-center text-red-500 py-3 md:py-4 text-sm md:text-base">{error}</div>
                                 ) : (
                                     <>
-                                        <h2 className="text-base md:text-lg font-semibold mb-2 md:mb-4">
-                                            Cadet Attendance - 15 Weeks ({selectedSemester})
+                                        <h2 className="text-base md:text-lg font-semibold mb-2 md:mb-4 animate-fade-in-up">
+                                            Cadet Attendance - {selectedSemester === '2025-2026 1st semester' ? '10' : '15'} Weeks ({selectedSemester})
                                         </h2>
                                         {filteredCadets.length === 0 ? (
                                             <p className="text-center py-3 md:py-4 text-gray-500 text-sm md:text-base">No cadets found.</p>
@@ -719,7 +731,7 @@ export default function AdminAttendance(){
                                                             <th scope="col" className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
                                                                 Student Number
                                                             </th>
-                                                            {Array.from({ length: 15 }, (_, i) => (
+                                                            {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => (
                                                                 <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
                                                                     <span className="hidden sm:inline">W{i + 1}</span>
                                                                     <span className="sm:hidden">{i + 1}</span>
@@ -748,7 +760,7 @@ export default function AdminAttendance(){
                                                                 <td className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
                                                                     <div className="text-xs sm:text-sm text-gray-500 truncate">{cadet.student_number}</div>
                                                                 </td>
-                                                                {Array.from({ length: 15 }, (_, i) => {
+                                                                {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
                                                                     const weekNumber = i + 1;
                                                                     const isPresent = attendanceData[cadet.user_id]?.[weekNumber] || false;
                                                                     
@@ -772,7 +784,7 @@ export default function AdminAttendance(){
                                                                 })}
                                                                 <td className="px-3 sm:px-4 md:px-6 py-3 text-center border-r border-gray-200" style={{ minWidth: '80px', width: '80px' }}>
                                                                     <span className="text-xs sm:text-sm font-medium text-gray-900">
-                                                                        {calculateWeeksPresent(cadet.user_id)}/15
+                                                                        {calculateWeeksPresent(cadet.user_id)}/{selectedSemester === '2025-2026 1st semester' ? '10' : '15'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-3 sm:px-4 md:px-6 py-3 text-center" style={{ minWidth: '80px', width: '80px' }}>
@@ -845,7 +857,7 @@ export default function AdminAttendance(){
                                                     onClick={toggleEditMode}
                                                     disabled={saving}
                                                     className={`${editMode 
-                                                        ? 'bg-green-600 hover:bg-green-700' 
+                                                        ? 'bg-primary hover:bg-primary/85' 
                                                         : 'bg-primary hover:bg-primary/85'
                                                     } text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs sm:text-sm`}
                                                 >

@@ -8,8 +8,6 @@ export default function Register() {
     const [fileName, setFileName] = useState('Choose file');
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
-    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-    const [isPasswordConfirmationFocused, setIsPasswordConfirmationFocused] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -75,14 +73,14 @@ export default function Register() {
                     <div 
                         ref={containerRef}
                         onScroll={handleScroll}
-                        className={`w-full bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg max-h-[85vh] overflow-y-auto overflow-x-hidden ${isScrolling ? 'scrollbar-visible' : 'scrollbar-hidden'}`}
+                        className={`w-full bg-black bg-opacity-80 text-textColor p-4 sm:p-8 rounded-xl sm:rounded-2xl shadow-lg max-h-[85vh] overflow-y-auto overflow-x-hidden ${isScrolling ? 'scrollbar-visible' : 'scrollbar-hidden'} animate-scale-in-up`}
                         style={{
                             scrollbarWidth: 'none',
                             msOverflowStyle: 'none',  
                         }}
                     >
-                        <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4' />
-                        <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center'>Registration</h1>
+                        <img src='/images/ROTCLogo.png' alt='ROTC Logo' className='w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4 animate-fade-in-up animate-stagger-1' />
+                        <h1 className='text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center animate-fade-in-up animate-stagger-2'>Registration</h1>
                         
                         <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4 font-regular'>
                             <div>
@@ -93,7 +91,7 @@ export default function Register() {
                                         id='email'
                                         value={data.email}
                                         onChange={e => setData('email', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         placeholder='Enter your email address'
                                         required
                                     />
@@ -107,7 +105,7 @@ export default function Register() {
                                         id='student_number'
                                         value={data.student_number}
                                         onChange={e => setData('student_number', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         placeholder='Enter your student number'
                                         required
                                     />
@@ -122,7 +120,7 @@ export default function Register() {
                                             id='first_name'
                                             value={data.first_name}
                                             onChange={e => setData('first_name', e.target.value)}
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             placeholder='Enter your first name'
                                             required
                                         />
@@ -135,7 +133,7 @@ export default function Register() {
                                             id='middle_name'
                                             value={data.middle_name}
                                             onChange={e => setData('middle_name', e.target.value)}
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             placeholder='Enter your middle name'
                                             required
                                         />
@@ -148,7 +146,7 @@ export default function Register() {
                                             id='last_name'
                                             value={data.last_name}
                                             onChange={e => setData('last_name', e.target.value)}
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             placeholder='Enter your last name'
                                             required
                                         />
@@ -162,7 +160,7 @@ export default function Register() {
                                         id='campus'
                                         value={data.campus}
                                         onChange={e => setData('campus', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
+                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         required
                                     >
                                         <option value="" className="text-gray-400">Select Campus</option>
@@ -183,7 +181,7 @@ export default function Register() {
                                             id='course'
                                             value={data.course}
                                             onChange={e => setData('course', e.target.value)}
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             required
                                         >
                                             <option value="" className="text-gray-400">Select Course</option>
@@ -208,7 +206,7 @@ export default function Register() {
                                             value={data.year}
                                             onChange={e => setData('year', e.target.value)}
                                             placeholder='e.g., 2nd Year - G'
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             required
                                         />
                                         {errors.year && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.year}</div>}
@@ -219,7 +217,7 @@ export default function Register() {
                                             id='section'
                                             value={data.section}
                                             onChange={e => setData('section', e.target.value)}
-                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         >
                                             <option value="" className="text-gray-400">Select Group</option>
                                             <option value="G1" className="text-gray-700">G1</option>
@@ -237,21 +235,17 @@ export default function Register() {
                                             id='password'
                                             value={data.password}
                                             onChange={e => setData('password', e.target.value)}
-                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             placeholder='Enter your password (min. 8 characters)'
                                             required
-                                            onFocus={() => setIsPasswordFocused(true)}
-                                            onBlur={() => setIsPasswordFocused(false)}
                                         />
-                                        {(data.password && data.password.length > 0) && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {showPassword ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
-                                            </button>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                     {errors.password && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password}</div>}
                                 </div>
@@ -264,33 +258,29 @@ export default function Register() {
                                             id='password_confirmation'
                                             value={data.password_confirmation}
                                             onChange={e => setData('password_confirmation', e.target.value)}
-                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 pr-10 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             placeholder='Confirm your password'
                                             required
-                                            onFocus={() => setIsPasswordConfirmationFocused(true)}
-                                            onBlur={() => setIsPasswordConfirmationFocused(false)}
                                         />
-                                        {(data.password_confirmation && data.password_confirmation.length > 0) && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {showPasswordConfirmation ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
-                                            </button>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showPasswordConfirmation ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                     {errors.password_confirmation && <div className="text-red-500 text-xs sm:text-sm mt-1">{errors.password_confirmation}</div>}
                                 </div>
 
                                 <div className="mb-3 sm:mb-4">
                                     <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='phone_number'>Phone Number</label>
-                                    <input
+                                        <input
                                         type='text'
                                         id='phone_number'
                                         value={data.phone_number}
                                         onChange={e => setData('phone_number', e.target.value)}
-                                        className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3'
+                                            className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         placeholder='Enter your phone number'
                                         required
                                     />
@@ -341,7 +331,7 @@ export default function Register() {
                                         />
                                         <label 
                                             htmlFor='cor_file' 
-                                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-1 sm:mt-2 cursor-pointer flex items-center justify-center text-xs sm:text-sm'
+                                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-1 sm:mt-2 cursor-pointer flex items-center justify-center text-xs sm:text-sm hover-scale'
                                         >
                                             <span className="truncate">{fileName}</span>
                                         </label>
@@ -353,7 +343,7 @@ export default function Register() {
                             <button 
                                 type="submit"
                                 disabled={processing}
-                                className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition duration-300 mt-1 sm:mt-2 disabled:opacity-50 text-xs sm:text-base'
+                                className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-1 sm:mt-2 disabled:opacity-50 text-xs sm:text-base hover-scale'
                             >
                                 {processing ? 'Registering...' : 'Register'}
                             </button>

@@ -35,7 +35,7 @@ class SecondSemesterExamScore extends Model
     protected $casts = [
         'midterm_exam' => 'integer',
         'final_exam' => 'integer',
-        'average' => 'integer',
+        'average' => 'decimal:2',
         'subject_prof' => 'integer',
     ];
 

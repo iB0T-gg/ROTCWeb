@@ -16,6 +16,7 @@ class GradeController extends Controller
     public function getEquivalentGrades(Request $request)
     {
         $query = User::where('role', 'user')
+                    ->where('archived', false)
                     ->select('id', 'equivalent_grade', 'final_grade', 'semester')
                     ->whereNotNull('equivalent_grade');
         
@@ -160,6 +161,7 @@ class GradeController extends Controller
         try {
             // Get users with their grade information
             $users = User::where('role', 'user')
+                        ->where('archived', false)
                         ->leftJoin('user_grades', function($join) {
                             $join->on('users.id', '=', 'user_grades.user_id')
                                  ->where('user_grades.semester', '=', \DB::raw('users.semester'));
@@ -219,7 +221,8 @@ class GradeController extends Controller
                 ]);
             }
             
-            $query = User::where('role', 'user');
+            $query = User::where('role', 'user')
+                        ->where('archived', false);
             
             // Select columns that exist
             $selectColumns = ['id', 'first_name', 'middle_name', 'last_name', 'year', 'course', 'section'];
@@ -265,6 +268,7 @@ class GradeController extends Controller
         try {
             // Get semesters from users table
             $userSemesters = User::where('role', 'user')
+                            ->where('archived', false)
                             ->whereNotNull('semester')
                             ->distinct()
                             ->pluck('semester')
@@ -308,6 +312,7 @@ class GradeController extends Controller
             if ($isSecondSemester) {
                 // Handle second semester data from separate tables
                 $users = User::where('role', 'user')
+                            ->where('archived', false)
                             ->leftJoin('user_grades', function($join) use ($semester) {
                                 $join->on('users.id', '=', 'user_grades.user_id')
                                      ->where('user_grades.semester', '=', $semester);
@@ -351,6 +356,7 @@ class GradeController extends Controller
             } else {
                 // Handle first semester or all semesters (existing logic)
                 $query = User::where('role', 'user')
+                            ->where('archived', false)
                             ->leftJoin('user_grades', function($join) use ($semester) {
                                 $join->on('users.id', '=', 'user_grades.user_id');
                                 if ($semester) {

@@ -10,16 +10,14 @@ import { FaSort } from 'react-icons/fa6';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -331,21 +329,16 @@ const FacultyExams = ({ auth }) => {
           subject_prof: subjectProf,
         };
       });
-      // CSRF: try meta tag first, then fall back to XSRF-TOKEN cookie
-      const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-      const cookieToken = (() => {
-        try {
-          const cookies = document.cookie.split(';');
-          const xsrfCookie = cookies.find(cookie => cookie.trim().startsWith('XSRF-TOKEN='));
-          return xsrfCookie ? decodeURIComponent(xsrfCookie.split('=')[1]) : null;
-        } catch { 
-          return null; 
-        }
-      })();
-      const csrfToken = metaToken || cookieToken;
-      
+      // Get CSRF token from meta tag
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
       if (!csrfToken) {
-        console.error('Security token not found. Please refresh the page and try again.');
+        console.error('CSRF token not found. Please refresh the page and try again.');
+        setAlertDialog({
+          isOpen: true,
+          type: 'error',
+          title: 'Session Error',
+          message: 'CSRF token not found. Please refresh the page and try again.'
+        });
         return;
       }
 
@@ -544,8 +537,9 @@ const FacultyExams = ({ auth }) => {
       <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
         <div className='flex-1 p-3 md:p-6'>
+          <div className='font-regular animate-fade-in-up'>
           {/* Breadcrumb - separated, light background */}
-          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
+          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up'>
                 <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
@@ -553,14 +547,14 @@ const FacultyExams = ({ auth }) => {
                 <span className="cursor-default font-bold">Exams</span>
           </div>
           {/* Page Header */}
-          <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+          <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
             <h1 className='text-lg md:text-2xl font-semibold'>Exams</h1>
           </div>
           {/* Main Content */}
           <div className='w-full mx-auto'>
             
             {/* Tabs Bar with Search and Filter on the right */}
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6 animate-scale-in-up'>
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                   {semesterOptions.map((semester) => (
@@ -770,13 +764,13 @@ const FacultyExams = ({ auth }) => {
             </div>
 
             {/* Main Content */}
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto animate-scale-in-up'>
               {/* Title and Controls */}
-              <div className='flex justify-between items-center mb-4 md:mb-6'>
+              <div className='flex justify-between items-center mb-4 md:mb-6 animate-fade-in-up'>
                 <h1 className='text-base md:text-lg font-semibold text-black'>Exam Record</h1>
               </div>
               
-              <div className="overflow-x-auto -mx-3 md:mx-0">
+              <div className="overflow-x-auto -mx-3 md:mx-0 animate-fade-in-up">
                 <div className="min-w-full">
                   <table className='w-full border-collapse min-w-[600px]'>
                     <thead className='text-gray-600'>
@@ -946,6 +940,7 @@ const FacultyExams = ({ auth }) => {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

@@ -5,21 +5,22 @@ import Header from '../../components/header';
 import FacultySidebar from '../../components/facultySidebar';
 import { FaSearch } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
+import { FaAngleLeft } from "react-icons/fa";
+import { FaAngleRight } from "react-icons/fa";
+
 
 // Alert Dialog Component
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -72,6 +73,7 @@ const FacultyMerits = ({ auth }) => {
   const previousTableScrollRef = useRef(null);
   const previousBottomScrollRef = useRef(null);
   const [previousContentWidth, setPreviousContentWidth] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Alert state
   const [alertDialog, setAlertDialog] = useState({
@@ -81,9 +83,19 @@ const FacultyMerits = ({ auth }) => {
     message: ''
   });
   
-  // Slider state for second semester weeks
-  const [currentWeekRange, setCurrentWeekRange] = useState({ start: 0, end: 9 }); // Show weeks 1-10 initially
-  const [scrollPosition, setScrollPosition] = useState(0); // 0-5 for different week ranges
+  // Week window state (visible weeks on desktop)
+const WEEK_WINDOW = 8;
+const [currentWeekRange, setCurrentWeekRange] = useState({ start: 0, end: WEEK_WINDOW - 1 });
+const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Mobile detection to show all weeks on small screens
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640); // Tailwind sm breakpoint
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   
   // Multiple selection states
   const [selectedPlatoons, setSelectedPlatoons] = useState([]);
@@ -378,6 +390,7 @@ const FacultyMerits = ({ auth }) => {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       console.log('Starting merit save process...');
       console.log('Selected semester:', selectedSemester);
@@ -620,6 +633,8 @@ const FacultyMerits = ({ auth }) => {
           message: 'Error saving merits: ' + error.message
         });
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -655,22 +670,21 @@ const FacultyMerits = ({ auth }) => {
   );
 
   // Handle slider change for second semester weeks
-  const handleSliderChange = (newPosition) => {
-    if (selectedSemester === '2026-2027 2nd semester') {
-      const clampedPosition = Math.max(0, Math.min(newPosition, 5)); // 0-5 for 6 different positions
-      setScrollPosition(clampedPosition);
-      setCurrentWeekRange({ start: clampedPosition, end: clampedPosition + 9 }); // Show 10 weeks at a time
-    }
-  };
+const handleSliderChange = (newPosition) => {
+  const totalWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+  const maxPos = Math.max(0, totalWeeks - WEEK_WINDOW);
+  const clampedPosition = Math.max(0, Math.min(newPosition, maxPos));
+  setScrollPosition(clampedPosition);
+  setCurrentWeekRange({ start: clampedPosition, end: clampedPosition + WEEK_WINDOW - 1 });
+};
 
-  // Get current weeks to display based on semester (UI-only)
+// Weeks helpers
+  const getAllWeeks = () => (selectedSemester === '2025-2026 1st semester' ? firstSemesterWeeks.slice(0, 10) : secondSemesterWeeks);
   const getCurrentWeeks = () => {
-    if (selectedSemester === '2025-2026 1st semester') {
-      // Show only Weeks 1-10 in the UI for 2025-2026 1st semester
-      return firstSemesterWeeks.slice(0, 10);
-    }
-    // 2026-2027 2nd semester: show all 15 weeks
-    return secondSemesterWeeks;
+    const weeks = getAllWeeks();
+    // On mobile, show all weeks to match desired behavior
+    if (isMobile) return weeks;
+    return weeks.slice(currentWeekRange.start, currentWeekRange.start + WEEK_WINDOW);
   };
 
   // Calculate total merits: start with max possible, deduct demerits
@@ -683,9 +697,11 @@ const FacultyMerits = ({ auth }) => {
 
   // Calculate total merits for the currently displayed weeks only (UI display)
   const calculateDisplayedTotalMerits = (demeritValues = []) => {
-    const displayWeeks = getCurrentWeeks().length; // 10 for 2025-2026 1st sem; otherwise 15
+    const displayWeeks = getCurrentWeeks().length;
+    // On mobile, compute across all weeks; on desktop, compute for the visible window
+    const start = isMobile ? 0 : currentWeekRange.start;
     const totalDemerits = (demeritValues || [])
-      .slice(0, displayWeeks)
+      .slice(start, start + displayWeeks)
       .reduce((sum, d) => sum + (Number(d) || 0), 0);
     return Math.max(0, displayWeeks * 10 - totalDemerits);
   };
@@ -710,8 +726,9 @@ const FacultyMerits = ({ auth }) => {
       <div className="flex flex-col md:flex-row">
         <FacultySidebar />
         <div className="flex-1 p-3 md:p-6">
+          <div className="font-regular animate-fade-in-up">
             {/* Breadcrumb */}
-          <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base">
+          <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up">
                 <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
@@ -719,12 +736,12 @@ const FacultyMerits = ({ auth }) => {
                 <span className="cursor-default font-bold">Aptitude</span>  
           </div>
           {/* Page Header and Controls */}
-          <div className="flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg">
+          <div className="flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down">
             <h1 className="text-lg md:text-2xl font-semibold">Aptitude Management</h1>
             
               </div>
              {/* Tab Navigation */}
-              <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6">
+             <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6 animate-scale-in-up">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                    <button 
@@ -874,9 +891,10 @@ const FacultyMerits = ({ auth }) => {
                             handleSave();
                           }
                         }}
-                        className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 w-full text-sm md:text-base'
+                        className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 w-full text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
+                        disabled={isSaving}
                       >
-                        {isEditing ? 'Save' : 'Edit Merits'}
+                        {isEditing ? (isSaving ? 'Saving…' : 'Save') : 'Edit Merits'}
                       </button>
                     </div>
                  </div>
@@ -884,9 +902,31 @@ const FacultyMerits = ({ auth }) => {
              </div>
  
              {/* Main Content */}
-             <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto">
-               <div className="flex justify-between items-center mb-4 md:mb-6">
+             <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto animate-scale-in-up">
+               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 md:mb-6 animate-fade-in-up">
                  <h1 className="text-base md:text-lg font-semibold text-black">Military Attitude</h1>
+                 {/* Week window controls (desktop/tablet) */}
+                 <div className="hidden sm:flex items-center gap-2">
+                   <button
+                     className="px-2 py-1 rounded border bg-white hover:bg-gray-50"
+                     onClick={() => handleSliderChange(scrollPosition - 1)}
+                     disabled={scrollPosition === 0}
+                     title="Previous weeks"
+                   >
+                     <FaAngleLeft />
+                   </button>
+                   <div className="text-sm text-gray-700 whitespace-nowrap">
+                     Weeks {currentWeekRange.start + 1} - {Math.min((currentWeekRange.start + WEEK_WINDOW), getAllWeeks().length)} of {getAllWeeks().length}
+                   </div>
+                   <button
+                     className="px-2 py-1 rounded border bg-white hover:bg-gray-50"
+                     onClick={() => handleSliderChange(scrollPosition + 1)}
+                     disabled={currentWeekRange.end >= getAllWeeks().length - 1}
+                     title="Next weeks"
+                   >
+                     <FaAngleRight />
+                   </button>
+                 </div>
                </div>
                
                
@@ -894,18 +934,18 @@ const FacultyMerits = ({ auth }) => {
                {activeTab === 'current' && (
                  <>
                    {/* Desktop/Tablet Table */}
-                   <div className="overflow-x-auto">
-                     <div className="min-w-full">
-                       <table key={renderKey} className="w-full border-collapse min-w-[1200px]">
-                         <thead className="text-gray-600">
-                           <tr>
-                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
+                  <div className="overflow-x-auto hidden sm:block animate-fade-in-up">
+                    <div className="min-w-full">
+                      <table key={renderKey} className="border-collapse table-auto md:table-fixed w-max md:w-full min-w-full">
+                        <thead className="text-gray-600 bg-gray-50">
+                          <tr>
+                            <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[140px] md:min-w-[160px] sticky left-0 bg-white z-10">Cadet Names</th>
                     {/* Dynamically render week columns with M/D subheaders */}
                     {getCurrentWeeks().map((week) => (
-                      <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[80px]">
+                      <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[56px] md:min-w-[72px] whitespace-nowrap">
                         <div className="flex flex-col items-center">
                           <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
-                          <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5">
+                          <div className="flex xl:flex-row flex-col items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5">
                             <span className="bg-green-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">M</span>
                             <span className="bg-red-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                           </div>
@@ -930,13 +970,13 @@ const FacultyMerits = ({ auth }) => {
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                     
                     return (
-                      <tr key={cadet.id} className="border-b border-gray-200">
+                      <tr key={cadet.id} className="border-b border-gray-200 odd:bg-white even:bg-gray-50">
                         <td className="p-1 sm:p-2 md:p-3 text-gray-900 text-xs sm:text-sm md:text-base sticky left-0 bg-white z-10 min-w-[120px]">{formatCadetName(cadet)}</td>
                         {getCurrentWeeks().map((week, j) => {
                           const weekIndex = j; // Direct index for both semesters
                           return (
                             <td key={j} className="p-1 sm:p-2 md:p-3 text-center">
-                              <div className="flex gap-0.5 sm:gap-1 justify-center">
+                              <div className="flex xl:flex-row flex-col items-center justify-center gap-0.5 sm:gap-1">
                                 {/* Merits input (Green) */}
                                 <input
                                   type="number"
@@ -951,7 +991,7 @@ const FacultyMerits = ({ auth }) => {
                                     const meritVal = Number(meritValues[weekIndex]);
                                     return isNaN(meritVal) ? 10 : meritVal;
                                   })()}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
+                                  className={`w-3 h-3 sm:w-5 sm:h-4 md:w-7 md:h-5 lg:w-9 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium bg-gray-100 cursor-not-allowed text-gray-500`}
                                   placeholder="10"
                                   disabled={true}
                                   readOnly
@@ -969,9 +1009,9 @@ const FacultyMerits = ({ auth }) => {
                                     return isNaN(demeritVal) ? '' : demeritVal;
                                   })()}
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
-                                  className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
+                                  className={`w-3 h-3 sm:w-5 sm:h-4 md:w-7 md:h-5 lg:w-9 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
-                                  disabled={!isEditing}
+                                  disabled={!isEditing || isSaving}
                                 />
                               </div>
                             </td>
@@ -993,7 +1033,7 @@ const FacultyMerits = ({ auth }) => {
                       </div>
             </div>
                     {/* Mobile Card List */}
-                    <div className="sm:hidden space-y-3">
+                    <div className="sm:hidden space-y-3 animate-fade-in-up">
                       {paginatedCadets.map((cadet) => {
                         const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
                         const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
@@ -1154,7 +1194,7 @@ const FacultyMerits = ({ auth }) => {
                       setIsEditing(true);
                       toast.info('Edit mode enabled. You can now modify demerits.');
                     }}
-                    className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                    className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
                   >
                     Edit Merits
                   </button>
@@ -1170,9 +1210,10 @@ const FacultyMerits = ({ auth }) => {
 
                     <button 
                       onClick={handleSave}
-                      className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                      className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
+                      disabled={isSaving}
                     >
-                      Save
+                      {isSaving ? 'Saving…' : 'Save'}
                     </button>
                   </>
                 )}
@@ -1184,16 +1225,16 @@ const FacultyMerits = ({ auth }) => {
                {/* Previous Semester Content */}
                {activeTab === 'previous' && (
                  <>
-                   {/* Desktop/Tablet Table */}
-                   <div className="overflow-x-auto hidden sm:block" ref={previousTableScrollRef}>
+                  {/* Desktop/Tablet Table */}
+                 <div className="overflow-x-auto hidden sm:block animate-fade-in-up" ref={previousTableScrollRef}>
                      <div className="min-w-full">
-                       <table className="w-full border-collapse min-w-[1200px]">
-                         <thead className="text-gray-600">
-                           <tr>
-                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[120px] sticky left-0 bg-white z-10">Cadet Names</th>
+                      <table className="border-collapse table-auto md:table-fixed w-max md:w-full min-w-full">
+                        <thead className="text-gray-600 bg-gray-50">
+                          <tr>
+                            <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[140px] md:min-w-[160px] sticky left-0 bg-white z-10">Cadet Names</th>
                      {/* Dynamically render week columns with M/D subheaders */}
-                     {getCurrentWeeks().map((week) => (
-                       <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[80px]">
+                    {getCurrentWeeks().map((week) => (
+                      <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[56px] md:min-w-[72px] whitespace-nowrap">
                          <div className="flex flex-col items-center">
                            <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
                           <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5">
@@ -1220,7 +1261,7 @@ const FacultyMerits = ({ auth }) => {
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                      
                      return (
-                       <tr key={cadet.id} className="hover:bg-gray-50 border-b border-gray-200">
+                       <tr key={cadet.id} className="border-b border-gray-200 odd:bg-white even:bg-gray-50">
                          <td className="p-1 sm:p-2 md:p-3 border-b text-xs sm:text-sm md:text-base sticky left-0 bg-white z-10 min-w-[120px]">
                            <div className="text-gray-900">
                              {formatCadetName(cadet)}
@@ -1263,7 +1304,7 @@ const FacultyMerits = ({ auth }) => {
                                   onChange={e => handleDemeritChange(cadetIndex, weekIndex, e.target.value)}
                                   className={`w-3 sm:w-5 md:w-7 lg:w-9 h-3 sm:h-4 md:h-5 lg:h-7 text-center border border-gray-300 rounded text-[7px] sm:text-[9px] md:text-[11px] lg:text-sm font-medium ${!isEditing ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white text-gray-700 hover:border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500'}`}
                                   placeholder="0"
-                                  disabled={!isEditing}
+                                  disabled={!isEditing || isSaving}
                                 />
                               </div>
                             </td>
@@ -1298,7 +1339,7 @@ const FacultyMerits = ({ auth }) => {
             )}
 
             {/* Mobile Card List */}
-             <div className="sm:hidden space-y-3">
+             <div className="sm:hidden space-y-3 animate-fade-in-up">
                {paginatedCadets.map((cadet) => {
                  const cadetIndex = cadets.findIndex(c => c.id === cadet.id);
                  const weeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
@@ -1450,25 +1491,26 @@ const FacultyMerits = ({ auth }) => {
                        setIsEditing(true);
                        toast.info('Edit mode enabled. You can now modify merits.');
                      }}
-                     className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                     className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
                    >
                      Edit Merits
                    </button>
                  ) : (
                    <>
                      
-                     <button 
+                    <button 
                        onClick={handleCancel}
                        className="bg-gray-500 text-white px-3 md:px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150 text-sm md:text-base"
                      >
                        Cancel
                      </button>
  
-                     <button 
+                    <button 
                        onClick={handleSave}
-                       className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base'
+                       className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
+                       disabled={isSaving}
                      >
-                       Save
+                       {isSaving ? 'Saving…' : 'Save'}
                      </button>
                    </>
                  )}
@@ -1477,6 +1519,7 @@ const FacultyMerits = ({ auth }) => {
               </>
               )}
             </div>
+          </div>
         </div>
       </div>
 

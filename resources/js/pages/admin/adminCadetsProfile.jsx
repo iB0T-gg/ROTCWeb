@@ -1,10 +1,9 @@
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { FaSearch } from 'react-icons/fa'
-import { FaSort } from 'react-icons/fa6'
-import { FaFileExcel } from 'react-icons/fa'
+import { FaSearch, FaEdit, FaTrash, FaSort } from 'react-icons/fa';
+import { FaFileExcel } from 'react-icons/fa';
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, Head } from '@inertiajs/react';
 
@@ -16,6 +15,8 @@ export default function AdminCadetsProfile(){
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredCadets, setFilteredCadets] = useState([]);
+    const [selectedCampus, setSelectedCampus] = useState('');
+    const [showFilterPicker, setShowFilterPicker] = useState(false);
     // Add pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const cadetsPerPage = 8; // Same as facultyFinalGrades
@@ -107,19 +108,44 @@ export default function AdminCadetsProfile(){
         fetchCadets();
     }, []);
 
-    // Filter cadets based on search term and sort alphabetically
+    // Get unique campuses from cadets data
+    const getUniqueCampuses = () => {
+        const campuses = [...new Set(cadets.map(cadet => cadet.campus).filter(Boolean))];
+        return campuses.sort();
+    };
+
+    const uniqueCampuses = getUniqueCampuses();
+
+    // Filter cadets based on search term, campus, and sort alphabetically
     useEffect(() => {
-        const filtered = cadets.filter(cadet => 
-            cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            `${cadet.first_name} ${cadet.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}`.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const filtered = cadets.filter(cadet => {
+            const matchesSearch = cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                `${cadet.first_name} ${cadet.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}`.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesCampus = !selectedCampus || cadet.campus === selectedCampus;
+            
+            return matchesSearch && matchesCampus;
+        });
         
-        // Sort alphabetically by last name, first name
-        const sorted = [...filtered].sort((a, b) => formatCadetName(a).localeCompare(formatCadetName(b)));
+        // Sort by gender (males first) and then alphabetically by last name, first name
+        // This sorting is applied to ALL filtered results, including campus-filtered results
+        const sorted = [...filtered].sort((a, b) => {
+            // First sort by gender - males first
+            const genderA = a.gender?.toLowerCase() || '';
+            const genderB = b.gender?.toLowerCase() || '';
+            
+            if (genderA === 'male' && genderB !== 'male') return -1;
+            if (genderA !== 'male' && genderB === 'male') return 1;
+            
+            // If same gender, sort alphabetically by name
+            return formatCadetName(a).localeCompare(formatCadetName(b));
+        });
         
         setFilteredCadets(sorted);
-    }, [searchTerm, cadets]);
+        // Reset to first page when filtering changes
+        setCurrentPage(1);
+    }, [searchTerm, selectedCampus, cadets]);
 
     // Pagination calculation
     const totalPages = Math.ceil(filteredCadets.length / cadetsPerPage);
@@ -130,9 +156,10 @@ export default function AdminCadetsProfile(){
 
     // Function to export cadet profile data to Excel
     const exportToExcel = () => {
-        // Create CSV content
-        let csvContent = "Student Number,First Name,Middle Name,Last Name,CY&S,Birthday,Blood Type,Address,Region,Height,Phone Number\n";
+        // Create CSV content with updated headers including gender and campus
+        let csvContent = "Student Number,First Name,Middle Name,Last Name,CY&S,Gender,Campus,Birthday,Blood Type,Address,Region,Height,Phone Number\n";
         
+        // Use filteredCadets which already includes the proper sorting (males first, alphabetical)
         filteredCadets.forEach(cadet => {
             // Format each row and handle potential commas in data
             // Format birthday as dd-mm-yyyy
@@ -144,6 +171,8 @@ export default function AdminCadetsProfile(){
                 `"${cadet.middle_name || 'N/A'}"`,
                 `"${cadet.last_name || 'N/A'}"`,
                 `${cadet.course} ${cadet.year}${cadet.section ? '-' + cadet.section : ''}` || 'N/A',
+                cadet.gender || 'N/A',
+                cadet.campus || 'N/A',
                 `"${formattedBirthday}"`,
                 cadet.blood_type || 'N/A',
                 `"${cadet.address || 'N/A'}"`,
@@ -162,9 +191,12 @@ export default function AdminCadetsProfile(){
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
+        // Create filename with campus info if filtered
+        const campusSuffix = selectedCampus ? `_${selectedCampus.replace(/\s+/g, '_')}` : '';
+        
         // Set link properties
         link.setAttribute('href', url);
-        link.setAttribute('download', `ROTC_Cadets_Profiles_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute('download', `ROTC_Cadets_Profiles${campusSuffix}_${new Date().toISOString().slice(0,10)}.csv`);
         link.style.visibility = 'hidden';
         
         // Append link to document, trigger click, and remove
@@ -183,7 +215,7 @@ export default function AdminCadetsProfile(){
         <AdminSidebar  />
         
         <div className='flex-1 p-2 sm:p-4 md:p-6'>
-          <div className='font-regular'>
+          <div className='font-regular animate-fade-in-up'>
             <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-xs sm:text-sm md:text-base">
                 <Link href="/adminHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
@@ -191,35 +223,98 @@ export default function AdminCadetsProfile(){
                 <span className="mx-1 md:mx-2 font-semibold">{">"}</span>
                 <span className="cursor-default font-bold">Cadets Profile Record</span>  
           </div>
-            <div className='flex items-center justify-between mt-2 sm:mt-3 md:mt-4 mb-3 sm:mb-4 md:mb-6 pl-3 md:pl-5 py-3 sm:py-4 md:py-7 bg-primary text-white p-2 sm:p-3 md:p-4 rounded-lg'>
+            <div className='flex items-center justify-between mt-2 sm:mt-3 md:mt-4 mb-3 sm:mb-4 md:mb-6 pl-3 md:pl-5 py-3 sm:py-4 md:py-7 bg-primary text-white p-2 sm:p-3 md:p-4 rounded-lg animate-fade-in-down'>
                 <h1 className='text-lg sm:text-xl md:text-2xl font-semibold'>Cadet Profiles</h1>
             </div>
 
-            <div className='bg-white p-2 sm:p-4 md:p-6 rounded-lg shadow w-full mx-auto h-full'>
-              <div className='flex flex-col gap-3 sm:gap-4 mb-4 md:mb-6'>
-                {/* Title Section */}
-                <div>
-                  <h1 className='text-sm sm:text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
-                  <p className='text-xs md:text-sm text-gray-500 mt-1'>
-                    Showing {filteredCadets.length} of {cadets.length} cadets
-                  </p>
-                </div>
+            <div className='bg-white p-2 sm:p-4 md:p-6 rounded-lg shadow w-full mx-auto h-full animate-scale-in-up'>
+              {/* Tab Navigation */}
+              <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6 animate-scale-in-up">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  {/* Title Section */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                    <div>
+                      <h1 className='text-sm sm:text-base md:text-lg font-semibold text-black'>List of Cadets</h1>
+                      <p className='text-xs md:text-sm text-gray-500 mt-1'>
+                        Showing {filteredCadets.length} of {cadets.length} cadets
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Search Section */}
-                <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3'>
-                  <div className="w-full sm:w-auto">
-                    <label className="block text-xs font-medium text-gray-700 mb-1 sm:hidden">
-                      Search Cadets
-                    </label>
-                    <div className="relative">
-                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                    {/* Search */}
+                    <div className="relative flex-grow sm:flex-grow-0">
+                      <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="search"
-                        placeholder="Search Cadets"
+                        placeholder="Search"
+                        className="w-full sm:w-48 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-48 md:w-64 p-2 pl-8 sm:pl-10 border border-gray-300 rounded-lg text-xs sm:text-sm md:text-base"
+                        onChange={e => setSearchTerm(e.target.value)}
                       />
+                    </div>
+                    
+                    {/* Campus Filter Dropdown */}
+                    <div className="relative w-full sm:w-auto">
+                      <div
+                        className="bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 cursor-pointer w-full text-sm md:text-base"
+                        onClick={() => setShowFilterPicker(!showFilterPicker)}
+                      >
+                        <span className="text-gray-600">
+                          {selectedCampus
+                            ? `Campus: ${selectedCampus}`
+                            : 'Sort by : All Campus'}
+                        </span>
+                        <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+
+                      {showFilterPicker && (
+                        <>
+                          <div 
+                            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+                            onClick={() => setShowFilterPicker(false)}
+                          ></div>
+                          <div
+                            className="fixed sm:absolute inset-x-0 sm:inset-auto z-50 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-[90%] sm:w-64 left-1/2 sm:left-auto right-0 sm:right-0 -translate-x-1/2 sm:translate-x-0 mx-auto sm:mx-0"
+                            style={{ maxWidth: '400px' }}
+                          >
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Campus</label>
+                                <select
+                                  className="w-full bg-gray-100 p-2 rounded border"
+                                  value={selectedCampus}
+                                  onChange={e => setSelectedCampus(e.target.value)}
+                                >
+                                  <option value="">All Campuses</option>
+                                  {uniqueCampuses.map((campus) => (
+                                    <option key={campus} value={campus}>
+                                      {campus}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex gap-2 mt-4">
+                                <button
+                                  className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
+                                  onClick={() => {
+                                    setSelectedCampus('');
+                                    setShowFilterPicker(false);
+                                  }}
+                                >
+                                  Clear
+                                </button>
+                                <button
+                                  className="flex-1 px-4 py-2 bg-primary rounded text-sm md:text-base text-white hover:bg-opacity-90"
+                                  onClick={() => setShowFilterPicker(false)}
+                                >
+                                  Apply
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

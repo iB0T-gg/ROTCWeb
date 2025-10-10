@@ -41,7 +41,8 @@ class ExamController extends Controller
         // NOTE: Do not filter users by semester here. A user's semester field may be empty
         // or not aligned with the requested view, which would incorrectly return 0 cadets.
         // We fetch all approved cadets and then look up their exam scores for the requested semester.
-        $query = User::where('role', 'user');
+        $query = User::where('role', 'user')
+            ->where('archived', false);
         
         $users = $query->get();
         $examData = [];
@@ -145,63 +146,107 @@ class ExamController extends Controller
             if ($maxFinal <= 0) { $maxFinal = 100; }
             if ($maxMidterm <= 0) { $maxMidterm = 100; }
             
+            \Log::info('Exam scores save request', [
+                'semester' => $semester,
+                'max_final' => $maxFinal,
+                'max_midterm' => $maxMidterm,
+                'scores_count' => count($request->input('scores', [])),
+            ]);
+            
             // Validation rules use dynamic max score for both midterm and final
             $finalExamMax = $maxFinal;
             $midtermExamMax = $maxMidterm;
             
-            $request->validate([
+            // Validation rules depend on semester
+            $validationRules = [
                 'scores' => 'required|array',
                 'scores.*.id' => 'required|exists:users,id',
-                'scores.*.final_exam' => "nullable|integer|min:0|max:{$finalExamMax}",
-                'scores.*.midterm_exam' => "nullable|integer|min:0|max:{$midtermExamMax}",
+                'scores.*.final_exam' => "nullable|numeric|min:0|max:{$finalExamMax}",
                 'semester' => 'required|string',
-                // Allow any positive max scores (no upper cap)
                 'max_final' => 'nullable|integer|min:1',
-                'max_midterm' => 'nullable|integer|min:1',
-            ]);
+            ];
+            
+            // Only validate midterm_exam for 2nd semester
+            if (strpos($semester, '2nd semester') !== false) {
+                $validationRules['scores.*.midterm_exam'] = "nullable|numeric|min:0|max:{$midtermExamMax}";
+                $validationRules['max_midterm'] = 'nullable|integer|min:1';
+            }
+            
+            $request->validate($validationRules);
+            
             $examScoreModel = $this->getExamScoreModelForSemester($semester);
             $scores = $request->input('scores');
+            
+            \Log::info('Using model: ' . $examScoreModel);
             
             // Use database transaction to ensure atomicity
             DB::transaction(function () use ($scores, $examScoreModel, $semester, $maxFinal, $maxMidterm) {
                 foreach ($scores as $score) {
+                    // Convert empty strings to null and validate numeric values
                     $finalExam = $score['final_exam'];
-                    $midtermExam = $score['midterm_exam'] ?? null;
+                    if ($finalExam === '' || $finalExam === null) {
+                        $finalExam = null;
+                    } else {
+                        $finalExam = (int) $finalExam;
+                        if ($finalExam < 0) $finalExam = 0;
+                        if ($finalExam > $maxFinal) $finalExam = $maxFinal;
+                    }
+                    
+                    $midtermExam = null;
+                    if (strpos($semester, '2nd semester') !== false) {
+                        // Only process midterm for 2nd semester
+                        $midtermExam = $score['midterm_exam'] ?? null;
+                        if ($midtermExam === '' || $midtermExam === null) {
+                            $midtermExam = null;
+                        } else {
+                            $midtermExam = (int) $midtermExam;
+                            if ($midtermExam < 0) $midtermExam = 0;
+                            if ($midtermExam > $maxMidterm) $midtermExam = $maxMidterm;
+                        }
+                    }
                     
                     // Calculate average and subject_prof based on semester
                     $subjectProf = 0;
                     if ($semester === '2025-2026 2nd semester') {
                         // For 2nd semester: mean of normalized scores × 100
-                        $finalNorm = ($finalExam === '' || $finalExam === null) ? 0 : (($maxFinal > 0) ? ($finalExam / $maxFinal) : 0);
-                        $midNorm = ($midtermExam === '' || $midtermExam === null) ? 0 : (($maxMidterm > 0) ? ($midtermExam / $maxMidterm) : 0);
+                        $finalNorm = ($finalExam === null) ? 0 : (($maxFinal > 0) ? ($finalExam / $maxFinal) : 0);
+                        $midNorm = ($midtermExam === null) ? 0 : (($maxMidterm > 0) ? ($midtermExam / $maxMidterm) : 0);
                         $average = (($finalNorm + $midNorm) / 2) * 100;
                         // Format to 2 decimal places for 2nd semester
                         $average = round($average, 2);
                     } else {
                         // For 1st semester: (Final / maxFinal) * 100
                         $denominator = max(1, $maxFinal);
-                        $average = ($finalExam === '' || $finalExam === null) ? 0 : ($finalExam / $denominator) * 100;
+                        $average = ($finalExam === null) ? 0 : ($finalExam / $denominator) * 100;
                         // Format to whole number for 1st semester
                         $average = round($average);
                     }
                     // Calculate Subject Prof (40%) for both semesters (rounded to whole number, max 40)
                     $subjectProf = min(40, round($average * 0.40));
 
-                    // Build payload; only 2nd sem table contains subject_prof column
-                    $payload = [
-                        'final_exam' => $finalExam,
-                        'midterm_exam' => $midtermExam,
-                        'average' => $average,
-                    ];
-                    // Persist computed Subject Proficiency (40%) for first semester too
+                    // Build payload based on semester - different columns for different tables
                     if (strpos($semester, '2nd semester') !== false) {
-                        $payload['subject_prof'] = $subjectProf;
+                        // 2nd semester table has both midterm_exam and final_exam
+                        $payload = [
+                            'final_exam' => $finalExam,
+                            'midterm_exam' => $midtermExam,
+                            'average' => $average,
+                            'subject_prof' => $subjectProf,
+                        ];
                     } else {
-                        $payload['subj_prof_40'] = $subjectProf;
+                        // 1st semester table only has final_exam (no midterm_exam column)
+                        $payload = [
+                            'final_exam' => $finalExam,
+                            'average' => $average,
+                            'subj_prof_40' => $subjectProf,
+                        ];
                     }
-                    if (strpos($semester, '2nd semester') !== false) {
-                        $payload['subject_prof'] = $subjectProf;
-                    }
+
+                    \Log::info('Saving exam score', [
+                        'user_id' => $score['id'],
+                        'semester' => $semester,
+                        'payload' => $payload
+                    ]);
 
                     $examScore = $examScoreModel::updateOrCreate(
                         [
@@ -219,8 +264,15 @@ class ExamController extends Controller
 
             return response()->json(['message' => 'Successfully saved exam scores.']);
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in saveExamScores', ['errors' => $e->errors()]);
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            \Log::error('Error saving exam scores', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['message' => 'Error saving exam scores: ' . $e->getMessage()], 500);
         }
     }

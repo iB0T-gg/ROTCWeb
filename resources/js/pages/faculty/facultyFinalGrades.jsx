@@ -11,16 +11,14 @@ import { FaSort } from 'react-icons/fa6';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -267,7 +265,7 @@ const FacultyFinalGrades = ({ auth }) => {
     const attendance = attendanceMap[cadet.id];
     if (!attendance) return 0;
     
-    const weekLimit = 15; // Both semesters now use 15 weeks
+    const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15; // 1st semester: 10 weeks, 2nd semester: 15 weeks
     
     // For 2nd semester, check if there's a pre-calculated attendance_30 value
     if (selectedSemester === '2025-2026 2nd semester' && attendance.attendance_30 !== undefined && attendance.attendance_30 > 0) {
@@ -324,13 +322,13 @@ const FacultyFinalGrades = ({ auth }) => {
     const demDays = record.demerits_array || record.demerit_days || (record.demerits && (record.demerits.merits_array || record.demerits.days)) || [];
     const weekCountGuess = (Array.isArray(meritDays) && meritDays.length) ? meritDays.length
                             : (Array.isArray(demDays) && demDays.length) ? demDays.length
-                            : 15; // Both semesters now use 15 weeks
+                            : (selectedSemester === '2025-2026 1st semester' ? 10 : 15); // 1st semester: 10 weeks, 2nd semester: 15 weeks
     if ((meritDays && meritDays.length) || (demDays && demDays.length)) {
       // Updated calculation to match facultyMerits.jsx: total_merits = 150 - total_demerits
       const totalDemerits = (demDays || []).reduce((s, v) => s + (Number(v) || 0), 0);
-      const maxPossible = weekCountGuess * 10; // 150 for 15 weeks
+      const maxPossible = weekCountGuess * 10; // 100 for 10 weeks (1st semester), 150 for 15 weeks (2nd semester)
       const totalMerits = Math.max(0, maxPossible - totalDemerits);
-      const perc = Math.min(30, Math.max(0, Math.round((totalMerits / 150) * 30)));
+      const perc = Math.min(30, Math.max(0, Math.round((totalMerits / maxPossible) * 30)));
       console.log('[Aptitude] Computed from array days', { cadetId, totalDemerits, totalMerits, weekCountGuess, maxPossible, perc, record });
       return isNaN(perc) ? 0 : perc;
     }
@@ -346,7 +344,7 @@ const FacultyFinalGrades = ({ auth }) => {
     }
 
     // As a final fallback, build days from individual keyed fields (week1..week15, merit1.., m1.. etc.)
-    const weekLimit = 15; // Both semesters now use 15 weeks
+    const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15; // 1st semester: 10 weeks, 2nd semester: 15 weeks
     const meritsByWeek = Array(weekLimit).fill(0);
     const demeritsByWeek = Array(weekLimit).fill(0);
     Object.keys(record || {}).forEach(k => {
@@ -363,11 +361,11 @@ const FacultyFinalGrades = ({ auth }) => {
       }
     });
     
-    // Updated calculation to match facultyMerits.jsx: total_merits = 150 - total_demerits
+    // Updated calculation to match facultyMerits.jsx: total_merits = max_possible - total_demerits
     const totalDemerits2 = demeritsByWeek.reduce((s, v) => s + (Number(v) || 0), 0);
-    const maxPossible = weekLimit * 10; // 150 for 15 weeks
+    const maxPossible = weekLimit * 10; // 100 for 10 weeks (1st semester), 150 for 15 weeks (2nd semester)
     const totalMerits2 = Math.max(0, maxPossible - totalDemerits2);
-    const perc2 = Math.min(30, Math.max(0, Math.round((totalMerits2 / 150) * 30)));
+    const perc2 = Math.min(30, Math.max(0, Math.round((totalMerits2 / maxPossible) * 30)));
     console.log('[Aptitude] Computed from keyed fields', { cadetId, meritsByWeek, demeritsByWeek, totalDemerits2, totalMerits2, perc2 });
     return isNaN(perc2) ? 0 : perc2;
   };
@@ -709,8 +707,9 @@ const FacultyFinalGrades = ({ auth }) => {
       <div className='flex flex-col md:flex-row'>
         <FacultySidebar />
         <div className='flex-1 p-3 md:p-6'>
+          <div className='font-regular animate-fade-in-up'>
           {/* Breadcrumb - separated, light background */}
-          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
+          <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up'>
                 <Link href="/faculty/facultyHome" className="hover:underline cursor-pointer font-semibold">
                   Dashboard
                 </Link>
@@ -718,12 +717,12 @@ const FacultyFinalGrades = ({ auth }) => {
                 <span className="cursor-default font-bold">Final Grades</span>
           </div>
           {/* Page Header */}
-          <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+          <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
             <h1 className='text-lg md:text-2xl font-semibold'>Final Grades</h1>
           </div>
 
             {/* Tab Navigation */}
-            <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
+            <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6 animate-scale-in-up">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
                 {/* Semester Selection Tabs */}
                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto">
@@ -887,12 +886,12 @@ const FacultyFinalGrades = ({ auth }) => {
           <div className='w-full mx-auto'>
             
             {/* Main Content */}
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto animate-scale-in-up'>
               {/* Title and Controls */}
-              <div className='flex justify-between items-center mb-4 md:mb-6'>
+              <div className='flex justify-between items-center mb-4 md:mb-6 animate-fade-in-up'>
                 <h1 className='text-base md:text-lg font-semibold text-black'>Equivalent Grades</h1>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto animate-fade-in-up">
                 <table className="w-full border-collapse">
                   <thead className="text-gray-600">
                     <tr>
@@ -1065,8 +1064,9 @@ const FacultyFinalGrades = ({ auth }) => {
                       )}
                     </>
                   )}
-                </div>
-              </div>
+            </div>
+          </div>
+          </div>
             </div>
           </div>
         </div>

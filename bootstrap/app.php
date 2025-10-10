@@ -13,8 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-        HandleInertiaRequests::class,
-    ]);
+            HandleInertiaRequests::class,
+        ]);
+        
+        // Override the default 'guest' middleware alias with our custom RedirectIfAuthenticated
+        $middleware->alias([
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

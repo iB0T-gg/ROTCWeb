@@ -5,6 +5,32 @@ import "react-datepicker/dist/react-datepicker.css";
 import Header from "../../components/header";
 import UserSidebar from "../../components/userSidebar";
 
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 rounded text-white transition-colors ${buttonColor}`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UserProfile = ({ auth, user }) => {
   const ChevronDownIcon = ({ className }) => (
     <svg
@@ -55,6 +81,14 @@ const UserProfile = ({ auth, user }) => {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  // AlertDialog state
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   // Only set battalion from gender if battalion is empty
   useEffect(() => {
@@ -289,15 +323,30 @@ const UserProfile = ({ auth, user }) => {
       onSuccess: () => {
         setEditing(false);
         setShowDatePicker(false);
-        alert('Profile updated successfully!');
+        setAlertDialog({
+          isOpen: true,
+          title: 'Success',
+          message: 'Profile updated successfully!',
+          type: 'success'
+        });
       },
       onError: (errors) => {
         console.error('Error response:', errors);
         if (errors && typeof errors === 'object') {
           const errorMessages = Object.values(errors).flat();
-          alert('Validation errors:\n' + errorMessages.join('\n'));
+          setAlertDialog({
+            isOpen: true,
+            title: 'Validation Errors',
+            message: errorMessages.join('\n'),
+            type: 'error'
+          });
         } else {
-          alert('Failed to update profile. Please check your input.');
+          setAlertDialog({
+            isOpen: true,
+            title: 'Error',
+            message: 'Failed to update profile. Please check your input.',
+            type: 'error'
+          });
         }
       }
     });
@@ -361,7 +410,12 @@ const UserProfile = ({ auth, user }) => {
       const maxSize = 5 * 1024 * 1024; // 5MB
       
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, PNG, JPG, or GIF).');
+        setAlertDialog({
+          isOpen: true,
+          title: 'Invalid File Type',
+          message: 'Please select a valid image file (JPEG, PNG, JPG, or GIF).',
+          type: 'error'
+        });
         e.target.value = '';
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -369,7 +423,12 @@ const UserProfile = ({ auth, user }) => {
       }
       
       if (file.size > maxSize) {
-        alert('File size must be less than 5MB.');
+        setAlertDialog({
+          isOpen: true,
+          title: 'File Too Large',
+          message: 'File size must be less than 5MB.',
+          type: 'error'
+        });
         e.target.value = '';
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -390,7 +449,12 @@ const UserProfile = ({ auth, user }) => {
   // Handle avatar save
   const handleSaveAvatar = async () => {
     if (!selectedFile) {
-      alert("Please select a file.");
+      setAlertDialog({
+        isOpen: true,
+        title: 'No File Selected',
+        message: 'Please select a file.',
+        type: 'error'
+      });
       return;
     }
 
@@ -404,16 +468,31 @@ const UserProfile = ({ auth, user }) => {
           setShowAvatarModal(false);
           setSelectedFile(null);
           setPreviewUrl(null);
-          alert("Profile picture uploaded successfully!");
+          setAlertDialog({
+            isOpen: true,
+            title: 'Success',
+            message: 'Profile picture uploaded successfully!',
+            type: 'success'
+          });
           window.location.reload();
         },
         onError: (errors) => {
           console.error('Upload errors:', errors);
           if (errors && typeof errors === 'object') {
             const errorMessages = Object.values(errors).flat();
-            alert('Upload failed:\n' + errorMessages.join('\n'));
+            setAlertDialog({
+              isOpen: true,
+              title: 'Upload Failed',
+              message: errorMessages.join('\n'),
+              type: 'error'
+            });
           } else {
-            alert('Upload failed. Please try again.');
+            setAlertDialog({
+              isOpen: true,
+              title: 'Upload Failed',
+              message: 'Upload failed. Please try again.',
+              type: 'error'
+            });
           }
         },
         onFinish: () => {
@@ -435,22 +514,22 @@ const UserProfile = ({ auth, user }) => {
       <div className="flex flex-col lg:flex-row">
         <UserSidebar />
         <div className="flex-1 p-3 lg:p-6">
-          <div className="font-regular">
-            <div className="bg-white p-2 lg:p-3 text-[#6B6A6A] rounded-lg pl-3 lg:pl-5 text-sm lg:text-base">
+          <div className="font-regular animate-fade-in-up">
+            <div className="bg-white p-2 lg:p-3 text-[#6B6A6A] rounded-lg pl-3 lg:pl-5 text-sm lg:text-base animate-fade-in-up">
               <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
                 Dashboard
               </Link>
               <span className="mx-1 lg:mx-2 font-semibold">{">"}</span>
               <span className="cursor-default font-bold">Profile</span>
             </div>
-            <div className="bg-primary text-white p-3 lg:p-4 rounded-lg flex items-center justify-between mt-4 mb-4 lg:mb-6 pl-3 lg:pl-5 py-4 lg:py-7">
+            <div className="bg-primary text-white p-3 lg:p-4 rounded-lg flex items-center justify-between mt-4 mb-4 lg:mb-6 pl-3 lg:pl-5 py-4 lg:py-7 animate-fade-in-down">
               <h1 className="text-xl lg:text-2xl font-semibold">Profile</h1>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 items-start">
               {/* LEFT COLUMN - Profile Info and Academic Info */}
               <div className="lg:col-span-1 flex flex-col gap-4 order-1 lg:order-1">
                 {/* Profile Info Card */}
-                <div className="bg-white p-4 lg:p-6 rounded-lg shadow">
+                <div className="bg-white p-4 lg:p-6 rounded-lg shadow animate-scale-in-up">
                 <div className="flex flex-col items-center text-center">
                   {/* Profile Picture */}
                   <div 
@@ -516,7 +595,7 @@ const UserProfile = ({ auth, user }) => {
                 </div>
 
                 {/* Academic Information Section - Separate Card */}
-                <div className="bg-white p-3 lg:p-4 rounded-lg shadow">
+                <div className="bg-white p-3 lg:p-4 rounded-lg shadow animate-scale-in-up">
                   <h3 className="text-base lg:text-lg font-semibold text-black mb-3 text-center">Academic Info</h3>
                   
                   {/* Course */}
@@ -588,7 +667,7 @@ const UserProfile = ({ auth, user }) => {
               </div>
 
               {/* RIGHT CARD - Editable Fields */}
-              <form onSubmit={handleSubmit} className="lg:col-span-3 bg-white p-4 lg:p-6 rounded-lg shadow order-2 lg:order-2">
+              <form onSubmit={handleSubmit} className="lg:col-span-3 bg-white p-4 lg:p-6 rounded-lg shadow order-2 lg:order-2 animate-scale-in-up">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-3 lg:gap-0">
                   <h1 className="text-lg lg:text-xl font-semibold text-black">Personal Information</h1>
                   {!editing && (
@@ -1086,6 +1165,15 @@ const UserProfile = ({ auth, user }) => {
           </div>
         </div>
       )}
+      
+      {/* AlertDialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
     </div>
     </>
   );

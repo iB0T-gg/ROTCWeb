@@ -28,23 +28,44 @@ export default function AdminHome(){
                 
                 for (const semester of semesters) {
                     try {
+                        // Use the admin-cadets-by-semester endpoint to get data from user_grades table
                         const response = await axios.get(`/api/admin-cadets-by-semester/${encodeURIComponent(semester)}`);
                         const cadets = response.data;
                         
-                        // Find the cadet with the highest grade in this semester
+                        console.log(`Fetched ${cadets.length} cadets from user_grades table for ${semester}`);
+                        
+                        // Find the cadet with the highest grade in this semester from user_grades table
+                        // Note: In ROTC system, lower equivalent grades are better (1.00 is highest, 5.00 is failing)
                         let topCadet = null;
-                        let highestGrade = -1;
+                        let bestGrade = Infinity; // Start with infinity to find the lowest (best) grade
                         
                         cadets.forEach(cadet => {
-                            const grade = parseFloat(cadet.equivalent_grade || cadet.final_grade || 0);
-                            if (!isNaN(grade) && grade > highestGrade) {
-                                highestGrade = grade;
+                            const equivalentGrade = parseFloat(cadet.equivalent_grade);
+                            
+                            // Skip cadets with no valid equivalent grade from user_grades table
+                            if (isNaN(equivalentGrade) || equivalentGrade <= 0 || equivalentGrade === null) {
+                                return;
+                            }
+                            
+                            // For equivalent grades, lower is better (1.00 is best, 5.00 is failing)
+                            if (equivalentGrade < bestGrade) {
+                                bestGrade = equivalentGrade;
                                 topCadet = { ...cadet, semester };
                             }
                         });
                         
+                        console.log(`Found ${cadets.filter(c => c.equivalent_grade && c.equivalent_grade > 0).length} cadets with valid grades from user_grades table`);
+                        
                         if (topCadet) {
                             topCadetsData[semester] = topCadet;
+                            console.log(`Top cadet for ${semester}:`, {
+                                name: `${topCadet.first_name} ${topCadet.last_name}`,
+                                equivalent_grade: topCadet.equivalent_grade,
+                                final_grade: topCadet.final_grade,
+                                rotc_grade: topCadet.rotc_grade,
+                                common_module_grade: topCadet.common_module_grade,
+                                bestGrade: bestGrade
+                            });
                         }
                         
                     } catch (semesterError) {
@@ -80,7 +101,7 @@ export default function AdminHome(){
     return (
         <>
             <Head title="ROTC Portal - Admin Dashboard" />
-            <div className='w-full min-h-screen bg-backgroundColor'>
+      <div className='w-full min-h-screen bg-backgroundColor'>
       <Header auth={auth} />
       
       <div className='flex flex-col md:flex-row'>
@@ -88,33 +109,33 @@ export default function AdminHome(){
         
         <div className='flex-1 p-3 md:p-6'>
 
-          <div className='font-regular'>
+          <div className='font-regular animate-fade-in-up'>
             {/* Breadcrumb */}
             <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
               <span className="cursor-default font-bold">Dashboard</span>  
             </div>
             
             {/* Page Header */}
-            <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg shadow-md'>
+            <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg shadow-md animate-fade-in-down'>
               <h1 className='text-xl md:text-2xl font-semibold'>Welcome Admin!</h1>
             </div>
 
             {/* Main Content: Card Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              <Link href="/adminPermission" className="transition-all">
-                <div className="bg-white p-4 md:p-6 rounded-lg drop-shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 animate-fade-in-up">
+              <Link href="/adminPermission" className="transition-all animate-fade-in-up animate-stagger-1">
+                <div className="bg-white p-4 md:p-6 rounded-lg drop-shadow-lg hover-lift cursor-pointer">
                   <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-black">Permission</h3>
                   <p className="text-gray-600 text-sm md:text-base">Manage user permissions</p>
                 </div>
               </Link>
-              <Link href="/adminMasterlist" className="transition-all">
-                <div className="bg-white p-4 md:p-6 rounded-lg drop-shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+              <Link href="/adminMasterlist" className="transition-all animate-fade-in-up animate-stagger-2">
+                <div className="bg-white p-4 md:p-6 rounded-lg drop-shadow-lg hover-lift cursor-pointer">
                   <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-black">Master Lists</h3>
                   <p className="text-gray-600 text-sm md:text-base">View and manage all users</p>
                 </div>
               </Link>
-              <Link href="/adminAttendance" className="transition-all sm:col-span-2 lg:col-span-1">
-                <div className="bg-white p-4 md:p-6 rounded-lg shadow drop-shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+              <Link href="/adminAttendance" className="transition-all sm:col-span-2 lg:col-span-1 animate-fade-in-up animate-stagger-3">
+                <div className="bg-white p-4 md:p-6 rounded-lg shadow drop-shadow-lg hover-lift cursor-pointer">
                   <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-black">Attendance</h3>
                   <p className="text-gray-600 text-sm md:text-base">Manage attendance records</p>
                 </div>
@@ -122,7 +143,7 @@ export default function AdminHome(){
             </div>
 
             {/* Top Cadets Per Semester Section */}
-            <div className="bg-white p-4 md:p-6 rounded-lg mb-4 md:mb-6 shadow-lg mt-4 md:mt-6">
+            <div className="bg-white p-4 md:p-6 rounded-lg mb-4 md:mb-6 shadow-lg mt-4 md:mt-6 animate-fade-in-up animate-stagger-4">
               <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-primary">Top Performing Cadets by Semester</h2>
               {loading ? (
                 <div className="flex items-center space-x-2">
@@ -144,15 +165,15 @@ export default function AdminHome(){
                 </div>
               ) : availableSemesters.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {availableSemesters.map((semester) => {
+                  {availableSemesters.map((semester, index) => {
                     const topCadet = topCadets[semester];
                     return (
-                      <div key={semester} className="bg-primary/20 p-4 rounded-lg border">
+                      <div key={semester} className={`bg-primary/20 p-4 rounded-lg border animate-scale-in animate-stagger-${index + 1}`}>
                         <div className="flex items-center mb-3">
                           <div className="bg-primary text-white px-2 py-1 rounded text-xs md:text-sm font-semibold mr-2">
                             {semester}
                           </div>
-                          <h3 className="font-semibold text-sm md:text-base text-gray-800">Highest Grade</h3>
+                          <h3 className="font-semibold text-sm md:text-base text-gray-800">Top Performer</h3>
                         </div>
                         
                         {topCadet ? (
@@ -166,9 +187,15 @@ export default function AdminHome(){
                               <p><span className="font-medium">Campus:</span> {topCadet.campus || 'N/A'}</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-xs md:text-sm text-gray-500">Grade:</span>
+                              <span className="text-xs md:text-sm text-gray-500">Equivalent Grade:</span>
                               <span className="bg-primary text-white px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold">
-                                {formatGrade(topCadet.equivalent_grade || topCadet.final_grade)}
+                                {formatGrade(topCadet.equivalent_grade)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-xs md:text-sm text-gray-500">Final Grade:</span>
+                              <span className="text-xs md:text-sm text-gray-600">
+                                {topCadet.final_grade}%
                               </span>
                             </div>
                           </div>

@@ -288,4 +288,36 @@ class AdminController extends Controller
         
         return response()->json($archivedUsers);
     }
+
+    /**
+     * Restore all archived users
+     */
+    public function restoreAllUsers(Request $request)
+    {
+        // Get all archived users (admins should not be archived by design)
+        $archivedUsers = User::where('archived', true)->get();
+
+        if ($archivedUsers->isEmpty()) {
+            return response()->json([
+                'message' => 'No archived users to restore',
+                'restored_count' => 0
+            ]);
+        }
+
+        $restoredCount = 0;
+        foreach ($archivedUsers as $user) {
+            // Restore each user and ensure status is approved
+            $user->update([
+                'archived' => false,
+                'archived_at' => null,
+                'status' => $user->status === 'approved' ? 'approved' : 'approved'
+            ]);
+            $restoredCount++;
+        }
+
+        return response()->json([
+            'message' => 'All archived users restored successfully',
+            'restored_count' => $restoredCount
+        ]);
+    }
 } 

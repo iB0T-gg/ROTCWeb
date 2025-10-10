@@ -8,16 +8,14 @@ import { Link, Head } from '@inertiajs/react';
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
 
-  const textColor = type === 'success' ? 'text-primary' : 'text-red-800';
-  const borderColor = type === 'success' ? 'border-primary' : 'border-red-300';
   const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-        <div className={`border rounded-lg p-4 mb-4`}>
-          <h3 className={`text-lg font-semibold ${textColor} mb-2`}>{title}</h3>
-          <p className={`${textColor}`}>{message}</p>
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
         </div>
         <div className="flex justify-end">
           <button
@@ -178,21 +176,21 @@ export default function Issue({ issues = [] }) {
             <AdminSidebar />
             
             <div className='flex-1 p-3 md:p-6'>
-              <div className='font-regular'>
+              <div className='font-regular animate-fade-in-up'>
                 {/* Breadcrumb */}
-                <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
+                <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up'>
                     <Link href="/adminHome" className="hover:text-primary cursor-pointer">Home</Link>
                     {" > "}
                     <span className='cursor-pointer font-semibold'>Issues</span>
                 </div>
                 
                 {/* Page Header */}
-                <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+                <div className='flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
                     <h1 className='text-xl md:text-2xl font-semibold'>Reported Issues</h1>
                 </div>
 
                 {/* Filter Section */}
-                <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6">
+                <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-3 md:mb-6 animate-scale-in-up">
                     <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0'>
                         <h1 className='text-base md:text-lg font-semibold text-black mb-2 sm:mb-0'>Issue Reports</h1>
                         
@@ -229,7 +227,7 @@ export default function Issue({ issues = [] }) {
                 </div>
                 
                 {/* Issues list */}
-                <div className='bg-white rounded-lg shadow overflow-hidden'>
+                <div className='bg-white rounded-lg shadow overflow-hidden animate-scale-in-up'>
                     {loading ? (
                         <div className='p-4 md:p-8 text-center text-sm md:text-base'>Loading issues...</div>
                     ) : filteredIssues.length === 0 ? (

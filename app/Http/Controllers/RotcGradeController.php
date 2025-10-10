@@ -24,6 +24,7 @@ class RotcGradeController extends Controller
         
         try {
             $cadets = User::where('role', 'user')
+                ->where('archived', false)
                 ->select('id', 'first_name', 'last_name', 'middle_name', 'platoon', 'company', 'battalion')
                 ->get();
 
@@ -135,7 +136,9 @@ class RotcGradeController extends Controller
         try {
             DB::beginTransaction();
 
-            $cadets = User::where('role', 'user')->get();
+            $cadets = User::where('role', 'user')
+                ->where('archived', false)
+                ->get();
             $updated = 0;
 
             foreach ($cadets as $cadet) {

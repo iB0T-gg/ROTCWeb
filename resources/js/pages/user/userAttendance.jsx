@@ -14,6 +14,9 @@ const userAttendance = ({ auth }) => {
     // Semester options
     const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
 
+  // Week limit depends on semester: 1st = 10 weeks, 2nd = 15 weeks
+  const weekLimit = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+
     // Fetch user's attendance data
     const fetchUserAttendance = async () => {
         try {
@@ -108,7 +111,7 @@ const userAttendance = ({ auth }) => {
       <div className='flex flex-col md:flex-row'>
         <UserSidebar />
         <div className='flex-1 p-3 md:p-6'>
-          <div className='font-regular'>
+          <div className='font-regular animate-fade-in-up'>
             {/* Breadcrumb */}
             <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base'>
               <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
@@ -119,12 +122,12 @@ const userAttendance = ({ auth }) => {
             </div>
 
             {/* Page Header */}
-            <div className='bg-primary text-white p-3 md:p-4 rounded-lg flex items-center mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7'>
+            <div className='bg-primary text-white p-3 md:p-4 rounded-lg flex items-center mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down'>
               <h1 className='text-xl md:text-2xl font-semibold'>Attendance</h1>
             </div>
 
             {/* Main Card */}
-            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto'>
+            <div className='bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto animate-scale-in-up'>
               {/* Profile Section */}
               <div className="flex flex-col items-center sm:flex-row sm:items-center mb-4 md:mb-6 pb-4 border-b">
                 <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden mb-3 sm:mb-0 sm:mr-4">
@@ -178,7 +181,7 @@ const userAttendance = ({ auth }) => {
                 <>
                   {/* Attendance Summary */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
-                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center">
+                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center animate-fade-in-up animate-stagger-1">
                       <div className="text-xl md:text-2xl font-bold text-primary">
                         {(() => {
                           if (!attendanceData?.weekly_attendance) return 0;
@@ -188,24 +191,24 @@ const userAttendance = ({ auth }) => {
                       </div>
                       <div className="text-xs md:text-sm">Weeks Present</div>
                     </div>
-                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center">
+                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center animate-fade-in-up animate-stagger-2">
                       <div className="text-xl md:text-2xl font-bold text-primary">
                         {(() => {
                           if (!attendanceData?.weekly_attendance) return '0%';
                           const weeklyData = attendanceData.weekly_attendance;
                           const presentCount = Object.values(weeklyData).filter(Boolean).length;
-                          // Calculate percentage: (present weeks / 15) * 30
-                          return `${Math.round((presentCount / 15) * 30)}%`;
+                          // Calculate percentage: (present weeks / weekLimit) * 30
+                          return `${Math.round((presentCount / weekLimit) * 30)}%`;
                         })()}
                       </div>
                       <div className="text-xs md:text-sm">Attendance Score</div>
                     </div>
-                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center sm:col-span-2 lg:col-span-1">
+                    <div className="bg-primary/20 p-3 md:p-4 rounded-lg text-center sm:col-span-2 lg:col-span-1 animate-fade-in-up animate-stagger-3">
                       <div className="text-xl md:text-2xl font-bold text-primary">
                         {(() => {
-                          if (!attendanceData?.weekly_attendance) return '0/15';
+                          if (!attendanceData?.weekly_attendance) return `0/${weekLimit}`;
                           const presentCount = Object.values(attendanceData.weekly_attendance).filter(Boolean).length;
-                          return `${presentCount}/15`;
+                          return `${presentCount}/${weekLimit}`;
                         })()}
                       </div>
                       <div className="text-xs md:text-sm">Completion Rate</div>
@@ -247,7 +250,7 @@ const userAttendance = ({ auth }) => {
                           </tr>
                         </thead>
                         <tbody>
-                          {Array.from({ length: 15 }, (_, i) => {
+                          {Array.from({ length: weekLimit }, (_, i) => {
                             const weekNumber = i + 1;
                             // Get attendance status from admin attendance data structure
                             const isPresent = attendanceData?.weekly_attendance?.[weekNumber] || false;

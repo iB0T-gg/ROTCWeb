@@ -29,8 +29,10 @@ class FinalGradesController extends Controller
         }
         
         try {
-            // Get all cadets
-            $cadets = User::where('role', 'user')->get();
+            // Get all cadets (exclude archived)
+            $cadets = User::where('role', 'user')
+                ->where('archived', false)
+                ->get();
             
             $finalGradesData = [];
             
@@ -377,10 +379,14 @@ class FinalGradesController extends Controller
             $totalDemerits += $demerit;
         }
         
-        // Calculate exactly like frontend: total_merits = 150 - total_demerits, then scale to 30
-        $maxPossible = 15 * 10; // 150 for 15 weeks
+        // Calculate exactly like frontend: total_merits = max_possible - total_demerits, then scale to 30
+        // 1st semester: 10 weeks * 10 points = 100 max possible
+        // 2nd semester: 15 weeks * 10 points = 150 max possible
+        $isFirstSemester = strpos($semester, '1st semester') !== false;
+        $weeksCount = $isFirstSemester ? 10 : 15;
+        $maxPossible = $weeksCount * 10;
         $totalMerits = max(0, $maxPossible - $totalDemerits);
-        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
+        $aptitude30 = min(30, max(0, round(($totalMerits / $maxPossible) * 30)));
         
         return $aptitude30;
     }
@@ -624,10 +630,14 @@ class FinalGradesController extends Controller
             $totalDemerits += $demerit;
         }
         
-        // Calculate aptitude_30 using the same logic as frontend: total_merits = 150 - total_demerits
-        $maxPossible = 15 * 10; // 150 for 15 weeks
+        // Calculate aptitude_30 using the same logic as frontend: total_merits = max_possible - total_demerits
+        // 1st semester: 10 weeks * 10 points = 100 max possible
+        // 2nd semester: 15 weeks * 10 points = 150 max possible
+        $isFirstSemester = strpos($semester, '1st semester') !== false;
+        $weeksCount = $isFirstSemester ? 10 : 15;
+        $maxPossible = $weeksCount * 10;
         $totalMerits = max(0, $maxPossible - $totalDemerits);
-        $aptitude30 = min(30, max(0, round(($totalMerits / 150) * 30)));
+        $aptitude30 = min(30, max(0, round(($totalMerits / $maxPossible) * 30)));
         
         return [
             'aptitude_30' => $aptitude30,

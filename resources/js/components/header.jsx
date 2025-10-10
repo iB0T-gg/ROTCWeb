@@ -40,9 +40,16 @@ export default function Header({ auth }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         setMobileMenuOpen(false);
-        post('/logout');
+        try {
+            await window.axios.post('/logout');
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // Force redirect even if logout fails
+            window.location.href = '/';
+        }
     };
 
     return (

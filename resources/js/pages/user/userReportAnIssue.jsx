@@ -4,13 +4,45 @@ import UserSidebar from '../../components/userSidebar';
 import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
 
+// Alert Dialog Component
+const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
+  if (!isOpen) return null;
+
+  const buttonColor = type === 'success' ? 'bg-primary/90 hover:bg-primary' : 'bg-red-600 hover:bg-red-700';
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className={`px-4 py-2 rounded text-white transition-colors ${buttonColor}`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const userReportAnIssue = ({ auth }) => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [issueDescription, setIssueDescription] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+  
+  // AlertDialog state
+  const [alertDialog, setAlertDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   // Check if user has made any input
   const hasUserInput = selectedIssue || issueDescription.trim().length > 0;
@@ -36,12 +68,16 @@ const userReportAnIssue = ({ auth }) => {
     e.preventDefault();
     
     if (!selectedIssue && !issueDescription.trim()) {
-      alert('Please select an issue type or provide a description.');
+      setAlertDialog({
+        isOpen: true,
+        title: 'Missing Information',
+        message: 'Please select an issue type or provide a description.',
+        type: 'error'
+      });
       return;
     }
     
     setSubmitting(true);
-    setSubmitError(null);
     
     try {
       // Submit the issue to the backend
@@ -51,18 +87,27 @@ const userReportAnIssue = ({ auth }) => {
         is_anonymous: isAnonymous
       });
       
-      setSubmitSuccess(true);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Success',
+        message: 'Your issue has been submitted successfully! The admin will review it soon.',
+        type: 'success'
+      });
       
       // Reset the form after a short delay
       setTimeout(() => {
         setSelectedIssue(null);
         setIssueDescription('');
-        setSubmitSuccess(false);
       }, 3000);
       
     } catch (error) {
       console.error('Error submitting issue:', error);
-      setSubmitError(error.response?.data?.message || 'An error occurred while submitting your issue. Please try again.');
+      setAlertDialog({
+        isOpen: true,
+        title: 'Submission Failed',
+        message: error.response?.data?.message || 'An error occurred while submitting your issue. Please try again.',
+        type: 'error'
+      });
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +137,7 @@ const userReportAnIssue = ({ auth }) => {
           <UserSidebar />
         </div>
         <div className='flex-1 p-3 md:p-6'>
-          <div className='font-regular'>
+          <div className='font-regular animate-fade-in-up'>
             {/* Breadcrumb */}
             <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 mb-4 text-sm md:text-base'>
               <Link href="/user/userHome" className="hover:underline cursor-pointer font-semibold">
@@ -103,12 +148,12 @@ const userReportAnIssue = ({ auth }) => {
             </div>
             
             {/* Title */}
-            <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg'>
+            <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
               <h1 className='text-xl md:text-2xl font-semibold'>Report an Issue</h1>
             </div>
             
             {/* Card */}
-            <form onSubmit={handleSubmit} className='bg-white p-3 md:p-6 rounded-lg shadow w-full h-auto md:h-[650px] overflow-y-auto'>
+            <form onSubmit={handleSubmit} className='bg-white p-3 md:p-6 rounded-lg shadow w-full h-auto md:h-[650px] overflow-y-auto animate-scale-in-up'>
               {/* Reason for reporting */}
               <div className='mb-4 md:mb-6'>
                 <p className='font-semibold mb-2 mt-2 md:mt-4 text-sm md:text-base'>Reason for reporting this issue?</p>
@@ -130,20 +175,6 @@ const userReportAnIssue = ({ auth }) => {
                   ))}
                 </div>
               </div>
-              
-              {/* Success message */}
-              {submitSuccess && (
-                <div className="mb-4 p-3 md:p-4 bg-green-100 text-green-700 rounded-lg text-sm md:text-base">
-                  Your issue has been submitted successfully! The admin will review it soon.
-                </div>
-              )}
-              
-              {/* Error message */}
-              {submitError && (
-                <div className="mb-4 p-3 md:p-4 bg-red-100 text-red-700 rounded-lg text-sm md:text-base">
-                  {submitError}
-                </div>
-              )}
               
               {/* Clarity for the issue */}
               <div className='mb-4 md:mb-6'>
@@ -200,6 +231,15 @@ const userReportAnIssue = ({ auth }) => {
         </div>
       </div>
     </div>
+    
+    {/* AlertDialog */}
+    <AlertDialog
+      isOpen={alertDialog.isOpen}
+      onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      title={alertDialog.title}
+      message={alertDialog.message}
+      type={alertDialog.type}
+    />
     </>
   );
 };

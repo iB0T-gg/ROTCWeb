@@ -20,7 +20,6 @@ class ExamScore extends Model
      */
     protected $fillable = [
         'user_id',
-        'midterm_exam',
         'final_exam',
         'average',
         'subj_prof_40',
@@ -33,7 +32,6 @@ class ExamScore extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'midterm_exam' => 'integer',
         'final_exam' => 'integer',
         'average' => 'integer',
         'subj_prof_40' => 'integer',
