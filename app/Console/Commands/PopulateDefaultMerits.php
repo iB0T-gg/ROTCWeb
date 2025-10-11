@@ -132,7 +132,7 @@ class PopulateDefaultMerits extends Command
         $this->info('Populating second semester merit records...');
         $createdCount = 0;
         $weekCount = 15;
-        $semester = '2026-2027 2nd semester';
+        $semester = '2025-2026 2nd semester';
 
         foreach ($cadets as $cadet) {
             // Check if merit record already exists

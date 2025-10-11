@@ -31,7 +31,7 @@ $deletedCount = 0;
 foreach ($duplicates as $cadetId => $records) {
     echo "Processing cadet_id: $cadetId\n";
     
-    // Sort records by semester to keep the newer one (2026-2027)
+    // Sort records by semester to keep the newer one (2025-2026)
     $sortedRecords = $records->sortBy('semester');
     
     // Keep the last record (newest semester) and delete the rest

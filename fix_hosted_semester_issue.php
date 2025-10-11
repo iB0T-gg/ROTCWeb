@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 echo "=== FIXING HOSTED SITE SEMESTER ISSUE ===\n\n";
 
-$oldSemester = '2026-2027 2nd semester';
+$oldSemester = '2025-2026 2nd semester';
 $newSemester = '2025-2026 2nd semester';
 
 echo "This script will update all database records from '$oldSemester' to '$newSemester'\n";

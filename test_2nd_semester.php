@@ -11,7 +11,7 @@ echo "=== TESTING 2ND SEMESTER FINAL GRADES ===\n\n";
 
 try {
     // Test both semester namings
-    $semesters = ['2025-2026 2nd semester', '2026-2027 2nd semester'];
+    $semesters = ['2025-2026 2nd semester', '2025-2026 2nd semester'];
     
     foreach ($semesters as $semester) {
         echo "Testing semester: $semester\n";

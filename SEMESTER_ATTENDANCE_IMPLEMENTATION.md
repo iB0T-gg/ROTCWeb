@@ -33,7 +33,7 @@ The controller now properly handles semester-specific operations:
 User Action → FirstSemesterAttendanceRecord → first_semester_attendance (your table)
 ```
 
-#### **For 2nd Semester (e.g., "2026-2027 2nd semester"):**
+#### **For 2nd Semester (e.g., "2025-2026 2nd semester"):**
 ```
 User Action → SecondSemesterAttendanceRecord → second_semester_attendance (your table)
 ```

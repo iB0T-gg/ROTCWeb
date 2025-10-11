@@ -127,7 +127,7 @@ WHAT IT DOES:
 
 TABLES UPDATED:
 1. first_semester_aptitude - Contains merit scores for "2025-2026 1st semester"
-2. second_semester_aptitude - Contains merit scores for "2026-2027 2nd semester"
+2. second_semester_aptitude - Contains merit scores for "2025-2026 2nd semester"
 
 CHANGES MADE TO THE CODEBASE:
 1. SecondSemesterDataSeeder.php - Now sets empty strings instead of null

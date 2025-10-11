@@ -13,7 +13,7 @@ echo "=== TESTING GALVEZ IN BOTH SEMESTERS ===\n\n";
 $controller = new FinalGradesController();
 $galvezId = 14; // Jewell Toby Galvez
 
-$semesters = ['2025-2026 2nd semester', '2026-2027 2nd semester'];
+$semesters = ['2025-2026 2nd semester', '2025-2026 2nd semester'];
 
 foreach ($semesters as $semester) {
     echo "--- TESTING SEMESTER: $semester ---\n";

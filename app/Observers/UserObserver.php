@@ -132,7 +132,7 @@ class UserObserver
             [
                 'cadet_id' => $user->id,
                 'type' => 'military_attitude',
-                'semester' => '2026-2027 2nd semester',
+                'semester' => '2025-2026 2nd semester',
             ],
             $filteredSecondMeritValues
         );

@@ -119,8 +119,8 @@ The system will display:
 ```php
 '2025-2026 1st semester' => '2025-08-15'  // August 15, 2025
 '2025-2026 2nd semester' => '2026-01-15'  // January 15, 2026
-'2026-2027 1st semester' => '2026-08-15'  // August 15, 2026
-'2026-2027 2nd semester' => '2027-01-15'  // January 15, 2027
+'2025-2026 1st semester' => '2025-08-15'  // August 15, 2025
+'2025-2026 2nd semester' => '2026-01-15'  // January 15, 2026
 ```
 
 *Note: These dates can be adjusted in the AttendanceController if needed.*

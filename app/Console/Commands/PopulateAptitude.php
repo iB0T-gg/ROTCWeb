@@ -84,7 +84,7 @@ class PopulateAptitude extends Command
             $model = SecondSemesterMerit::firstOrNew([
                 'cadet_id' => $cadet->id,
                 'type' => 'military_attitude',
-                'semester' => '2026-2027 2nd semester',
+                'semester' => '2025-2026 2nd semester',
             ]);
 
             // Week columns

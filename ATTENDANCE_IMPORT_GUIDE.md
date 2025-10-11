@@ -79,7 +79,7 @@ After import, you'll see:
 The system automatically calculates which week each attendance record belongs to based on:
 - **Semester start dates**:
   - 2025-2026 1st semester: September 1, 2025
-  - 2026-2027 2nd semester: February 1, 2027
+  - 2025-2026 2nd semester: February 1, 2026
 - **Maximum weeks per semester**:
   - 1st semester: 10 weeks
   - 2nd semester: 15 weeks
