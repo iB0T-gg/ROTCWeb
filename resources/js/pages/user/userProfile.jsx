@@ -596,7 +596,7 @@ const UserProfile = ({ auth, user }) => {
 
                 {/* Academic Information Section - Separate Card */}
                 <div className="bg-white p-3 lg:p-4 rounded-lg shadow animate-scale-in-up">
-                  <h3 className="text-base lg:text-lg font-semibold text-black mb-3 text-center">Academic Info</h3>
+                  <h3 className="text-base lg:text-lg font-semibold text-black mb-3 text-center">Academic Information</h3>
                   
                   {/* Course */}
                   <div className="mb-3">

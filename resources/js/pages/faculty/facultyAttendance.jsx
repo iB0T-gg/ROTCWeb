@@ -162,7 +162,7 @@ const FacultyAttendance = ({ auth }) => {
           </div>
           {/* Page Header */}
           <div className='flex items-center justify-between mt-3 md:mt-4 mb-4 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg animate-fade-in-down'>
-            <h1 className='text-lg md:text-2xl font-semibold'>Attendance Management</h1>
+            <h1 className='text-lg md:text-2xl font-semibold'>Attendance Report</h1>
           </div>
             {/* Tab Navigation */}
             <div className="bg-white p-3 md:p-6 rounded-lg shadow mb-4 md:mb-6 animate-scale-in-up">

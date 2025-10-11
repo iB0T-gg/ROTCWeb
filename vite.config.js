@@ -18,6 +18,7 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    base: '/build',
     build: {
         outDir: 'public/build',   // ✅ required for Laravel to find manifest.json
         manifest: true,           // ✅ generate manifest.json
