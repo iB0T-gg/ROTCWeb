@@ -101,7 +101,7 @@ export default function Register() {
                                 <div className="mb-3 sm:mb-4">
                                     <label className='block text-xs sm:text-sm mb-1 sm:mb-2 text-textColor font-regular' htmlFor='student_number'>Student Number</label>
                                     <input
-                                        type='text'
+                                        type='number'
                                         id='student_number'
                                         value={data.student_number}
                                         onChange={e => setData('student_number', e.target.value)}
