@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('week_number');
             $table->boolean('is_present')->default(false);
             $table->date('attendance_date');
-            $table->string('semester')->default('2026-2027 2nd semester');
+            $table->string('semester')->default('2025-2026 2nd semester');
             $table->timestamps();
             
             // Add unique constraint to prevent duplicate entries

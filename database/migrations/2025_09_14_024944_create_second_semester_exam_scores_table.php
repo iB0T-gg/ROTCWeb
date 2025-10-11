@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('midterm_exam')->nullable();
             $table->integer('final_exam')->nullable();
-            $table->string('semester')->default('2026-2027 2nd semester');
+            $table->string('semester')->default('2025-2026 2nd semester');
             $table->timestamps();
             
             // Add unique constraint to prevent duplicate entries per user per semester

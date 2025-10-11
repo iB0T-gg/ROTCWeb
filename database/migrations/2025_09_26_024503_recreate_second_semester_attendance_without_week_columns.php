@@ -23,7 +23,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('attendance_date');
-            $table->string('semester')->default('2026-2027 2nd semester');
+            $table->string('semester')->default('2025-2026 2nd semester');
             $table->integer('weeks_present')->default(0);
             $table->integer('attendance_30')->default(0);
             $table->timestamps();
@@ -65,7 +65,7 @@ return new class extends Migration
             $table->integer('week_number');
             $table->boolean('is_present')->default(false);
             $table->date('attendance_date');
-            $table->string('semester')->default('2026-2027 2nd semester');
+            $table->string('semester')->default('2025-2026 2nd semester');
             $table->integer('weeks_present')->default(0);
             $table->integer('attendance_30')->default(0);
             $table->timestamps();

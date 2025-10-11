@@ -36,7 +36,7 @@ return new class extends Migration
             }
             
             // Determine semester based on table
-            $semester = $tableName === 'first_semester_aptitude' ? '2025-2026 1st semester' : '2026-2027 2nd semester';
+            $semester = $tableName === 'first_semester_aptitude' ? '2025-2026 1st semester' : '2025-2026 2nd semester';
             
             \DB::table($tableName)->insert([
                 'cadet_id' => $cadet->id,

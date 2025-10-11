@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cadet_id')->constrained('users')->onDelete('cascade');
             $table->string('type')->default('military_attitude');
-            $table->string('semester')->default('2026-2027 2nd semester');
+            $table->string('semester')->default('2025-2026 2nd semester');
             $table->string('day_1')->nullable();
             $table->string('day_2')->nullable();
             $table->string('day_3')->nullable();

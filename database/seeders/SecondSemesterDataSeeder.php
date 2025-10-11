@@ -14,7 +14,7 @@ class SecondSemesterDataSeeder extends Seeder
      */
     public function run(): void
     {
-        $secondSemester = '2026-2027 2nd semester';
+        $secondSemester = '2025-2026 2nd semester';
         
         // Get all users with role 'user' (cadets)
         $cadets = User::where('role', 'user')->get();
