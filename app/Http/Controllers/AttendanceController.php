@@ -973,8 +973,6 @@ class AttendanceController extends Controller
         $semesterStarts = [
             '2025-2026 1st semester' => '2025-08-15',
             '2025-2026 2nd semester' => '2026-01-15',
-            '2026-2027 1st semester' => '2026-08-15',
-            '2026-2027 2nd semester' => '2027-01-15',
         ];
 
         if (!isset($semesterStarts[$semester])) {

@@ -104,7 +104,7 @@ const [scrollPosition, setScrollPosition] = useState(0);
   const cadetsPerPage = 8;
 
   // Semester options
-  const semesterOptions = ['2025-2026 1st semester', '2026-2027 2nd semester'];
+  const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
 
   // Function to fetch data based on selected semester
   const fetchDataForSemester = async (semester) => {
@@ -121,7 +121,7 @@ const [scrollPosition, setScrollPosition] = useState(0);
       
       if (semester === '2025-2026 1st semester') {
         meritsEndpoint = '/api/first_semester_aptitude';
-      } else if (semester === '2026-2027 2nd semester') {
+      } else if (semester === '2025-2026 2nd semester') {
         meritsEndpoint = '/api/second_semester_aptitude';
       } else {
         console.error('Unknown semester:', semester);
@@ -505,7 +505,7 @@ const [scrollPosition, setScrollPosition] = useState(0);
       let saveEndpoint;
       if (selectedSemester === '2025-2026 1st semester') {
         saveEndpoint = '/api/first_semester_aptitude/save';
-      } else if (selectedSemester === '2026-2027 2nd semester') {
+      } else if (selectedSemester === '2025-2026 2nd semester') {
         saveEndpoint = '/api/second_semester_aptitude/save';
       } else {
         setAlertDialog({
@@ -765,14 +765,14 @@ const handleSliderChange = (newPosition) => {
                        setIsEditing(false);
                        setCurrentPage(1);
                        setActiveTab('previous');
-                       setSelectedSemester('2026-2027 2nd semester');
+                       setSelectedSemester('2025-2026 2nd semester');
                        // Fetch will be triggered by useEffect on selectedSemester
                      }}
                       className={`w-full sm:w-auto py-2 px-3 md:px-4 rounded-lg text-sm md:text-base ${activeTab === 'previous' 
                        ? 'bg-primary text-white' 
                        : 'bg-gray-100 text-gray-700'}`}
                    >
-                     2026-2027 2nd semester
+                     2025-2026 2nd semester
                    </button>
                 </div>
                   <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 w-full lg:w-auto">
@@ -1102,7 +1102,7 @@ const handleSliderChange = (newPosition) => {
                       })}
                     </div>
             {/* Horizontal Scrollbar (currently unused for 2nd semester since all 15 weeks are shown, keep for future use) */}
-            {false && selectedSemester === '2026-2027 2nd semester' && (
+            {false && selectedSemester === '2025-2026 2nd semester' && (
               <div className="w-full mt-3 md:mt-4">
                 <div className="flex items-center gap-2 w-full">
                   <button

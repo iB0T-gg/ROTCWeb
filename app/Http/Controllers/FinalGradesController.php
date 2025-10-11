@@ -365,7 +365,7 @@ class FinalGradesController extends Controller
         // Handle semester name variations in database
         $aptitude = DB::table('second_semester_aptitude')
             ->where('cadet_id', $userId)
-            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->whereIn('semester', ['2025-2026 2nd semester'])
             ->first();
             
         if (!$aptitude) return 0;
@@ -432,7 +432,7 @@ class FinalGradesController extends Controller
         // Handle semester name variations in database
         $exam = DB::table('second_semester_exam_scores')
             ->where('user_id', $userId)
-            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->whereIn('semester', ['2025-2026 2nd semester'])
             ->first();
             
         if (!$exam) return 0;
@@ -600,7 +600,7 @@ class FinalGradesController extends Controller
         // Handle semester name variations in database
         $aptitude = DB::table('second_semester_aptitude')
             ->where('cadet_id', $userId)
-            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->whereIn('semester', ['2025-2026 2nd semester'])
             ->first();
             
         if (!$aptitude) {
@@ -659,7 +659,7 @@ class FinalGradesController extends Controller
         // Handle semester name variations in database
         $exam = DB::table('second_semester_exam_scores')
             ->where('user_id', $userId)
-            ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester'])
+            ->whereIn('semester', ['2025-2026 2nd semester'])
             ->first();
             
         if (!$exam) {

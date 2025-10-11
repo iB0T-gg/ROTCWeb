@@ -71,7 +71,7 @@ class ExamController extends Controller
                 // Get aptitude_30 from second_semester_aptitude
                 $aptitude = DB::table('second_semester_aptitude')
                     ->where('cadet_id', $user->id)
-                    ->whereIn('semester', ['2025-2026 2nd semester', '2026-2027 2nd semester']) // Handle both semester formats
+                    ->whereIn('semester', ['2025-2026 2nd semester']) // Handle semester format
                     ->first();
                 $aptitude30 = $aptitude ? (float) $aptitude->aptitude_30 : 0;
                 

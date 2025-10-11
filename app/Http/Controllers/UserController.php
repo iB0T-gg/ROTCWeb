@@ -795,7 +795,7 @@ class UserController extends Controller
         
         $query = $meritModel::with('cadet')
             ->where('type', 'military_attitude')
-            ->where('semester', '2026-2027 2nd semester');
+            ->where('semester', '2025-2026 2nd semester');
         
         $merits = $query->get()->keyBy('cadet_id');
         
@@ -827,7 +827,7 @@ class UserController extends Controller
             }
 
             $meritModel = \App\Models\SecondSemesterMerit::class;
-            $semester = '2026-2027 2nd semester';
+            $semester = '2025-2026 2nd semester';
             $savedCount = 0;
 
             \DB::transaction(function () use ($request, $meritModel, $semester, $faculty, &$savedCount) {
