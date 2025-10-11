@@ -67,7 +67,7 @@ class AuthController extends Controller
         
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
-            'student_number' => 'required|string|unique:users',
+            'student_number' => 'required|numeric|unique:users',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
