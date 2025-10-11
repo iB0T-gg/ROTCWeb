@@ -150,7 +150,7 @@ export default function UserSidebar() {
                         >
                             {auth.user.profile_pic_url || auth.user.profile_pic ? (
                                 <img 
-                                    src={auth.user.profile_pic_url || (auth.user.profile_pic ? (auth.user.profile_pic.startsWith('http') ? auth.user.profile_pic : `/storage/${auth.user.profile_pic}`) : null)}
+                                    src={auth.user.profile_pic_url || (auth.user.profile_pic ? (auth.user.profile_pic.startsWith('http') ? auth.user.profile_pic : `/public/storage/${auth.user.profile_pic}`) : null)}
                                     alt="Profile" 
                                     className="w-14 h-14 rounded-full object-cover border-2 border-primary"
                                     onError={(e) => {

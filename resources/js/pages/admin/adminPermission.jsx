@@ -627,7 +627,7 @@ export default function AdminPermission(){
                       <img 
                         src={getUserCertificate(selectedUserCertificate).startsWith('http') 
                           ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`} 
+                          : `/public/storage/${getUserCertificate(selectedUserCertificate)}`} 
                         alt="Certificate of Registration"
                         className="max-w-full h-auto mx-auto rounded border shadow"
                         onError={(e) => {
@@ -645,7 +645,7 @@ export default function AdminPermission(){
                         <p className="text-xs mt-2">
                           Full path: {getUserCertificate(selectedUserCertificate).startsWith('http') 
                             ? getUserCertificate(selectedUserCertificate)
-                            : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                            : `/public/storage/${getUserCertificate(selectedUserCertificate)}`}
                         </p>
                       </div>
                     </div>
@@ -653,7 +653,7 @@ export default function AdminPermission(){
                       <a 
                         href={getUserCertificate(selectedUserCertificate).startsWith('http') 
                           ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                          : `/public/storage/${getUserCertificate(selectedUserCertificate)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
@@ -663,7 +663,7 @@ export default function AdminPermission(){
                       <a 
                         href={getUserCertificate(selectedUserCertificate).startsWith('http') 
                           ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                          : `/public/storage/${getUserCertificate(selectedUserCertificate)}`}
                         download
                         className="px-4 py-2 bg-primary/90 text-white rounded hover:bg-primary transition-colors"
                       >

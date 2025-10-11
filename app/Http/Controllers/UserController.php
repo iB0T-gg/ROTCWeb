@@ -167,7 +167,7 @@ class UserController extends Controller
             }
 
             // Save the path to the user
-            $user->profile_pic_url = '/storage/' . $path;
+            $user->profile_pic_url = '/public/storage/' . $path;
             $user->save();
 
             \Log::info('Avatar uploaded successfully', [

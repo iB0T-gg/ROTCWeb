@@ -94,7 +94,7 @@ export default function Header({ auth }) {
                             {auth && auth.user && auth.user.role !== 'admin' && auth.user.role !== 'faculty' ? (
                                 auth.user.profile_pic_url || auth.user.profile_pic ? (
                                     <img 
-                                        src={auth.user.profile_pic_url || (auth.user.profile_pic ? (auth.user.profile_pic.startsWith('http') ? auth.user.profile_pic : `/storage/${auth.user.profile_pic}`) : null)}
+                                        src={auth.user.profile_pic_url || (auth.user.profile_pic ? (auth.user.profile_pic.startsWith('http') ? auth.user.profile_pic : `/public/storage/${auth.user.profile_pic}`) : null)}
                                         alt="Profile" 
                                         className="w-10 h-10 rounded-full object-cover border-2 border-white"
                                         onError={(e) => {
