@@ -92,39 +92,46 @@ export default function AdminPermission(){
 
     // Helper function to get certificate from user (checking multiple possible field names)
     const getUserCertificate = (user) => {
-        // Check various possible field names for the certificate
-        const possibleFields = [
-            'cor_file_path', // Primary field name based on user feedback
-            'certificate_of_registration',
-            'certificate',
-            'cor',
-            'registration_certificate',
-            'certificate_file',
-            'certificate_path'
-        ];
-        
-        for (const field of possibleFields) {
-            if (user[field] && user[field].trim() !== '') {
-                console.log(`Found certificate in field '${field}':`, user[field]);
-                let filePath = user[field];
-                
-                // Ensure the path starts with /storage/ (database should now contain correct paths)
-                if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
-                    if (filePath.startsWith('/')) {
-                        filePath = '/storage' + filePath;
-                    } else {
-                        filePath = '/storage/' + filePath;
-                    }
-                }
-                
-                console.log(`Final certificate path:`, filePath);
-                return filePath;
+      const possibleFields = [
+        'cor_file_path',
+        'certificate_of_registration',
+        'certificate',
+        'cor',
+        'registration_certificate',
+        'certificate_file',
+        'certificate_path'
+      ];
+    
+      for (const field of possibleFields) {
+        if (user[field] && user[field].trim() !== '') {
+          let filePath = user[field].trim();
+    
+          // 🔹 Remove any "public/" prefix
+          filePath = filePath.replace(/^\/?public\//, '');
+    
+          // 🔹 Ensure it starts with /storage/
+          if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
+            if (filePath.startsWith('/')) {
+              filePath = '/storage' + filePath;
+            } else {
+              filePath = '/storage/' + filePath;
             }
+          }
+    
+          // 🔹 Ensure full absolute URL (important for production)
+          if (!filePath.startsWith('http')) {
+            filePath = `${window.location.origin}${filePath}`;
+          }
+    
+          console.log(`✅ Final certificate path:`, filePath);
+          return filePath;
         }
-        
-        console.log('No certificate found for user:', user.first_name, user.last_name);
-        return null;
+      }
+    
+      console.log('⚠️ No certificate found for user:', user.first_name, user.last_name);
+      return null;
     };
+    
 
     // Helper function to check if user has a certificate
     const userHasCertificate = (user) => {
