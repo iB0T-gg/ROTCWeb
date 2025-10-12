@@ -111,3 +111,4 @@ If you encounter issues:
 2. Verify file permissions and directory structure
 3. Test with a simple file upload first
 4. Contact Hostinger support if symbolic links are not supported
+

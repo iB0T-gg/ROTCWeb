@@ -114,3 +114,4 @@ echo "\nNext steps:\n";
 echo "1. Upload your Laravel application to Hostinger\n";
 echo "2. Run this script on the server\n";
 echo "3. Test file uploads in your application\n";
+

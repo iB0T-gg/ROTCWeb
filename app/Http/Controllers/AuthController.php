@@ -85,7 +85,7 @@ class AuthController extends Controller
         if ($request->hasFile('cor_file')) {
             $file = $request->file('cor_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $corFilePath = $file->storeAs('cor_files', $fileName, 'public');
+            $corFilePath = $file->storeAs('cor_files', $fileName, 'custom_public');
         }
 
         $user = User::create([
@@ -140,7 +140,7 @@ class AuthController extends Controller
         if ($request->hasFile('credentials_file')) {
             $file = $request->file('credentials_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $credentialsFilePath = $file->storeAs('credentials_files', $fileName, 'public');
+            $credentialsFilePath = $file->storeAs('credentials_files', $fileName, 'custom_public');
         }
 
         $user = User::create([

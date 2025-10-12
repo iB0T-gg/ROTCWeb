@@ -160,7 +160,7 @@ class UserController extends Controller
             $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
             
             // Store the file
-            $path = $file->storeAs('avatars', $filename, 'public');
+            $path = $file->storeAs('avatars', $filename, 'custom_public');
 
             if (!$path) {
                 return back()->withErrors(['error' => 'Failed to store file']);
