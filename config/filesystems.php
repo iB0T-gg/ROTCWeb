@@ -7,19 +7,22 @@ return [
     | Default Filesystem Disk
     |--------------------------------------------------------------------------
     |
-    | This is the default disk Laravel will use. We’ll use the “public” disk
-    | since it’s properly mapped to /storage via the symbolic link.
+    | This option controls the default filesystem disk that should be used
+    | by the framework. You may set this in your ".env" file.
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'public'),
+    'default' => env('FILESYSTEM_DISK', 'custom_public'),
 
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
-    | You may configure as many filesystem disks as necessary.
+    | Configure as many filesystem disks as necessary. You may even configure
+    | multiple disks for the same driver.
+    |
+    | Supported drivers: "local", "ftp", "sftp", "s3"
     |
     */
 
@@ -31,7 +34,6 @@ return [
             'throw' => false,
         ],
 
-        // ✅ Correct public disk for uploads
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
@@ -40,9 +42,14 @@ return [
             'throw' => false,
         ],
 
-        // ❌ Removed "custom_public" (not needed and can cause confusion)
-        // If you want to keep it for direct public storage use, you can re-add it,
-        // but we’ll standardize everything under “public” for Laravel’s structure.
+        // ✅ Custom disk that stores files directly in /public/storage
+        'custom_public' => [
+            'driver' => 'local',
+            'root' => public_path('storage'),
+            'url' => env('APP_URL') . '/storage',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
 
         's3' => [
             'driver' => 's3',
@@ -63,12 +70,9 @@ return [
     | Symbolic Links
     |--------------------------------------------------------------------------
     |
-    | This link allows access to /storage in your public directory.
+    | These links are created when you run `php artisan storage:link`.
     |
     */
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
-    ],
-
-];
