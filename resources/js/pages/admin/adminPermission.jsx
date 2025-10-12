@@ -106,7 +106,14 @@ export default function AdminPermission(){
         for (const field of possibleFields) {
             if (user[field] && user[field].trim() !== '') {
                 console.log(`Found certificate in field '${field}':`, user[field]);
-                return user[field];
+                let filePath = user[field];
+                
+                // If the path contains /public/storage/, replace it with /storage/
+                if (filePath.includes('/public/storage/')) {
+                    filePath = filePath.replace('/public/storage/', '/storage/');
+                }
+                
+                return filePath;
             }
         }
         
