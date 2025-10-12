@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -167,7 +168,7 @@ class UserController extends Controller
             }
 
             // Save the path to the user
-            $user->profile_pic_url = '/public/storage/' . $path;
+            $user->profile_pic_url = Storage::disk('custom_public')->url($path);
             $user->save();
 
             \Log::info('Avatar uploaded successfully', [
