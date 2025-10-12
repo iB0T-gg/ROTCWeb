@@ -108,11 +108,25 @@ export default function AdminPermission(){
                 console.log(`Found certificate in field '${field}':`, user[field]);
                 let filePath = user[field];
                 
-                // If the path contains /public/storage/, replace it with /storage/
+                // Handle different path formats
                 if (filePath.includes('/public/storage/')) {
+                    // Full URL with /public/storage/ - replace with /storage/
                     filePath = filePath.replace('/public/storage/', '/storage/');
+                } else if (filePath.includes('/storage/')) {
+                    // Already has /storage/ - keep as is
+                    filePath = filePath;
+                } else if (filePath.startsWith('cor_files/') || filePath.startsWith('avatars/') || filePath.startsWith('credentials_files/')) {
+                    // Relative path - add /storage/ prefix
+                    filePath = '/storage/' + filePath;
+                } else if (filePath.startsWith('http')) {
+                    // Full HTTP URL - keep as is
+                    filePath = filePath;
+                } else {
+                    // Default case - assume it's a relative path and add /storage/
+                    filePath = '/storage/' + filePath;
                 }
                 
+                console.log(`Processed certificate path:`, filePath);
                 return filePath;
             }
         }
@@ -632,9 +646,7 @@ export default function AdminPermission(){
                     </div>
                     <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-auto">
                       <img 
-                        src={getUserCertificate(selectedUserCertificate).startsWith('http') 
-                          ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`} 
+                        src={getUserCertificate(selectedUserCertificate)} 
                         alt="Certificate of Registration"
                         className="max-w-full h-auto mx-auto rounded border shadow"
                         onError={(e) => {
@@ -650,17 +662,13 @@ export default function AdminPermission(){
                         <p>Unable to load certificate image</p>
                         <p className="text-sm">File: {getUserCertificate(selectedUserCertificate)}</p>
                         <p className="text-xs mt-2">
-                          Full path: {getUserCertificate(selectedUserCertificate).startsWith('http') 
-                            ? getUserCertificate(selectedUserCertificate)
-                            : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                          Full path: {getUserCertificate(selectedUserCertificate)}
                         </p>
                       </div>
                     </div>
                     <div className="mt-4 flex justify-center gap-3">
                       <a 
-                        href={getUserCertificate(selectedUserCertificate).startsWith('http') 
-                          ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                        href={getUserCertificate(selectedUserCertificate)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
@@ -668,9 +676,7 @@ export default function AdminPermission(){
                         Open in New Tab
                       </a>
                       <a 
-                        href={getUserCertificate(selectedUserCertificate).startsWith('http') 
-                          ? getUserCertificate(selectedUserCertificate)
-                          : `/storage/${getUserCertificate(selectedUserCertificate)}`}
+                        href={getUserCertificate(selectedUserCertificate)}
                         download
                         className="px-4 py-2 bg-primary/90 text-white rounded hover:bg-primary transition-colors"
                       >
