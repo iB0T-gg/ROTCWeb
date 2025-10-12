@@ -109,21 +109,39 @@ export default function AdminPermission(){
                 let filePath = user[field];
                 
                 // Handle different path formats
+                console.log('Original filePath:', filePath);
+                
+                // Force replace any occurrence of /public/storage/ with /storage/
                 if (filePath.includes('/public/storage/')) {
-                    // Full URL with /public/storage/ - replace with /storage/
-                    filePath = filePath.replace('/public/storage/', '/storage/');
-                } else if (filePath.includes('/storage/')) {
-                    // Already has /storage/ - keep as is
-                    filePath = filePath;
-                } else if (filePath.startsWith('cor_files/') || filePath.startsWith('avatars/') || filePath.startsWith('credentials_files/')) {
-                    // Relative path - add /storage/ prefix
-                    filePath = '/storage/' + filePath;
-                } else if (filePath.startsWith('http')) {
-                    // Full HTTP URL - keep as is
-                    filePath = filePath;
-                } else {
-                    // Default case - assume it's a relative path and add /storage/
-                    filePath = '/storage/' + filePath;
+                    filePath = filePath.replace(/\/public\/storage\//g, '/storage/');
+                    console.log('Replaced /public/storage/ with /storage/:', filePath);
+                }
+                
+                // Handle case where it might be missing the leading slash
+                if (filePath.includes('public/storage/')) {
+                    filePath = filePath.replace(/public\/storage\//g, 'storage/');
+                    console.log('Replaced public/storage/ with storage/:', filePath);
+                }
+                
+                // If it's a full URL, extract just the path part
+                if (filePath.startsWith('http')) {
+                    try {
+                        const url = new URL(filePath);
+                        filePath = url.pathname;
+                        console.log('Extracted path from full URL:', filePath);
+                    } catch (e) {
+                        console.log('Failed to parse URL, keeping as is:', filePath);
+                    }
+                }
+                
+                // Ensure the path starts with /storage/
+                if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
+                    if (filePath.startsWith('/')) {
+                        filePath = '/storage' + filePath;
+                    } else {
+                        filePath = '/storage/' + filePath;
+                    }
+                    console.log('Ensured path starts with /storage/:', filePath);
                 }
                 
                 console.log(`Processed certificate path:`, filePath);
