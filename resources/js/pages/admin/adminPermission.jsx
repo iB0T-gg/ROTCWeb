@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// Cache busting: v2025-10-12-04-00
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { FaSearch } from 'react-icons/fa'
@@ -92,46 +93,41 @@ export default function AdminPermission(){
 
     // Helper function to get certificate from user (checking multiple possible field names)
     const getUserCertificate = (user) => {
-      const possibleFields = [
-        'cor_file_path',
-        'certificate_of_registration',
-        'certificate',
-        'cor',
-        'registration_certificate',
-        'certificate_file',
-        'certificate_path'
-      ];
-    
-      for (const field of possibleFields) {
-        if (user[field] && user[field].trim() !== '') {
-          let filePath = user[field].trim();
-    
-          // 🔹 Remove any "public/" prefix
-          filePath = filePath.replace(/^\/?public\//, '');
-    
-          // 🔹 Ensure it starts with /storage/
-          if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
-            if (filePath.startsWith('/')) {
-              filePath = '/storage' + filePath;
-            } else {
-              filePath = '/storage/' + filePath;
+        // Check various possible field names for the certificate
+        const possibleFields = [
+            'cor_file_path', // Primary field name based on user feedback
+            'certificate_of_registration',
+            'certificate',
+            'cor',
+            'registration_certificate',
+            'certificate_file',
+            'certificate_path'
+        ];
+        
+        for (const field of possibleFields) {
+            if (user[field] && user[field].trim() !== '') {
+                console.log(`Found certificate in field '${field}':`, user[field]);
+                let filePath = user[field];
+                
+                // Ensure the path starts with /storage/ (database should now contain correct paths)
+                if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
+                    if (filePath.startsWith('/')) {
+                        filePath = '/storage' + filePath;
+                    } else {
+                        filePath = '/storage/' + filePath;
+                    }
+                }
+                
+                console.log(`Final certificate path:`, filePath);
+                console.log(`DEBUG: getUserCertificate returning:`, filePath);
+                console.log(`DEBUG: Full URL would be:`, window.location.origin + filePath);
+                return filePath;
             }
-          }
-    
-          // 🔹 Ensure full absolute URL (important for production)
-          if (!filePath.startsWith('http')) {
-            filePath = `${window.location.origin}${filePath}`;
-          }
-    
-          console.log(`✅ Final certificate path:`, filePath);
-          return filePath;
         }
-      }
-    
-      console.log('⚠️ No certificate found for user:', user.first_name, user.last_name);
-      return null;
+        
+        console.log('No certificate found for user:', user.first_name, user.last_name);
+        return null;
     };
-    
 
     // Helper function to check if user has a certificate
     const userHasCertificate = (user) => {
@@ -644,7 +640,11 @@ export default function AdminPermission(){
                     </div>
                     <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-auto">
                       <img 
-                        src={getUserCertificate(selectedUserCertificate)} 
+                        src={(() => {
+                          const path = getUserCertificate(selectedUserCertificate);
+                          console.log('DEBUG: Image src path:', path);
+                          return path;
+                        })()} 
                         alt="Certificate of Registration"
                         className="max-w-full h-auto mx-auto rounded border shadow"
                         onError={(e) => {
@@ -666,7 +666,11 @@ export default function AdminPermission(){
                     </div>
                     <div className="mt-4 flex justify-center gap-3">
                       <a 
-                        href={getUserCertificate(selectedUserCertificate)}
+                        href={(() => {
+                          const path = getUserCertificate(selectedUserCertificate);
+                          console.log('DEBUG: Modal href path:', path);
+                          return path;
+                        })()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
