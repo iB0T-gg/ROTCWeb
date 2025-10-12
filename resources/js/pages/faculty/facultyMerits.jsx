@@ -904,7 +904,7 @@ const handleSliderChange = (newPosition) => {
              {/* Main Content */}
              <div className="bg-white p-3 md:p-6 rounded-lg shadow w-full mx-auto animate-scale-in-up">
                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 md:mb-6 animate-fade-in-up">
-                 <h1 className="text-base md:text-lg font-semibold text-black">Military Attitude</h1>
+                 <h1 className="text-base md:text-lg font-semibold text-black">Military Aptitude</h1>
                  {/* Week window controls (desktop/tablet) */}
                  <div className="hidden sm:flex items-center gap-2">
                    <button
@@ -1201,7 +1201,7 @@ const handleSliderChange = (newPosition) => {
                     }}
                     className='bg-primary text-white px-3 md:px-4 py-2 rounded hover:bg-[#3d4422] transition-colors duration-150 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed'
                   >
-                    Edit Merits
+                    Edit Aptitude
                   </button>
                 ) : (
                   <>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Header from '../../components/header';
 import UserSidebar from '../../components/userSidebar';
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, Link } from '@inertiajs/react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
 
 // Alert Dialog Component
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
@@ -260,9 +261,11 @@ export default function ChangePassword({ auth }) {
                 <div className="flex-1 p-3 md:p-6">
                     <div className="font-regular animate-fade-in-up">
                         {/* Breadcrumb */}
-                        <div className="bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 cursor-pointer text-sm md:text-base">
-                            Home {">"} Change Password
-                        </div>
+                        <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up'>
+                            <Link href="/adminHome" className="hover:text-primary hover:underline cursor-pointer font-semibold">Dashboard</Link>
+                            {" > "}
+                            <span className='cursor-pointer font-bold'>Change Password</span>
+                         </div>
                         
                         {/* Page Header */}
                         <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
