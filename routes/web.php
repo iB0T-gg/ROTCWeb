@@ -152,6 +152,17 @@ Route::get('/csrf-token', function (Request $request) {
     ]);
 });
 
+// File serving route for storage files
+Route::get('/storage/{path}', function ($path) {
+    $filePath = public_path('storage/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    
+    return response()->file($filePath);
+})->where('path', '.*');
+
 // Refresh CSRF token route
 Route::post('/refresh-csrf', function (Request $request) {
     $request->session()->regenerateToken();
