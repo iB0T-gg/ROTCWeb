@@ -108,43 +108,16 @@ export default function AdminPermission(){
                 console.log(`Found certificate in field '${field}':`, user[field]);
                 let filePath = user[field];
                 
-                // Handle different path formats
-                console.log('Original filePath:', filePath);
-                
-                // Force replace any occurrence of /public/storage/ with /storage/
-                if (filePath.includes('/public/storage/')) {
-                    filePath = filePath.replace(/\/public\/storage\//g, '/storage/');
-                    console.log('Replaced /public/storage/ with /storage/:', filePath);
-                }
-                
-                // Handle case where it might be missing the leading slash
-                if (filePath.includes('public/storage/')) {
-                    filePath = filePath.replace(/public\/storage\//g, 'storage/');
-                    console.log('Replaced public/storage/ with storage/:', filePath);
-                }
-                
-                // If it's a full URL, extract just the path part
-                if (filePath.startsWith('http')) {
-                    try {
-                        const url = new URL(filePath);
-                        filePath = url.pathname;
-                        console.log('Extracted path from full URL:', filePath);
-                    } catch (e) {
-                        console.log('Failed to parse URL, keeping as is:', filePath);
-                    }
-                }
-                
-                // Ensure the path starts with /storage/
+                // Ensure the path starts with /storage/ (database should now contain correct paths)
                 if (!filePath.startsWith('/storage/') && !filePath.startsWith('http')) {
                     if (filePath.startsWith('/')) {
                         filePath = '/storage' + filePath;
                     } else {
                         filePath = '/storage/' + filePath;
                     }
-                    console.log('Ensured path starts with /storage/:', filePath);
                 }
                 
-                console.log(`Processed certificate path:`, filePath);
+                console.log(`Final certificate path:`, filePath);
                 return filePath;
             }
         }

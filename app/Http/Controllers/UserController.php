@@ -167,8 +167,8 @@ class UserController extends Controller
                 return back()->withErrors(['error' => 'Failed to store file']);
             }
 
-            // Save the path to the user
-            $user->profile_pic_url = Storage::disk('custom_public')->url($path);
+            // Save the path to the user (store relative path, not full URL)
+            $user->profile_pic_url = '/storage/' . $path;
             $user->save();
 
             \Log::info('Avatar uploaded successfully', [
