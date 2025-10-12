@@ -966,14 +966,14 @@ const handleSliderChange = (newPosition) => {
                     // with no data yet, so totals include all 15 weeks by default.
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                     
                     return (
                       <tr key={cadet.id} className="border-b border-gray-200 odd:bg-white even:bg-gray-50">
                         <td className="p-1 sm:p-2 md:p-3 text-gray-900 text-xs sm:text-sm md:text-base sticky left-0 bg-white z-10 min-w-[120px]">{formatCadetName(cadet)}</td>
                         {getCurrentWeeks().map((week, j) => {
-                          const weekIndex = j; // Direct index for both semesters
+                          const weekIndex = currentWeekRange.start + j; // Correct index accounting for current week range
                           return (
                             <td key={j} className="p-1 sm:p-2 md:p-3 text-center">
                               <div className="flex xl:flex-row flex-col items-center justify-center gap-0.5 sm:gap-1">
@@ -1041,7 +1041,7 @@ const handleSliderChange = (newPosition) => {
                         let demeritValues = demerits[cadetIndex]?.days ?? [];
                         if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                         if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                        const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                        const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                         const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
 
                         return (
@@ -1053,7 +1053,7 @@ const handleSliderChange = (newPosition) => {
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                               {getCurrentWeeks().map((week, j) => {
-                                const weekIndex = j;
+                                const weekIndex = currentWeekRange.start + j;
                                 return (
                                   <div key={j} className="border rounded p-2">
                                     <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
@@ -1262,7 +1262,7 @@ const handleSliderChange = (newPosition) => {
                     // Ensure arrays cover all weeks; pad with defaults when shorter
                     if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                     if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                    const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                    const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                     const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
                      
                      return (
@@ -1273,7 +1273,7 @@ const handleSliderChange = (newPosition) => {
                            </div>
                          </td>
                         {getCurrentWeeks().map((week, j) => {
-                          const weekIndex = j; // Direct index for both semesters
+                          const weekIndex = currentWeekRange.start + j; // Correct index accounting for current week range
                           return (
                             <td key={j} className="p-1 sm:p-2 md:p-3 text-center border-b">
                               <div className="flex gap-0.5 sm:gap-1 justify-center">
@@ -1352,7 +1352,7 @@ const handleSliderChange = (newPosition) => {
                  let demeritValues = demerits[cadetIndex]?.days ?? [];
                  if (meritValues.length < weeks) meritValues = [...meritValues, ...Array(weeks - meritValues.length).fill(10)];
                  if (demeritValues.length < weeks) demeritValues = [...demeritValues, ...Array(weeks - demeritValues.length).fill(0)];
-                 const totalMerits = calculateDisplayedTotalMerits(demeritValues);
+                        const totalMerits = calculateTotalMerits(meritValues, demeritValues);
                  const aptitudeScore = calculateAptitudeScore(meritValues, demeritValues);
 
                  return (
@@ -1364,7 +1364,7 @@ const handleSliderChange = (newPosition) => {
                      </div>
                      <div className="grid grid-cols-3 gap-2">
                        {getCurrentWeeks().map((week, j) => {
-                         const weekIndex = j;
+                         const weekIndex = currentWeekRange.start + j;
                          return (
                            <div key={j} className="border rounded p-2">
                              <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
