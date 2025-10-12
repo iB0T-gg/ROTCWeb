@@ -363,7 +363,7 @@ class AttendanceController extends Controller
             if (empty($attendanceRecords)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No valid attendance records found in the file. Please check that your file contains UserID, Date, and Time columns with valid data.'
+                    'message' => 'No valid attendance records found in the file. Please check that your file contains UserID and Date columns with valid data. Time column is optional.'
                 ], 422);
             }
 
@@ -419,15 +419,15 @@ class AttendanceController extends Controller
             
             if (!$columnMap) {
                 fclose($handle);
-                throw new \Exception('Unable to identify required columns (UserID, Date, Time) in the file header.');
+                throw new \Exception('Unable to identify required columns (UserID, Date) in the file header. Time column is optional.');
             }
 
             while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
-                if (count($data) < 3) continue; // Skip invalid rows
+                if (count($data) < 2) continue; // Skip invalid rows (need at least UserID and Date)
                 
                 $userIdIndex = $columnMap['user_id'];
                 $dateIndex = $columnMap['date'];
-                $timeIndex = $columnMap['time'];
+                $timeIndex = $columnMap['time'] ?? null; // Time column is optional
                 
                 if (!isset($data[$userIdIndex]) || !isset($data[$dateIndex])) {
                     continue; // Skip rows with missing required data
@@ -435,7 +435,7 @@ class AttendanceController extends Controller
 
                 $userId = trim($data[$userIdIndex]);
                 $dateStr = trim($data[$dateIndex]);
-                $timeStr = isset($data[$timeIndex]) ? trim($data[$timeIndex]) : '';
+                $timeStr = ($timeIndex !== null && isset($data[$timeIndex])) ? trim($data[$timeIndex]) : '';
 
                 // Parse and validate the data
                 $parsedRecord = $this->parseAttendanceRecord($userId, $dateStr, $timeStr, $semester);
@@ -513,7 +513,7 @@ class AttendanceController extends Controller
                     $columnMap = $this->mapCsvColumns($headerRow);
                     
                     if (!$columnMap) {
-                        throw new \Exception('Unable to identify required columns (UserID, Date, Time) in the Excel file header.');
+                        throw new \Exception('Unable to identify required columns (UserID, Date) in the Excel file header. Time column is optional.');
                     }
                     continue;
                 }
@@ -523,11 +523,11 @@ class AttendanceController extends Controller
                     continue;
                 }
                 
-                // Process data row
-                if ($columnMap && count($rowData) >= max($columnMap)) {
+                // Process data row (need at least UserID and Date columns)
+                if ($columnMap && count($rowData) >= max(array_values($columnMap)) + 1) {
                     $userId = trim($rowData[$columnMap['user_id']] ?? '');
                     $dateStr = trim($rowData[$columnMap['date']] ?? '');
-                    $timeStr = trim($rowData[$columnMap['time']] ?? '');
+                    $timeStr = trim($rowData[$columnMap['time'] ?? ''] ?? '');
                     
                     if (!empty($userId) && !empty($dateStr)) {
                         $parsedRecord = $this->parseAttendanceRecord($userId, $dateStr, $timeStr, $semester);
@@ -583,7 +583,7 @@ class AttendanceController extends Controller
             
             $columnMap = $this->mapCsvColumns($headerData);
             if (!$columnMap) {
-                throw new \Exception('Unable to identify required columns (UserID, Date, Time) in the Excel file header.');
+                throw new \Exception('Unable to identify required columns (UserID, Date) in the Excel file header. Time column is optional.');
             }
             
             // Process data rows
@@ -591,7 +591,7 @@ class AttendanceController extends Controller
             while (true) {
                 $userId = trim($worksheet->Cells($row, $columnMap['user_id'] + 1)->Value ?? '');
                 $dateStr = trim($worksheet->Cells($row, $columnMap['date'] + 1)->Value ?? '');
-                $timeStr = trim($worksheet->Cells($row, $columnMap['time'] + 1)->Value ?? '');
+                $timeStr = isset($columnMap['time']) ? trim($worksheet->Cells($row, $columnMap['time'] + 1)->Value ?? '') : '';
                 
                 // Break if we encounter an empty row
                 if (empty($userId) && empty($dateStr)) {
@@ -685,7 +685,7 @@ class AttendanceController extends Controller
                         $columnMap = $this->mapCsvColumns($headerRow);
                         
                         if (!$columnMap) {
-                            throw new \Exception('Unable to identify required columns (UserID, Date, Time) in the Excel file header.');
+                            throw new \Exception('Unable to identify required columns (UserID, Date) in the Excel file header. Time column is optional.');
                         }
                         continue;
                     }
@@ -694,7 +694,7 @@ class AttendanceController extends Controller
                     if ($columnMap && count($rowData) >= max($columnMap)) {
                         $userId = trim($rowData[$columnMap['user_id']] ?? '');
                         $dateStr = trim($rowData[$columnMap['date']] ?? '');
-                        $timeStr = trim($rowData[$columnMap['time']] ?? '');
+                        $timeStr = trim($rowData[$columnMap['time'] ?? ''] ?? '');
                         
                         if (!empty($userId) && !empty($dateStr)) {
                             $parsedRecord = $this->parseAttendanceRecord($userId, $dateStr, $timeStr, $semester);

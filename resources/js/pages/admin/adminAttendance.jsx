@@ -562,7 +562,7 @@ export default function AdminAttendance(){
                         
                         {/* Page Header */}
                         <div className="bg-primary text-white p-3 md:p-4 rounded-lg flex items-center justify-between mt-3 md:mt-4 mb-3 md:mb-6 pl-3 md:pl-5 py-4 md:py-7 animate-fade-in-down">
-                            <h1 className="text-xl md:text-2xl font-semibold">Attendance Managements</h1>
+                            <h1 className="text-xl md:text-2xl font-semibold">Attendance Management</h1>
                         </div>
 
                         {/* Filters and Search */}
@@ -799,85 +799,92 @@ export default function AdminAttendance(){
                                         </div>
                                     )}
                                     
-                                    {/* Pagination */}
-                                    {totalPages > 1 && (
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 items-center mt-4 md:mt-6 gap-3">
-                                            <div className="text-gray-600 text-xs sm:text-sm lg:justify-self-start order-2 lg:order-1 text-center lg:text-left">
-                                                Showing {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
-                                            </div>
-                                            <div className="flex justify-center lg:justify-self-center w-full lg:w-auto order-1 lg:order-2">
-                                                {currentPage > 1 && (
-                                                    <button
-                                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                        className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        {'<'}
-                                                    </button>
-                                                )}
-                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                    let page;
-                                                    if (totalPages <= 5) {
-                                                        page = i + 1;
-                                                    } else {
-                                                        const start = Math.max(1, currentPage - 2);
-                                                        const end = Math.min(totalPages, start + 4);
-                                                        page = start + i;
-                                                        if (page > end) return null;
-                                                    }
-                                                    
-                                                    return (
-                                                        <button
-                                                            key={page}
-                                                            onClick={() => setCurrentPage(page)}
-                                                            className={`mx-1 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'}`}
-                                                        >
-                                                            {page}
-                                                        </button>
-                                                    );
-                                                })}
-                                                <button
-                                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                                    disabled={currentPage === totalPages}
-                                                    className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                                                >
-                                                    &gt;
-                                                </button>
-                                            </div>
-                                            <div className="lg:justify-self-end flex flex-col sm:flex-row gap-2 order-3 w-full lg:w-auto">
-                                                {editMode && (
-                                                    <button
-                                                        onClick={cancelEditing}
-                                                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
-                                                    >
-                                                        <FaTimes />
-                                                        <span className="hidden sm:inline">Cancel</span>
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={toggleEditMode}
-                                                    disabled={saving}
-                                                    className={`${editMode 
-                                                        ? 'bg-primary hover:bg-primary/85' 
-                                                        : 'bg-primary hover:bg-primary/85'
-                                                    } text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs sm:text-sm`}
-                                                >
-                                                    {saving ? (
-                                                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
-                                                    ) : editMode ? (
-                                                        <FaSave />
-                                                    ) : (
-                                                        <FaEdit />
-                                                    )}
-                                                    <span className="hidden sm:inline">
-                                                        {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
-                                                    </span>
-                                                    <span className="sm:hidden">
-                                                        {saving ? 'Save...' : editMode ? 'Save' : 'Edit'}
-                                                    </span>
-                                                </button>
-                                            </div>
+                                    {/* Pagination and Controls */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 items-center mt-4 md:mt-6 gap-3">
+                                        {/* Results Info */}
+                                        <div className="text-gray-600 text-xs sm:text-sm lg:justify-self-start order-2 lg:order-1 text-center lg:text-left">
+                                            Showing {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                                         </div>
-                                    )}
+                                        
+                                        {/* Pagination Buttons - Only show if more than 1 page */}
+                                        <div className="flex justify-center lg:justify-self-center w-full lg:w-auto order-1 lg:order-2 gap-2">
+                                            {totalPages > 1 && (
+                                                <>
+                                                    {currentPage > 1 && (
+                                                        <button
+                                                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                            className="px-3 sm:px-4 py-2 rounded bg-white border text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                                                        >
+                                                            {'<'}
+                                                        </button>
+                                                    )}
+                                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                        let page;
+                                                        if (totalPages <= 5) {
+                                                            page = i + 1;
+                                                        } else {
+                                                            const start = Math.max(1, currentPage - 2);
+                                                            const end = Math.min(totalPages, start + 4);
+                                                            page = start + i;
+                                                            if (page > end) return null;
+                                                        }
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={page}
+                                                                onClick={() => setCurrentPage(page)}
+                                                                className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm transition-colors ${currentPage === page ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white border hover:bg-gray-50'}`}
+                                                            >
+                                                                {page}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    <button
+                                                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                                        disabled={currentPage === totalPages}
+                                                        className="px-3 sm:px-4 py-2 rounded bg-white border text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        &gt;
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Edit Attendance Button - Always visible */}
+                                        <div className="lg:justify-self-end flex flex-col sm:flex-row gap-2 order-3 w-full lg:w-auto">
+                                            {editMode && (
+                                                <button
+                                                    onClick={cancelEditing}
+                                                    className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
+                                                >
+                                                    <FaTimes />
+                                                    <span className="hidden sm:inline">Cancel</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={toggleEditMode}
+                                                disabled={saving}
+                                                className={`${editMode 
+                                                    ? 'bg-primary hover:bg-primary/85' 
+                                                    : 'bg-primary hover:bg-primary/85'
+                                                } text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-xs sm:text-sm`}
+                                            >
+                                                {saving ? (
+                                                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
+                                                ) : editMode ? (
+                                                    <FaSave />
+                                                ) : (
+                                                    <FaEdit />
+                                                )}
+                                                <span className="hidden sm:inline">
+                                                    {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Attendance'}
+                                                </span>
+                                                <span className="sm:hidden">
+                                                    {saving ? 'Save...' : editMode ? 'Save' : 'Edit'}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
                                     </>
                                 )}
                             </div>
@@ -930,14 +937,14 @@ export default function AdminAttendance(){
                             <div className="text-sm text-gray-600">
                                 <p className="mb-2"><strong>Deli Scanner Export Format:</strong></p>
                                 <ul className="list-disc list-inside space-y-1 text-xs">
-                                    <li><strong>CSV/TXT/Excel:</strong> UserID, Date, Time columns</li>
+                                    <li><strong>Required Columns:</strong> UserID, Date (Time is optional)</li>
                                     <li><strong>Date Format:</strong> YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY</li>
                                     <li><strong>User Matching:</strong> 8-digit Deli IDs matched to last 8 digits of 10-digit student numbers</li>
-                                    <li><strong>Excel Support:</strong> .xlsx and .xls files are supported with automatic processing</li>
+                                    <li><strong>File Support:</strong> .csv, .txt, .xlsx, .xls files</li>
                                 </ul>
                                 <div className="mt-2 p-2 bg-primary/20 rounded text-primary">
                                     <p className="text-xs"><strong>Current Semester:</strong> {selectedSemester}</p>
-                                    <p className="text-xs mt-1"><strong>Note:</strong> Excel files will be automatically processed. If processing fails, you'll be prompted to convert to CSV format.</p>
+                                    <p className="text-xs mt-1"><strong>Note:</strong> Only UserID and Date columns are required. Time column is optional.</p>
                                 </div>
                             </div>
 

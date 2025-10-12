@@ -1003,40 +1003,45 @@ const FacultyFinalGrades = ({ auth }) => {
                 <div className="text-gray-600 text-sm md:text-base order-2 sm:order-1">
                   Showing data {(currentPage - 1) * cadetsPerPage + 1} to {Math.min(currentPage * cadetsPerPage, filteredCadets.length)} of {filteredCadets.length} cadets
                 </div>
-                <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto">
-                  {currentPage > 1 && (
-                    <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      {'<'}
-                    </button>
-                  )}
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                    if (pageNum > totalPages) return null;
-                    return (
-                      <button
-                        key={pageNum}
-                        className={`mx-1 px-2 md:px-3 py-1 rounded text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
-                        onClick={() => setCurrentPage(pageNum)}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  {currentPage < totalPages && (
-                    <button
-                      className="mx-1 px-2 md:px-3 py-1 rounded bg-white border text-sm md:text-base"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      &gt;
-                    </button>
+                {/* Pagination Buttons - Only show if more than 1 page */}
+                <div className="flex justify-center order-1 sm:order-2 w-full sm:w-auto gap-2">
+                  {totalPages > 1 && (
+                    <>
+                      {currentPage > 1 && (
+                        <button
+                          className="px-3 md:px-4 py-2 rounded bg-white border text-sm md:text-base hover:bg-gray-50 transition-colors"
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                        >
+                          {'<'}
+                        </button>
+                      )}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                        if (pageNum > totalPages) return null;
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`px-3 md:px-4 py-2 rounded text-sm md:text-base transition-colors ${currentPage === pageNum ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white border hover:bg-gray-50'}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      {currentPage < totalPages && (
+                        <button
+                          className="px-3 md:px-4 py-2 rounded bg-white border text-sm md:text-base hover:bg-gray-50 transition-colors"
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                        >
+                          &gt;
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
                 
-                {/* Desktop Action Buttons - Hidden on mobile */}
-                <div className="hidden lg:flex justify-end gap-2 order-3">
+                {/* Action Buttons - Always visible */}
+                <div className="flex justify-end gap-2 order-3 w-full sm:w-auto">
                   {selectedSemester === '2025-2026 1st semester' && (
                     <>
                       {!isEditingCommon ? (
@@ -1064,7 +1069,7 @@ const FacultyFinalGrades = ({ auth }) => {
                       )}
                     </>
                   )}
-            </div>
+                </div>
           </div>
           </div>
             </div>

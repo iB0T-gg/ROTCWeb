@@ -491,12 +491,12 @@ export default function AdminMasterlist(){
                 </div>
                 
                 {/* Pagination Buttons */}
-                <div className="flex justify-center lg:justify-self-center w-full lg:w-auto">
+                <div className="flex justify-center lg:justify-self-center w-full lg:w-auto gap-2">
                   {totalPages > 1 && (
                     <>
                       {currentPage > 1 && (
                         <button
-                          className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm md:text-base"
+                          className="px-3 sm:px-4 py-2 rounded bg-white border text-xs sm:text-sm md:text-base hover:bg-gray-50 transition-colors"
                           onClick={() => setCurrentPage(currentPage - 1)}
                         >
                           {'<'}
@@ -508,7 +508,7 @@ export default function AdminMasterlist(){
                         return (
                           <button
                             key={pageNum}
-                            className={`mx-1 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm md:text-base ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white border'}`}
+                            className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm md:text-base transition-colors ${currentPage === pageNum ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white border hover:bg-gray-50'}`}
                             onClick={() => setCurrentPage(pageNum)}
                           >
                             {pageNum}
@@ -517,7 +517,7 @@ export default function AdminMasterlist(){
                       })}
                       {currentPage < totalPages && (
                         <button
-                          className="mx-1 px-2 sm:px-3 py-1 rounded bg-white border text-xs sm:text-sm md:text-base"
+                          className="px-3 sm:px-4 py-2 rounded bg-white border text-xs sm:text-sm md:text-base hover:bg-gray-50 transition-colors"
                           onClick={() => setCurrentPage(currentPage + 1)}
                         >
                           &gt;
