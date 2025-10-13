@@ -19,6 +19,21 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     /**
+     * Normalize a personal name so that the first letter of each word is uppercase
+     * and the rest are lowercase, using multibyte-safe functions.
+     */
+    private function normalizeName(?string $name): ?string
+    {
+        if ($name === null) return null;
+        $lower = mb_strtolower($name, 'UTF-8');
+        // ucwords equivalent for multibyte strings
+        return preg_replace_callback('/\b\p{L}/u', function ($m) use ($lower) {
+            $pos = $m[0][1] ?? 0; // not used, but kept for clarity
+            return mb_strtoupper($m[0], 'UTF-8');
+        }, $lower);
+    }
+
+    /**
      * Default redirect path after authentication
      * Note: This is overridden by authenticated() method for role-specific redirects
      */
@@ -77,7 +92,7 @@ class AuthController extends Controller
             'course' => 'required|string|max:10',
             'section' => 'nullable|string|max:10',
             'password' => $passwordValidation['rules'],
-            'phone_number' => 'required|string|max:20',
+            'phone_number' => 'required|numeric',
             'cor_file' => 'required|file|mimes:pdf|max:2048',
         ], $passwordValidation['messages']);
 
@@ -91,14 +106,14 @@ class AuthController extends Controller
         $user = User::create([
             'email' => $request->email,
             'student_number' => $request->student_number,
-            'first_name' => $request->first_name,
-            'middle_name' => $request->middle_name,
-            'last_name' => $request->last_name,
+            'first_name' => $this->normalizeName($request->first_name),
+            'middle_name' => $this->normalizeName($request->middle_name),
+            'last_name' => $this->normalizeName($request->last_name),
             'gender' => $request->gender,
             'campus' => $request->campus,
             'year' => $request->year,
             'course' => $request->course,
-            'section' => $request->section,
+            'section' => ($request->section === 'None' || $request->section === '') ? null : $request->section,
             'password' => Hash::make($request->password),
             'phone_number' => $request->phone_number,
             'cor_file_path' => $corFilePath,
@@ -146,9 +161,9 @@ class AuthController extends Controller
         $user = User::create([
             'email' => $request->email,
             'student_number' => $request->employee_id, // Using student_number field for employee_id
-            'first_name' => $request->first_name,
-            'middle_name' => $request->middle_name,
-            'last_name' => $request->last_name,
+            'first_name' => $this->normalizeName($request->first_name),
+            'middle_name' => $this->normalizeName($request->middle_name),
+            'last_name' => $this->normalizeName($request->last_name),
             'gender' => $request->gender,
             'campus' => $request->campus,
             'year_course_section' => $request->department, // Using year_course_section field for department

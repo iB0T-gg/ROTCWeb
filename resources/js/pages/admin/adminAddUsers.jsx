@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import { useForm, Link, Head } from '@inertiajs/react';
@@ -30,6 +31,8 @@ const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
 };
 
 export default function AddUsers({ auth, success, error }) {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     // Alert state
     const [alertDialog, setAlertDialog] = useState({
         isOpen: false,
@@ -193,11 +196,12 @@ export default function AddUsers({ auth, success, error }) {
                                         </label>
                                         <input 
                                             type="text"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.student_number ? 'border-red-500' : 'border-gray-300'}`}
+                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.student_number ? 'border-red-500' : 'border-gray-300'} ${data.role !== 'user' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
                                             value={data.student_number}
                                             onChange={e => setData('student_number', e.target.value)}
                                             required={data.role === 'user'}
-                                            placeholder={data.role !== 'user' ? 'Optional for admin/faculty' : 'Required for cadets'}
+                                            disabled={data.role !== 'user'}
+                                            placeholder={data.role !== 'user' ? '' : 'Required for cadets'}
                                         />
                                         {errors.student_number && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.student_number}</div>}
                                     </div>
@@ -220,25 +224,45 @@ export default function AddUsers({ auth, success, error }) {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Password</label>
-                                        <input 
-                                            type="password"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={data.password}
-                                            onChange={e => setData('password', e.target.value)}
-                                            required
-                                        />
+                                        <div className="relative">
+                                            <input 
+                                                type={showPassword ? 'text' : 'password'}
+                                                className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+                                                value={data.password}
+                                                onChange={e => setData('password', e.target.value)}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            >
+                                                {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                         {errors.password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.password}</div>}
                                     </div>
                                     
                                     <div>
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Confirm Password</label>
-                                        <input 
-                                            type="password"
-                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
-                                            value={data.password_confirmation}
-                                            onChange={e => setData('password_confirmation', e.target.value)}
-                                            required
-                                        />
+                                        <div className="relative">
+                                            <input 
+                                                type={showPasswordConfirmation ? 'text' : 'password'}
+                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                value={data.password_confirmation}
+                                                onChange={e => setData('password_confirmation', e.target.value)}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                                aria-label={showPasswordConfirmation ? 'Hide password' : 'Show password'}
+                                            >
+                                                {showPasswordConfirmation ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 

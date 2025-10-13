@@ -337,18 +337,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
     
     // Faculty-only API endpoints
     Route::middleware(FacultyMiddleware::class)->group(function () {
-        Route::get('/cadets', function (Request $request) {
-            return \App\Models\User::where('role', 'user')->select(
-                'id',
-                'first_name',
-                'last_name',
-                'middle_name',
-                'platoon',
-                'company',
-                'battalion',
-                'role'
-            )->get();
-        });
+        Route::get('/cadets', [UserController::class, 'getCadets']);
         Route::get('/merits', [UserController::class, 'getMerits']);
         Route::post('/merits/save', [UserController::class, 'saveMerits']);
         

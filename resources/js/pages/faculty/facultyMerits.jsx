@@ -658,7 +658,8 @@ const [scrollPosition, setScrollPosition] = useState(0);
     const platoonMatches = !selectedPlatoon || cadet.platoon === selectedPlatoon;
     const companyMatches = !selectedCompany || cadet.company === selectedCompany;
     const battalionMatches = !selectedBattalion || cadet.battalion === selectedBattalion;
-    return nameMatches && platoonMatches && companyMatches && battalionMatches;
+    const notArchived = !cadet.archived;
+    return notArchived && nameMatches && platoonMatches && companyMatches && battalionMatches;
   });
 
   // Sort cadets alphabetically by name before paginating

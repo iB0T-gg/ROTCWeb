@@ -404,11 +404,16 @@ class AttendanceController extends Controller
         $attendanceRecords = [];
         $filePath = $file->getRealPath();
         
-        // Try to detect delimiter
-        $sampleContent = file_get_contents($filePath, false, null, 0, 1024);
+        // Try to detect delimiter (comma, tab, semicolon)
+        $sampleContent = file_get_contents($filePath, false, null, 0, 2048);
+        $cComma = substr_count($sampleContent, ',');
+        $cTab = substr_count($sampleContent, "\t");
+        $cSemi = substr_count($sampleContent, ';');
         $delimiter = ',';
-        if (substr_count($sampleContent, '\t') > substr_count($sampleContent, ',')) {
-            $delimiter = '\t';
+        if ($cTab >= $cComma && $cTab >= $cSemi) {
+            $delimiter = "\t";
+        } elseif ($cSemi >= $cComma && $cSemi >= $cTab) {
+            $delimiter = ';';
         }
 
         if (($handle = fopen($filePath, 'r')) !== false) {
@@ -418,8 +423,14 @@ class AttendanceController extends Controller
             $columnMap = $this->mapCsvColumns($header);
             
             if (!$columnMap) {
+                // The file may be an "Attendance Statistic Table" export without a Date column
                 fclose($handle);
-                throw new \Exception('Unable to identify required columns (UserID, Date) in the file header. Time column is optional.');
+                try {
+                    $statsFallback = $this->processAttendanceStatisticCsv($filePath, $semester, $delimiter);
+                    return $statsFallback; // Already parsed, return here
+                } catch (\Exception $e) {
+                    throw new \Exception('Unable to identify required columns (UserID, Date) in the file header. Time column is optional. ' . $e->getMessage());
+                }
             }
 
             while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
@@ -445,6 +456,155 @@ class AttendanceController extends Controller
             }
             fclose($handle);
         }
+
+        return $attendanceRecords;
+    }
+
+    /**
+     * Fallback parser for "Attendance Statistic Table" CSV exports that look like:
+     * Row 1: Attendance Statistic Table
+     * Row 2: Date:2025-10-01~2025-10-13
+     * Later: a header row containing "User ID" and other columns but no per-day dates.
+     * We will generate one attendance record per user for each date in the provided range.
+     */
+    private function processAttendanceStatisticCsv($filePath, $semester, $delimiter)
+    {
+        $rows = [];
+        if (($handle = fopen($filePath, 'r')) !== false) {
+            while (($data = fgetcsv($handle, 10000, $delimiter)) !== false) {
+                $rows[] = $data;
+            }
+            fclose($handle);
+        }
+        if (empty($rows)) {
+            return [];
+        }
+
+        // Detect date range in the first few rows (e.g., "Date:2025-10-01~2025-10-13" or single date "Date:2025-10-01")
+        $startDateStr = null;
+        $endDateStr = null;
+        $maxScan = min(10, count($rows));
+        for ($i = 0; $i < $maxScan; $i++) {
+            foreach ($rows[$i] as $cell) {
+                $cellTrim = trim((string)$cell);
+                if ($cellTrim === '') continue;
+                // Range with tilde, dash, 'to', or asterisk used by some exports
+                if (preg_match('/Date\s*:\s*(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})\s*(?:[~\-*–]|to)\s*(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})/i', $cellTrim, $m)) {
+                    $startDateStr = $m[1];
+                    $endDateStr = $m[2];
+                    break 2;
+                }
+                // Single date
+                if (preg_match('/Date\s*:\s*(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})/i', $cellTrim, $m)) {
+                    $startDateStr = $m[1];
+                    $endDateStr = $m[1];
+                    break 2;
+                }
+            }
+        }
+
+        if (!$startDateStr || !$endDateStr) {
+            throw new \Exception('Could not detect date range (e.g., "Date:YYYY-MM-DD~YYYY-MM-DD").');
+        }
+
+        // Normalize dates using existing date parser to handle different delimiters and single-digit parts
+        $normalizedStart = $this->parseDate($startDateStr);
+        $normalizedEnd = $this->parseDate($endDateStr);
+        if (!$normalizedStart || !$normalizedEnd) {
+            throw new \Exception('Unrecognized date format in report header.');
+        }
+
+        // Find the header row that contains "User ID" (robust to extra spaces/symbols)
+        $headerRowIndex = null;
+        $userIdCol = null;
+        $nameCol = null;
+        $rowScanLimit = min(30, count($rows));
+        for ($i = 0; $i < $rowScanLimit; $i++) {
+            $normalized = array_map(function ($v) {
+                $s = strtolower(trim((string)$v));
+                // remove all non-alphanumerics to battle odd spaces/NBSPs
+                return preg_replace('/[^a-z0-9]+/i', '', $s);
+            }, $rows[$i]);
+            // exact match
+            $idx = array_search('userid', $normalized);
+            if ($idx === false) {
+                // substring match in case of extra characters around the text
+                foreach ($normalized as $colIdx => $cellVal) {
+                    if ($cellVal !== null && $cellVal !== '' && strpos($cellVal, 'userid') !== false) {
+                        $idx = $colIdx;
+                        break;
+                    }
+                }
+            }
+            // also capture Name column if present
+            $nameIdx = array_search('name', $normalized);
+            if ($nameIdx === false) {
+                foreach ($normalized as $colIdx => $cellVal) {
+                    if ($cellVal !== null && $cellVal !== '' && strpos($cellVal, 'name') !== false) {
+                        $nameIdx = $colIdx;
+                        break;
+                    }
+                }
+            }
+            if ($idx !== false) {
+                $headerRowIndex = $i;
+                $userIdCol = $idx;
+                if ($nameIdx !== false) { $nameCol = $nameIdx; }
+                break;
+            }
+        }
+
+        if ($headerRowIndex === null || $userIdCol === null) {
+            throw new \Exception('Could not find "User ID" column in the report.');
+        }
+
+        // Collect user IDs from rows after header until an empty block
+        $userIds = [];
+        for ($i = $headerRowIndex + 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            // Stop if the row is effectively empty
+            if (!array_filter($row, function ($v) { return trim((string)$v) !== ''; })) {
+                continue;
+            }
+            $rawId = isset($row[$userIdCol]) ? trim((string)$row[$userIdCol]) : '';
+            $fullName = $nameCol !== null && isset($row[$nameCol]) ? trim((string)$row[$nameCol]) : '';
+            if ($rawId === '') { continue; }
+            // Skip obvious artifacts like a total count (e.g., "24")
+            $digitsOnly = preg_replace('/\D+/', '', $rawId);
+            if ($digitsOnly === '' || strlen($digitsOnly) < 6) {
+                continue;
+            }
+            $userIds[] = [$rawId, $fullName];
+        }
+
+        // Build dates in range (inclusive)
+        $attendanceRecords = [];
+        try {
+            $current = new \DateTime($normalizedStart);
+            $end = new \DateTime($normalizedEnd);
+        } catch (\Exception $e) {
+            throw new \Exception('Invalid date range values in report header.');
+        }
+
+        while ($current <= $end) {
+            $dateStr = $current->format('Y-m-d');
+            foreach ($userIds as $idAndName) {
+                list($idStr, $fullName) = $idAndName;
+                // Try normal ID-based parsing first
+                $parsed = $this->parseAttendanceRecord($idStr, $dateStr, '', $semester);
+                if (!$parsed && !empty($fullName)) {
+                    $parsed = $this->parseAttendanceRecordWithName($idStr, $fullName, $dateStr, '', $semester);
+                }
+                if ($parsed) { $attendanceRecords[] = $parsed; }
+            }
+            // Move to next day
+            $current->modify('+1 day');
+        }
+
+        \Log::info('Processed Attendance Statistic CSV', [
+            'users_found' => count($userIds),
+            'dates_generated' => count($attendanceRecords)
+        ]);
 
         return $attendanceRecords;
     }
@@ -869,6 +1029,52 @@ class AttendanceController extends Controller
                 'date' => $dateStr,
                 'time' => $timeStr
             ]);
+            return null;
+        }
+    }
+
+    /**
+     * Secondary parser that can resolve a user using either Deli ID or a "Name" column
+     * when the Deli ID mapping fails.
+     */
+    private function parseAttendanceRecordWithName($userId, $fullName, $dateStr, $timeStr, $semester)
+    {
+        try {
+            $deliUserId = trim($userId);
+            $user = null;
+
+            // Try resolve by name if ID didn't map
+            $name = trim($fullName);
+            if (!empty($name)) {
+                // Split on spaces and try first/last heuristics
+                $parts = preg_split('/\s+/', $name);
+                if (count($parts) >= 2) {
+                    $first = $parts[0];
+                    $last = $parts[count($parts) - 1];
+                    $user = User::where('first_name', 'like', $first.'%')
+                        ->where('last_name', 'like', $last.'%')
+                        ->where('role', '!=', 'admin')
+                        ->first();
+                }
+            }
+
+            if (!$user) {
+                return null;
+            }
+
+            $date = $this->parseDate($dateStr);
+            if (!$date) { return null; }
+            $weekNumber = $this->getWeekNumber($date, $semester);
+            if (!$weekNumber) { return null; }
+
+            return [
+                'user_id' => $user->id,
+                'date' => $date,
+                'time' => $timeStr,
+                'week_number' => $weekNumber,
+                'semester' => $semester
+            ];
+        } catch (\Exception $e) {
             return null;
         }
     }

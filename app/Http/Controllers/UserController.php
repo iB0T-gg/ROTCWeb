@@ -10,6 +10,18 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
+    /**
+     * Normalize a personal name so that the first letter of each word is uppercase
+     * and the rest are lowercase, using multibyte-safe functions.
+     */
+    private function normalizeName(?string $name): ?string
+    {
+        if ($name === null) return null;
+        $lower = mb_strtolower($name, 'UTF-8');
+        return preg_replace_callback('/\b\p{L}/u', function ($m) {
+            return mb_strtoupper($m[0], 'UTF-8');
+        }, $lower);
+    }
     // Get all users (for admin/API)
     public function index()
     {
@@ -43,7 +55,7 @@ class UserController extends Controller
         }
         
         $cadets = $query->orderBy('last_name')
-                        ->get(['id', 'first_name', 'middle_name', 'last_name', 'platoon', 'company', 'battalion', 'midterm_exam', 'final_exam', 'semester']);
+                        ->get(['id', 'first_name', 'middle_name', 'last_name', 'platoon', 'company', 'battalion']);
         return response()->json($cadets);
     }
 
@@ -98,8 +110,11 @@ class UserController extends Controller
             // Convert empty strings to null for database compatibility
             $dataToUpdate = [];
             foreach ($validated as $key => $value) {
-                // Convert empty strings to null, but keep actual values
-                $dataToUpdate[$key] = ($value === '' || $value === null) ? null : $value;
+                $val = ($value === '' || $value === null) ? null : $value;
+                if (in_array($key, ['first_name', 'middle_name', 'last_name'], true)) {
+                    $val = $this->normalizeName($val);
+                }
+                $dataToUpdate[$key] = $val;
             }
 
             \Log::info('Data to update', ['data' => $dataToUpdate]);

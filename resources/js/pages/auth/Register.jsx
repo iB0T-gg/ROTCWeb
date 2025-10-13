@@ -220,6 +220,7 @@ export default function Register() {
                                             className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                         >
                                             <option value="" className="text-gray-400">Select Group</option>
+                                            <option value="None" className="text-gray-700">None</option>
                                             <option value="G1" className="text-gray-700">G1</option>
                                             <option value="G2" className="text-gray-700">G2</option>
                                         </select>
@@ -331,7 +332,7 @@ export default function Register() {
                                         />
                                         <label 
                                             htmlFor='cor_file' 
-                                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-1 sm:mt-2 cursor-pointer flex items-center justify-center text-xs sm:text-sm hover-scale'
+                                            className='w-full bg-primary text-textColor p-1.5 sm:p-2 rounded-full hover:bg-opacity-80 transition-all duration-300 mt-1 sm:mt-2 cursor-pointer flex items-center justify-center text-xs sm:text-base hover-scale'
                                         >
                                             <span className="truncate">{fileName}</span>
                                         </label>

@@ -50,6 +50,7 @@ export default function AdminAttendance(){
     const [importing, setImporting] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importResults, setImportResults] = useState(null);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [selectedBattalion, setSelectedBattalion] = useState('');
     const [selectedCompany, setSelectedCompany] = useState('');
     const [selectedPlatoon, setSelectedPlatoon] = useState('');
@@ -376,29 +377,55 @@ export default function AdminAttendance(){
         currentPage * cadetsPerPage
     );
 
+    // Validate and set file helper
+    const validateAndSetImportFile = (file) => {
+        if (!file) return;
+        const allowedTypes = ['.csv', '.txt', '.xlsx', '.xls'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        if (allowedTypes.includes(fileExtension)) {
+            setImportFile(file);
+            if (['.xlsx', '.xls'].includes(fileExtension)) {
+                console.log('Excel file selected. Will attempt processing with fallback to CSV conversion instructions if needed.');
+            }
+        } else {
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Invalid File Format',
+                message: 'Please select a valid file format (.csv, .txt, .xlsx, .xls)'
+            });
+        }
+    };
+
     // Handle file selection for import
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            const allowedTypes = ['.csv', '.txt', '.xlsx', '.xls'];
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            
-            if (allowedTypes.includes(fileExtension)) {
-                setImportFile(file);
-                
-                // Show informational message for Excel files
-                if (['.xlsx', '.xls'].includes(fileExtension)) {
-                    console.log('Excel file selected. Will attempt processing with fallback to CSV conversion instructions if needed.');
-                }
-            } else {
-                setAlertDialog({
-                    isOpen: true,
-                    type: 'error',
-                    title: 'Invalid File Format',
-                    message: 'Please select a valid file format (.csv, .txt, .xlsx, .xls)'
-                });
-                event.target.value = '';
-            }
+        validateAndSetImportFile(file);
+        if (!file) return;
+        const input = event.target;
+        input.value = '';
+    };
+
+    // Drag and drop handlers
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingOver(false);
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            validateAndSetImportFile(files[0]);
         }
     };
 
@@ -913,7 +940,13 @@ export default function AdminAttendance(){
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Select Deli Scanner Export File
                                 </label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                                <div 
+                                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${isDraggingOver ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400'}`}
+                                    onDragOver={handleDragOver}
+                                    onDragEnter={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                >
                                     <input
                                         type="file"
                                         accept=".csv,.txt,.xlsx,.xls"

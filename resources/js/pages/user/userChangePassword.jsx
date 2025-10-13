@@ -262,7 +262,7 @@ export default function ChangePassword({ auth }) {
                     <div className="font-regular animate-fade-in-up">
                         {/* Breadcrumb */}
                         <div className='bg-white p-2 md:p-3 text-[#6B6A6A] rounded-lg pl-3 md:pl-5 text-sm md:text-base animate-fade-in-up'>
-                            <Link href="/adminHome" className="hover:text-primary hover:underline cursor-pointer font-semibold">Dashboard</Link>
+                            <Link href="/user/userHome" className="hover:text-primary hover:underline cursor-pointer font-semibold">Dashboard</Link>
                             {" > "}
                             <span className='cursor-pointer font-bold'>Change Password</span>
                          </div>

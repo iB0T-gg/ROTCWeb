@@ -33,6 +33,35 @@ const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   );
 };
 
+// Confirm Dialog Component
+const ConfirmDialog = ({ isOpen, title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+        <div>
+          <h3 className={`text-lg font-semibold text-black mb-2`}>{title}</h3>
+          <p className={`text-black`}>{message}</p>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            onClick={onCancel}
+            className={`px-4 py-2 text-gray-600 hover:text-gray-800 rounded transition-colors duration-150`}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors duration-150`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChevronDownIcon = ({ className }) => (
   <svg
     className={className}
@@ -73,6 +102,14 @@ const FacultyFinalGrades = ({ auth }) => {
     type: 'success',
     title: '',
     message: ''
+  });
+
+  // Confirm state for posting grades
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
   });
 
   // Semester options
@@ -758,7 +795,19 @@ const FacultyFinalGrades = ({ auth }) => {
                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
                   {/* Post Button - Separate for each semester (moved to the left of Search) */}
                   <button
-                    onClick={() => handlePostGrades(selectedSemester)}
+                    onClick={() => {
+                      if (isLoading || isPosting) return;
+                      const semText = selectedSemester === '2025-2026 1st semester' ? '1st Semester' : '2nd Semester';
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: `Post ${semText} Grades?`,
+                        message: `This will submit the ${semText} grades for all visible Cadets in the current semester. Continue?`,
+                        onConfirm: () => {
+                          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                          handlePostGrades(selectedSemester);
+                        }
+                      });
+                    }}
                     disabled={isLoading || isPosting}
                     className={`w-full sm:w-auto px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-medium transition-colors duration-150 text-sm md:text-base ${
                       isPosting
@@ -1084,6 +1133,21 @@ const FacultyFinalGrades = ({ auth }) => {
         title={alertDialog.title}
         message={alertDialog.message}
         onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={isPosting ? 'Posting...' : 'Post Grades'}
+        cancelText={'Cancel'}
+        onConfirm={() => {
+          if (typeof confirmDialog.onConfirm === 'function' && !isPosting) {
+            confirmDialog.onConfirm();
+          }
+        }}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
     </>
