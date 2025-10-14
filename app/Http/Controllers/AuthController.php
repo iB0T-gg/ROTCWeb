@@ -82,13 +82,13 @@ class AuthController extends Controller
         
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
-            'student_number' => 'required|numeric|unique:users',
+            'student_number' => 'required|numeric|unique:users|digits:10',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'gender' => 'required|in:Male,Female',
             'campus' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
+            'year' => 'required|string|max:2',
             'course' => 'required|string|max:10',
             'section' => 'nullable|string|max:10',
             'password' => $passwordValidation['rules'],
