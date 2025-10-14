@@ -837,7 +837,7 @@ const handleSliderChange = (newPosition) => {
                                   >
                                     <option value="">Select Company</option>
                                     <option value="Alpha">Alpha</option>
-                                    <option value="Beta">Beta</option>
+                                    <option value="Beta">Bravo</option>
                                     <option value="Charlie">Charlie</option>
                                     <option value="Delta">Delta</option>
                                   </select>
