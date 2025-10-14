@@ -40,6 +40,13 @@ class AdminController extends Controller
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
@@ -73,9 +80,23 @@ class AdminController extends Controller
                 ? 'Admin user created and approved successfully! Login credentials sent via email.' 
                 : 'User created successfully and is pending approval!';
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'user' => $user
+                ]);
+            }
+
             return redirect()->back()->with('success', $message);
 
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create user: ' . $e->getMessage()
+                ], 500);
+            }
             return redirect()->back()->with('error', 'Failed to create user: ' . $e->getMessage())->withInput();
         }
     }

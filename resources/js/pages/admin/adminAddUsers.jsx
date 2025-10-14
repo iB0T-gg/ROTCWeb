@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { useForm, Link, Head } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 
 // Alert Dialog Component
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
@@ -41,7 +41,7 @@ export default function AddUsers({ auth, success, error }) {
         message: ''
     });
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const [formData, setFormData] = useState({
         first_name: '',
         middle_name: '',
         last_name: '',
@@ -51,12 +51,30 @@ export default function AddUsers({ auth, success, error }) {
         password: '',
         password_confirmation: '',
     });
+    const [processing, setProcessing] = useState(false);
 
-    const handleSubmit = (e) => {
+    const setData = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const reset = () => {
+        setFormData({
+            first_name: '',
+            middle_name: '',
+            last_name: '',
+            email: '',
+            student_number: '',
+            role: 'user',
+            password: '',
+            password_confirmation: '',
+        });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         // Validate student number is required only for cadets
-        if (data.role === 'user' && !data.student_number.trim()) {
+        if (formData.role === 'user' && !formData.student_number.trim()) {
             setAlertDialog({
                 isOpen: true,
                 type: 'error',
@@ -66,38 +84,49 @@ export default function AddUsers({ auth, success, error }) {
             return;
         }
         
-        post('/api/admin/add-user', {
-            onSuccess: () => {
+        setProcessing(true);
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            
+            const response = await fetch('/api/admin/add-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
                 reset();
                 setAlertDialog({
                     isOpen: true,
                     type: 'success',
                     title: 'Success',
-                    message: 'User has been successfully added!'
+                    message: result.message
                 });
-            },
-            onError: (errors) => {
-                // Check if there are specific validation errors
-                if (Object.keys(errors).length > 0) {
-                    // Use the first error message
-                    const firstError = Object.values(errors)[0];
-                    setAlertDialog({
-                        isOpen: true,
-                        type: 'error',
-                        title: 'Validation Error',
-                        message: Array.isArray(firstError) ? firstError[0] : firstError
-                    });
-                } else {
-                    setAlertDialog({
-                        isOpen: true,
-                        type: 'error',
-                        title: 'Error',
-                        message: 'An error occurred while adding the user. Please try again.'
-                    });
-                }
-                console.error('Validation errors:', errors);
+            } else {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Error',
+                    message: result.message || 'An error occurred while adding the user. Please try again.'
+                });
             }
-        });
+        } catch (error) {
+            console.error('Error adding user:', error);
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: 'An error occurred while adding the user. Please try again.'
+            });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -146,12 +175,11 @@ export default function AddUsers({ auth, success, error }) {
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">First Name</label>
                                         <input 
                                             type="text"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.first_name ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={data.first_name}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                            value={formData.first_name}
                                             onChange={e => setData('first_name', e.target.value)}
                                             required
                                         />
-                                        {errors.first_name && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.first_name}</div>}
                                     </div>
                                     
                                     <div>
@@ -159,7 +187,7 @@ export default function AddUsers({ auth, success, error }) {
                                         <input 
                                             type="text"
                                             className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
-                                            value={data.middle_name}
+                                            value={formData.middle_name}
                                             onChange={e => setData('middle_name', e.target.value)}
                                         />
                                     </div>
@@ -168,12 +196,11 @@ export default function AddUsers({ auth, success, error }) {
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Last Name</label>
                                         <input 
                                             type="text"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.last_name ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={data.last_name}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                            value={formData.last_name}
                                             onChange={e => setData('last_name', e.target.value)}
                                             required
                                         />
-                                        {errors.last_name && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.last_name}</div>}
                                     </div>
                                 </div>
 
@@ -182,28 +209,26 @@ export default function AddUsers({ auth, success, error }) {
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Email</label>
                                         <input 
                                             type="email"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={data.email}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                            value={formData.email}
                                             onChange={e => setData('email', e.target.value)}
                                             required
                                         />
-                                        {errors.email && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.email}</div>}
                                     </div>
                                     
                                     <div>
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">
-                                            Student Number {data.role === 'user' && <span className="text-red-500">*</span>}
+                                            Student Number {formData.role === 'user' && <span className="text-red-500">*</span>}
                                         </label>
                                         <input 
                                             type="text"
-                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.student_number ? 'border-red-500' : 'border-gray-300'} ${data.role !== 'user' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
-                                            value={data.student_number}
+                                            className={`w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${formData.role !== 'user' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
+                                            value={formData.student_number}
                                             onChange={e => setData('student_number', e.target.value)}
-                                            required={data.role === 'user'}
-                                            disabled={data.role !== 'user'}
-                                            placeholder={data.role !== 'user' ? '' : 'Required for cadets'}
+                                            required={formData.role === 'user'}
+                                            disabled={formData.role !== 'user'}
+                                            placeholder={formData.role !== 'user' ? '' : 'Required for cadets'}
                                         />
-                                        {errors.student_number && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.student_number}</div>}
                                     </div>
                                 </div>
 
@@ -211,7 +236,7 @@ export default function AddUsers({ auth, success, error }) {
                                     <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Role</label>
                                     <select 
                                         className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
-                                        value={data.role}
+                                        value={formData.role}
                                         onChange={e => setData('role', e.target.value)}
                                         required
                                     >
@@ -227,8 +252,8 @@ export default function AddUsers({ auth, success, error }) {
                                         <div className="relative">
                                             <input 
                                                 type={showPassword ? 'text' : 'password'}
-                                                className={`w-full px-2 md:px-3 py-1.5 md:py-2 border rounded-md focus:outline-none focus:border-primary text-sm md:text-base ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
-                                                value={data.password}
+                                                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                value={formData.password}
                                                 onChange={e => setData('password', e.target.value)}
                                                 required
                                             />
@@ -241,7 +266,6 @@ export default function AddUsers({ auth, success, error }) {
                                                 {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                                             </button>
                                         </div>
-                                        {errors.password && <div className="text-red-500 text-xs md:text-sm mt-1">{errors.password}</div>}
                                     </div>
                                     
                                     <div>
@@ -250,7 +274,7 @@ export default function AddUsers({ auth, success, error }) {
                                             <input 
                                                 type={showPasswordConfirmation ? 'text' : 'password'}
                                                 className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
-                                                value={data.password_confirmation}
+                                                value={formData.password_confirmation}
                                                 onChange={e => setData('password_confirmation', e.target.value)}
                                                 required
                                             />
