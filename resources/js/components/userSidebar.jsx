@@ -52,7 +52,8 @@ export default function UserSidebar() {
         }
     };
 
-    const menuItems = [
+    // Desktop menu items (without Change Password and Report Issue)
+    const desktopMenuItems = [
         {
         icons: <FaChartSimple />,
         label: 'Dashboard',
@@ -73,17 +74,12 @@ export default function UserSidebar() {
         label: 'Grades',
         link: '/user/userGrades',
         },
-        {
-            icons: <FaLock />,
-            label: 'Change Password',
-            link: '/user/change-password',
-        },
-        {
-        icons: <TbMessageReportFilled />,
-        label: 'Report an Issue',
-        link: '/user/userReportAnIssue',
-        },
-    ]
+    ];
+
+    // Mobile menu items (only desktop items, settings will be separate)
+    const mobileMenuItems = [
+        ...desktopMenuItems,
+    ];
 
     return (
         <>
@@ -94,7 +90,7 @@ export default function UserSidebar() {
                 </div>    
                 
                 <ul className='flex flex-col space-y-2 w-full px-4'>
-                    {menuItems.map((item, index) => {
+                    {desktopMenuItems.map((item, index) => {
                         const isActive = url === item.link;
                         return (
                             <li key={index}>
@@ -177,8 +173,8 @@ export default function UserSidebar() {
                 )}
                 
                 <div className="overflow-y-auto h-full py-4">
-                    <ul className='flex flex-col space-y-2 w-full px-4'>
-                        {menuItems.map((item, index) => {
+            <ul className='flex flex-col space-y-2 w-full px-4'>
+                {mobileMenuItems.map((item, index) => {
                             const isActive = url === item.link;
                             return (
                                 <li key={index}>
@@ -195,12 +191,41 @@ export default function UserSidebar() {
                             );
                         })}
                         
-                        {/* Logout button added to mobile sidebar */}
+                        {/* Settings section with Change Password, Report Issue, and Logout */}
                         <li className="mt-6 pt-6 border-t border-gray-200">
+                            <div className="px-3 py-2">
+                                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Settings</h3>
+                            </div>
+                        </li>
+                        
+                        <li>
+                            <Link 
+                                href="/user/change-password" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+                            >
+                                <FaLock />
+                                <span>Change Password</span>
+                            </Link>
+                        </li>
+                        
+                        <li>
+                            <Link 
+                                href="/user/userReportAnIssue" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+                            >
+                                <TbMessageReportFilled />
+                                <span>Report an Issue</span>
+                            </Link>
+                        </li>
+                        
+                        <li>
                             <button
                                 onClick={handleLogout}
                                 className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
                             >
+                                <GrKey />
                                 <span>Log Out</span>
                             </button>
                         </li>

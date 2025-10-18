@@ -60,7 +60,8 @@ export default function AdminSidebar() {
       setOpenSubMenu(openSubMenu === index ? null : index);
     };
 
-  const menuItems = [
+  // Desktop menu items (without Change Password and Issue)
+  const desktopMenuItems = [
   {
     icons: <FaChartSimple />,
     label: 'Dashboard',
@@ -100,18 +101,12 @@ export default function AdminSidebar() {
       },
     ],
   },
-  {
-    icons: <RiLockPasswordFill />,
-    label: 'Change Password',
-    link: '/admin/change-password',
-  },
-  {
-    icons: <TbMessageReportFilled />,
-    label: 'Issue',
-    link: '/Issue',
-  },
+  ];
 
-]
+  // Mobile menu items (only desktop items, settings will be separate)
+  const mobileMenuItems = [
+    ...desktopMenuItems,
+  ];
   return (
     <>
       {/* Desktop Sidebar - Changed to fixed positioning */}
@@ -121,7 +116,7 @@ export default function AdminSidebar() {
           </div>    
           
           <ul className='flex flex-col space-y-2 w-full px-4'>
-            {menuItems.map((item, index) => {
+            {desktopMenuItems.map((item, index) => {
               const isActive = url === item.link || (item.subItems && item.subItems.some(subItem => url === subItem.link));
               const isSubMenuOpen = openSubMenu === index;
               
@@ -140,31 +135,39 @@ export default function AdminSidebar() {
                         {item.icons}
                         <span className={`${!isOpen && 'hidden'} duration-200 flex-1`}>{item.label}</span>
                         {isOpen && (
-                          <span className="transform transition-transform duration-200">
-                          </span>
+                          <svg 
+                            className={`w-4 h-4 transition-transform duration-200 ${isSubMenuOpen ? 'rotate-180' : ''}`}
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         )}
                       </div>
-                      {isOpen && isSubMenuOpen && (
-                        <ul className="ml-8 mt-1 space-y-1">
-                          {item.subItems.map((subItem, subIndex) => {
-                            const isSubActive = url === subItem.link;
-                            return (
-                              <li key={`${index}-${subIndex}`}>
-                                <Link
-                                  href={subItem.link}
-                                  className={`block p-2 rounded-md transition-colors duration-200 text-sm
-                                    ${isSubActive
-                                      ? 'bg-primary bg-opacity-20 text-primary font-medium'
-                                      : 'hover:bg-primary hover:bg-opacity-20'}
-                                  `}
-                                >
-                                  {subItem.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen && isSubMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        {isOpen && isSubMenuOpen && (
+                          <ul className="ml-8 mt-1 space-y-1">
+                            {item.subItems.map((subItem, subIndex) => {
+                              const isSubActive = url === subItem.link;
+                              return (
+                                <li key={`${index}-${subIndex}`}>
+                                  <Link
+                                    href={subItem.link}
+                                    className={`block p-2 rounded-md transition-colors duration-200 text-sm
+                                      ${isSubActive
+                                        ? 'bg-primary bg-opacity-20 text-primary font-medium'
+                                        : 'hover:bg-primary hover:bg-opacity-20'}
+                                    `}
+                                  >
+                                    {subItem.label}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <Link 
@@ -215,7 +218,7 @@ export default function AdminSidebar() {
         
         <div className="overflow-y-auto h-full py-4">
           <ul className='flex flex-col space-y-2 w-full px-4'>
-            {menuItems.map((item, index) => {
+            {mobileMenuItems.map((item, index) => {
               const isActive = url === item.link || (item.subItems && item.subItems.some(subItem => url === subItem.link));
               const isSubMenuOpen = openSubMenu === index;
               
@@ -233,29 +236,39 @@ export default function AdminSidebar() {
                       >
                         {item.icons}
                         <span className="flex-1">{item.label}</span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform duration-200 ${isSubMenuOpen ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
-                      {isSubMenuOpen && (
-                        <ul className="ml-8 mt-1 space-y-1">
-                          {item.subItems.map((subItem, subIndex) => {
-                            const isSubActive = url === subItem.link;
-                            return (
-                              <li key={`${index}-${subIndex}`}>
-                                <Link
-                                  href={subItem.link}
-                                  onClick={() => setMobileMenuOpen(false)}
-                                  className={`block p-3 rounded-md transition-colors duration-200 text-sm
-                                    ${isSubActive
-                                      ? 'bg-primary bg-opacity-20 text-primary font-medium'
-                                      : 'hover:bg-primary hover:bg-opacity-20'}
-                                  `}
-                                >
-                                  {subItem.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isSubMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        {isSubMenuOpen && (
+                          <ul className="ml-8 mt-1 space-y-1">
+                            {item.subItems.map((subItem, subIndex) => {
+                              const isSubActive = url === subItem.link;
+                              return (
+                                <li key={`${index}-${subIndex}`}>
+                                  <Link
+                                    href={subItem.link}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`block p-3 rounded-md transition-colors duration-200 text-sm
+                                      ${isSubActive
+                                        ? 'bg-primary bg-opacity-20 text-primary font-medium'
+                                        : 'hover:bg-primary hover:bg-opacity-20'}
+                                    `}
+                                  >
+                                    {subItem.label}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <Link 
@@ -275,12 +288,41 @@ export default function AdminSidebar() {
               );
             })}
             
-            {/* Logout button added to mobile sidebar */}
+            {/* Settings section with Change Password, Issue, and Logout */}
             <li className="mt-6 pt-6 border-t border-gray-200">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Settings</h3>
+              </div>
+            </li>
+            
+            <li>
+              <Link 
+                href="/admin/change-password" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+              >
+                <RiLockPasswordFill />
+                <span>Change Password</span>
+              </Link>
+            </li>
+            
+            <li>
+              <Link 
+                href="/Issue" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+              >
+                <TbMessageReportFilled />
+                <span>Issue</span>
+              </Link>
+            </li>
+            
+            <li>
               <button
                 onClick={handleLogout}
                 className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
               >
+                <GrKey />
                 <span>Log Out</span>
               </button>
             </li>

@@ -52,8 +52,13 @@ const FacultySidebar = () => {
           window.location.href = '/';
       }
   };
+  
+  const toggleSubMenu = (index) => {
+      setOpenSubMenu(openSubMenu === index ? null : index);
+  };
 
-  const menuItems = [
+  // Desktop menu items (without Change Password and Report Issue)
+  const desktopMenuItems = [
     {
       icons: <FaChartSimple />,
       label: 'Dashboard',
@@ -71,25 +76,23 @@ const FacultySidebar = () => {
     },
     {
       icons: <PiExamFill />,
-      label: 'Exams',
-      link: '/faculty/facultyExams',
+      label: 'Grades',
+      subItems: [
+        {
+          label: 'Exams',
+          link: '/faculty/facultyExams',
+        },
+        {
+          label: 'Final Grades',
+          link: '/faculty/facultyFinalGrades',
+        },
+      ]
     },
-    {
-      icons: <BiSolidReport />,
-      label: 'Final Grades',
-      link: '/faculty/facultyFinalGrades',
-    },
-    {
-      icons: <FaLock />,
-      label: 'Change Password',
-      link: '/faculty/change-password',
-    },
-    {
-      icons: <TbMessageReportFilled />,
-      label: 'Report an Issue',
-      link: '/faculty/facultyReportAnIssue',
-    },
-    
+  ];
+
+  // Mobile menu items (only desktop items, settings will be separate)
+  const mobileMenuItems = [
+    ...desktopMenuItems,
   ];
 
   return (
@@ -101,22 +104,70 @@ const FacultySidebar = () => {
         </div>    
         
         <ul className='flex flex-col space-y-2 w-full px-4'>
-          {menuItems.map((item, index) => {
-            const isActive = url === item.link;
+          {desktopMenuItems.map((item, index) => {
+            const isActive = url === item.link || (item.subItems && item.subItems.some(subItem => url === subItem.link));
+            const isSubMenuOpen = openSubMenu === index;
             
             return (
               <li key={index}>
-                <Link 
-                  href={item.link} 
-                  className={`flex items-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1' } rounded-md gap-2 w-full transition-colors duration-200
-                    ${isActive 
-                      ? 'bg-primary bg-opacity-20 text-primary font-medium' 
-                      : 'hover:bg-primary hover:bg-opacity-20'}
-                  `}
-                >
-                  {item.icons}
-                  <span className={`${!isOpen && 'hidden'} duration-200`}>{item.label}</span>
-                </Link>
+                {item.subItems ? (
+                  <div>
+                    <div 
+                      onClick={() => toggleSubMenu(index)}
+                      className={`flex items-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1' } rounded-md gap-2 w-full transition-colors duration-200 cursor-pointer
+                        ${isActive 
+                          ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                          : 'hover:bg-primary hover:bg-opacity-20'}
+                      `}
+                    >
+                      {item.icons}
+                      <span className={`${!isOpen && 'hidden'} duration-200 flex-1`}>{item.label}</span>
+                      {isOpen && (
+                        <svg 
+                          className={`w-4 h-4 transition-transform duration-200 ${isSubMenuOpen ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </div>
+                    {isOpen && isSubMenuOpen && (
+                      <ul className="ml-8 mt-1 space-y-1">
+                        {item.subItems.map((subItem, subIndex) => {
+                          const isSubActive = url === subItem.link;
+                          return (
+                            <li key={subIndex}>
+                              <Link 
+                                href={subItem.link}
+                                className={`flex items-center p-2 px-4 rounded-md gap-2 w-full transition-colors duration-200 text-sm
+                                  ${isSubActive 
+                                    ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                                    : 'hover:bg-primary hover:bg-opacity-20'}
+                                `}
+                              >
+                                <span>{subItem.label}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                ) : (
+                  <Link 
+                    href={item.link} 
+                    className={`flex items-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1' } rounded-md gap-2 w-full transition-colors duration-200
+                      ${isActive 
+                        ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                        : 'hover:bg-primary hover:bg-opacity-20'}
+                    `}
+                  >
+                    {item.icons}
+                    <span className={`${!isOpen && 'hidden'} duration-200`}>{item.label}</span>
+                  </Link>
+                )}
               </li>
             );
           })}
@@ -153,33 +204,109 @@ const FacultySidebar = () => {
         
         <div className="overflow-y-auto h-full py-4">
           <ul className='flex flex-col space-y-2 w-full px-4'>
-            {menuItems.map((item, index) => {
-              const isActive = url === item.link;
+            {mobileMenuItems.map((item, index) => {
+              const isActive = url === item.link || (item.subItems && item.subItems.some(subItem => url === subItem.link));
+              const isSubMenuOpen = openSubMenu === index;
               
               return (
                 <li key={index}>
-                  <Link 
-                    href={item.link} 
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center p-3 rounded-md gap-3 w-full transition-colors duration-200
-                      ${isActive 
-                        ? 'bg-primary bg-opacity-20 text-primary font-medium' 
-                        : 'hover:bg-primary hover:bg-opacity-20'}
-                    `}
-                  >
-                    {item.icons}
-                    <span>{item.label}</span>
-                  </Link>
+                  {item.subItems ? (
+                    <div>
+                      <div 
+                        onClick={() => toggleSubMenu(index)}
+                        className={`flex items-center p-3 rounded-md gap-3 w-full transition-colors duration-200 cursor-pointer
+                          ${isActive 
+                            ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                            : 'hover:bg-primary hover:bg-opacity-20'}
+                        `}
+                      >
+                        {item.icons}
+                        <span className="flex-1">{item.label}</span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform duration-200 ${isSubMenuOpen ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                      {isSubMenuOpen && (
+                        <ul className="ml-4 mt-1 space-y-1">
+                          {item.subItems.map((subItem, subIndex) => {
+                            const isSubActive = url === subItem.link;
+                            return (
+                              <li key={subIndex}>
+                                <Link 
+                                  href={subItem.link}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className={`flex items-center p-3 px-4 rounded-md gap-3 w-full transition-colors duration-200 text-sm
+                                    ${isSubActive 
+                                      ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                                      : 'hover:bg-primary hover:bg-opacity-20'}
+                                  `}
+                                >
+                                  <span>{subItem.label}</span>
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <Link 
+                      href={item.link} 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center p-3 rounded-md gap-3 w-full transition-colors duration-200
+                        ${isActive 
+                          ? 'bg-primary bg-opacity-20 text-primary font-medium' 
+                          : 'hover:bg-primary hover:bg-opacity-20'}
+                      `}
+                    >
+                      {item.icons}
+                      <span>{item.label}</span>
+                    </Link>
+                  )}
                 </li>
               );
             })}
             
-            {/* Logout button added to mobile sidebar */}
+            {/* Settings section with Change Password, Report Issue, and Logout */}
             <li className="mt-6 pt-6 border-t border-gray-200">
+              <div className="px-3 py-2">
+                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Settings</h3>
+              </div>
+            </li>
+            
+            <li>
+              <Link 
+                href="/faculty/change-password" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+              >
+                <FaLock />
+                <span>Change Password</span>
+              </Link>
+            </li>
+            
+            <li>
+              <Link 
+                href="/faculty/facultyReportAnIssue" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
+              >
+                <TbMessageReportFilled />
+                <span>Report an Issue</span>
+              </Link>
+            </li>
+            
+            <li>
               <button
                 onClick={handleLogout}
                 className="flex items-center p-3 rounded-md gap-3 w-full text-sideBarTextColor hover:bg-primary hover:bg-opacity-20 transition-colors duration-200"
               >
+                <GrKey />
                 <span>Log Out</span>
               </button>
             </li>

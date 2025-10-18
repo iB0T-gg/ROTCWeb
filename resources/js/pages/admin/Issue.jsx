@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
 import axios from 'axios';
-import { Link, Head } from '@inertiajs/react';
+import { Link, Head, usePage } from '@inertiajs/react';
 
 // Alert Dialog Component
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
@@ -43,6 +43,7 @@ const ChevronDownIcon = ({ className }) => (
 );
 
 export default function Issue({ issues = [] }) {
+    const { auth } = usePage().props;
     // Local state to store issues if not provided via props
     const [allIssues, setAllIssues] = useState(issues || []);
     const [loading, setLoading] = useState(true);
@@ -170,7 +171,7 @@ export default function Issue({ issues = [] }) {
         <>
             <Head title="ROTC Portal - Issues" />
             <div className='w-full min-h-screen bg-backgroundColor'>
-          <Header />
+          <Header auth={auth} />
           
           <div className='flex flex-col md:flex-row'>
             <AdminSidebar />

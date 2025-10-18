@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Override the default 'guest' middleware alias with our custom RedirectIfAuthenticated
         $middleware->alias([
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'user' => \App\Http\Middleware\UserMiddleware::class,
+            'faculty' => \App\Http\Middleware\FacultyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

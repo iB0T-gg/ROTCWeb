@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useForm } from '@inertiajs/react';
-import { FaAngleDown, FaBars } from "react-icons/fa";
+import { FaAngleDown } from "react-icons/fa";
 import { IoMdClose } from "react-icons/io";
 import { GrKey } from "react-icons/gr";
+import { FaLock } from "react-icons/fa";
+import { FaExclamationTriangle } from "react-icons/fa";
+import { CiSettings } from "react-icons/ci";
 
 export default function Header({ auth }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const mobileMenuRef = useRef(null);
     const { post } = useForm();
 
     useEffect(() => {
@@ -17,31 +18,13 @@ export default function Header({ auth }) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setDropdownOpen(false);
             }
-            
-            // Close mobile menu when clicking outside
-            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && 
-                !event.target.closest('.mobile-menu-button')) {
-                setMobileMenuOpen(false);
-            }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Close mobile menu on window resize (if screen becomes larger)
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768) {
-                setMobileMenuOpen(false);
-            }
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     const handleLogout = async () => {
-        setMobileMenuOpen(false);
         try {
             await window.axios.post('/logout');
             window.location.href = '/';
@@ -49,6 +32,34 @@ export default function Header({ auth }) {
             console.error('Logout failed:', error);
             // Force redirect even if logout fails
             window.location.href = '/';
+        }
+    };
+
+    const getChangePasswordRoute = () => {
+        if (!auth || !auth.user) return '/user/change-password';
+        
+        switch (auth.user.role) {
+            case 'admin':
+                return '/admin/change-password';
+            case 'faculty':
+                return '/faculty/change-password';
+            case 'user':
+            default:
+                return '/user/change-password';
+        }
+    };
+
+    const getIssueRoute = () => {
+        if (!auth || !auth.user) return '/user/userReportAnIssue';
+        
+        switch (auth.user.role) {
+            case 'admin':
+                return '/Issue';
+            case 'faculty':
+                return '/faculty/facultyReportAnIssue';
+            case 'user':
+            default:
+                return '/user/userReportAnIssue';
         }
     };
 
@@ -129,12 +140,29 @@ export default function Header({ auth }) {
                     </button>
                     {/* Dropdown menu - only shown on non-mobile when activated */}
                     {dropdownOpen && (
-                        <div className="absolute right-0 mt-20 w-32 bg-white text-black rounded shadow-lg z-50">
+                        <div className="absolute right-0 mt-44 w-48 bg-white text-black rounded shadow-lg z-50">
+                            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 rounded-t">
+                                <CiSettings className="text-lg" />
+                                <h3 className="text-md font-semibold">Settings</h3>
+                            </div>
+                            <Link
+                                href={getIssueRoute()}
+                                className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-100"
+                                onClick={() => setDropdownOpen(false)}
+                            >
+                                <span className="ml-2">Report Issue</span>
+                            </Link>
+                            <Link
+                                href={getChangePasswordRoute()}
+                                className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-100"
+                                onClick={() => setDropdownOpen(false)}
+                            >
+                                <span className="ml-2">Change Password</span>
+                            </Link>
                             <button
                                 onClick={handleLogout}
                                 className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-100"
                             >
-                                <GrKey />
                                 <span className="ml-2">Log Out</span>
                             </button>
                         </div>
