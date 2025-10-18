@@ -205,7 +205,7 @@ export default function Register() {
                                             id='year'
                                             value={data.year}
                                             onChange={e => setData('year', e.target.value)}
-                                            placeholder='e.g., 2nd Year - G'
+                                            placeholder='e.g., 4D'
                                             className='w-full p-2 sm:p-3 rounded-lg bg-white text-gray-700 text-xs sm:text-sm pl-3 transition-all duration-300 focus:ring-2 focus:ring-primary focus:outline-none'
                                             required
                                         />
