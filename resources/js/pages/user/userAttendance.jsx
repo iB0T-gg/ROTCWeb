@@ -185,8 +185,8 @@ const userAttendance = ({ auth }) => {
                       <div className="text-xl md:text-2xl font-bold text-primary">
                         {(() => {
                           if (!attendanceData?.weekly_attendance) return 0;
-                          // Count present weeks from weekly_attendance object
-                          return Object.values(attendanceData.weekly_attendance).filter(Boolean).length;
+                          // Count present weeks from weekly_attendance object (only count true values)
+                          return Object.values(attendanceData.weekly_attendance).filter(status => status === true).length;
                         })()}
                       </div>
                       <div className="text-xs md:text-sm">Weeks Present</div>
@@ -196,7 +196,7 @@ const userAttendance = ({ auth }) => {
                         {(() => {
                           if (!attendanceData?.weekly_attendance) return '0%';
                           const weeklyData = attendanceData.weekly_attendance;
-                          const presentCount = Object.values(weeklyData).filter(Boolean).length;
+                          const presentCount = Object.values(weeklyData).filter(status => status === true).length;
                           // Calculate percentage: (present weeks / weekLimit) * 30
                           return `${Math.round((presentCount / weekLimit) * 30)}%`;
                         })()}
@@ -207,7 +207,7 @@ const userAttendance = ({ auth }) => {
                       <div className="text-xl md:text-2xl font-bold text-primary">
                         {(() => {
                           if (!attendanceData?.weekly_attendance) return `0/${weekLimit}`;
-                          const presentCount = Object.values(attendanceData.weekly_attendance).filter(Boolean).length;
+                          const presentCount = Object.values(attendanceData.weekly_attendance).filter(status => status === true).length;
                           return `${presentCount}/${weekLimit}`;
                         })()}
                       </div>
@@ -253,7 +253,21 @@ const userAttendance = ({ auth }) => {
                           {Array.from({ length: weekLimit }, (_, i) => {
                             const weekNumber = i + 1;
                             // Get attendance status from admin attendance data structure
-                            const isPresent = attendanceData?.weekly_attendance?.[weekNumber] || false;
+                            const attendanceStatus = attendanceData?.weekly_attendance?.[weekNumber];
+                            
+                            // Determine display based on attendance status
+                            let statusText, statusClass;
+                            if (attendanceStatus === true) {
+                              statusText = '✓ Present';
+                              statusClass = 'bg-primary/20 text-primary';
+                            } else if (attendanceStatus === false) {
+                              statusText = 'Absent';
+                              statusClass = 'bg-red-100 text-red-800';
+                            } else {
+                              // attendanceStatus is null or undefined
+                              statusText = '-';
+                              statusClass = 'bg-gray-100 text-gray-600';
+                            }
                             
                             return (
                               <tr key={weekNumber} className='border-b border-gray-100 hover:bg-gray-50'>
@@ -269,12 +283,8 @@ const userAttendance = ({ auth }) => {
                                   {getWeekDate(weekNumber)}
                                 </td>
                                 <td className='py-2 md:py-3 px-2 md:px-4 text-center'>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    isPresent 
-                                      ? 'bg-primary/20 text-primary' 
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {isPresent ? '✓ Present' : 'Absent'}
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusClass}`}>
+                                    {statusText}
                                   </span>
                                 </td>
                               </tr>

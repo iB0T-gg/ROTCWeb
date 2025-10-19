@@ -1408,58 +1408,31 @@ class AttendanceController extends Controller
             }
             
             // Determine which model to use based on semester
+            $attendance = null;
             if (strpos($semester, '1st semester') !== false) {
                 $attendance = Attendance::where('user_id', $userId)
                     ->where('semester', $semester)
                     ->first();
-                    
-                if (!$attendance) {
-                    // Create new attendance record with appropriate weeks based on semester
-                    $attendanceData = [
-                        'user_id' => $userId,
-                        'semester' => $semester,
-                        'weeks_present' => 0,
-                        'attendance_30' => 0,
-                        'attendance_date' => now()->toDateString(),
-                    ];
-                    
-                    // Initialize weekly columns based on semester (10 weeks for 1st, 15 for 2nd)
-                    $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
-                    for ($i = 1; $i <= $maxWeeks; $i++) {
-                        $attendanceData["week_{$i}"] = false;
-                    }
-                    
-                    $attendance = Attendance::create($attendanceData);
-                }
             } else {
                 $attendance = SecondSemesterAttendance::where('user_id', $userId)
                     ->where('semester', $semester)
                     ->first();
-                    
-                if (!$attendance) {
-                    // Create new attendance record with 15 weeks (all absent)
-                    $attendanceData = [
-                        'user_id' => $userId,
-                        'semester' => $semester,
-                        'weeks_present' => 0,
-                        'attendance_30' => 0,
-                        'attendance_date' => now()->toDateString(),
-                    ];
-                    
-                    // Initialize all weekly columns to false
-                    for ($i = 1; $i <= 15; $i++) {
-                        $attendanceData["week_{$i}"] = false;
-                    }
-                    
-                    $attendance = SecondSemesterAttendance::create($attendanceData);
-                }
             }
             
             // Get weekly attendance data from the database based on semester
             $weeklyAttendance = [];
             $maxWeeks = strpos($semester, '1st semester') !== false ? 10 : 15;
-            for ($week = 1; $week <= $maxWeeks; $week++) {
-                $weeklyAttendance[$week] = (bool) $attendance->{"week_{$week}"};
+            
+            if ($attendance) {
+                // If attendance record exists, get the actual data
+                for ($week = 1; $week <= $maxWeeks; $week++) {
+                    $weeklyAttendance[$week] = (bool) $attendance->{"week_{$week}"};
+                }
+            } else {
+                // If no attendance record exists, return null for all weeks
+                for ($week = 1; $week <= $maxWeeks; $week++) {
+                    $weeklyAttendance[$week] = null;
+                }
             }
             
             $userAttendanceData = [
@@ -1470,8 +1443,8 @@ class AttendanceController extends Controller
                 'course' => $user->course,
                 'year' => $user->year,
                 'section' => $user->section,
-                'weeks_present' => $attendance->weeks_present ?? 0,
-                'attendance_30' => $attendance->attendance_30 ?? 0,
+                'weeks_present' => $attendance ? $attendance->weeks_present : 0,
+                'attendance_30' => $attendance ? $attendance->attendance_30 : 0,
                 'weekly_attendance' => $weeklyAttendance,
             ];
             
