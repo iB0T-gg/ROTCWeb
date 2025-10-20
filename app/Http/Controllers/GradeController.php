@@ -311,13 +311,21 @@ class GradeController extends Controller
             
             if ($isSecondSemester) {
                 // Handle second semester data from separate tables
-                $users = User::where('role', 'user')
+                $query = User::where('role', 'user')
                             ->where('archived', false)
                             ->leftJoin('user_grades', function($join) use ($semester) {
                                 $join->on('users.id', '=', 'user_grades.user_id')
                                      ->where('user_grades.semester', '=', $semester);
-                            })
-                            ->select(
+                            });
+
+                // Filter by faculty's assigned company and battalion if user is faculty and has company/battalion assigned
+                $currentUser = auth()->user();
+                if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
+                    $query->where('users.company', $currentUser->company)
+                          ->where('users.battalion', $currentUser->battalion);
+                }
+
+                $users = $query->select(
                                 'users.id',
                                 'users.student_number',
                                 'users.first_name',
@@ -366,6 +374,13 @@ class GradeController extends Controller
 
                 if ($semester) {
                     $query->where('users.semester', $semester);
+                }
+
+                // Filter by faculty's assigned company and battalion if user is faculty and has company/battalion assigned
+                $currentUser = auth()->user();
+                if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
+                    $query->where('users.company', $currentUser->company)
+                          ->where('users.battalion', $currentUser->battalion);
                 }
 
                 $users = $query->select(

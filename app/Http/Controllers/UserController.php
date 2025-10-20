@@ -53,6 +53,13 @@ class UserController extends Controller
         if ($request->has('semester')) {
             $query->where('semester', $request->semester);
         }
+
+        // Filter by faculty's assigned company and battalion if user is faculty and has company/battalion assigned
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
+            $query->where('company', $currentUser->company)
+                  ->where('battalion', $currentUser->battalion);
+        }
         
         $cadets = $query->orderBy('last_name')
                         ->get(['id', 'first_name', 'middle_name', 'last_name', 'platoon', 'company', 'battalion']);

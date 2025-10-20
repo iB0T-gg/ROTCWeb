@@ -20,10 +20,18 @@ class AttendanceController extends Controller
             $semester = $request->get('semester', '2025-2026 1st semester');
             
             // Get all cadets (role 'user' only) ordered alphabetically by last name, then first name
-            $cadets = User::where('role', 'user')
+            $query = User::where('role', 'user')
                 ->where('status', 'approved')
-                ->where('archived', false)
-                ->orderBy('last_name')
+                ->where('archived', false);
+
+            // Filter by faculty's assigned company and battalion if user is faculty and has company/battalion assigned
+            $currentUser = auth()->user();
+            if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
+                $query->where('company', $currentUser->company)
+                      ->where('battalion', $currentUser->battalion);
+            }
+
+            $cadets = $query->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section', 'platoon', 'company', 'battalion']);
             

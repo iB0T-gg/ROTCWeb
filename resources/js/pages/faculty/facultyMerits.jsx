@@ -51,6 +51,8 @@ const firstSemesterWeeks = Array.from({ length: 10 }, (_, i) => `Week ${i + 1}`)
 const secondSemesterWeeks = Array.from({ length: 15 }, (_, i) => `Week ${i + 1}`);
 
 const FacultyMerits = ({ auth }) => {
+  // Check if faculty has company and battalion assigned (new faculty) or not (seeder faculty)
+  const isNewFaculty = auth && auth.company && auth.battalion;
   const [isEditing, setIsEditing] = useState(false);
   const [cadets, setCadets] = useState([]);
   const [merits, setMerits] = useState([]);
@@ -663,7 +665,19 @@ const [scrollPosition, setScrollPosition] = useState(0);
   });
 
   // Sort cadets alphabetically by name before paginating
-  const sortedCadets = [...filteredCadets].sort((a, b) => formatCadetName(a).localeCompare(formatCadetName(b)));
+  const sortedCadets = [...filteredCadets].sort((a, b) => {
+    const order = (c) => {
+      const batt = (c.battalion || '').toLowerCase();
+      const g = (c.gender || '').toLowerCase();
+      if (batt.includes('1st') || g === 'male' || g === 'm') return 0;
+      if (batt.includes('2nd') || g === 'female' || g === 'f') return 1;
+      return 2;
+    };
+    const aO = order(a);
+    const bO = order(b);
+    if (aO !== bO) return aO - bO;
+    return formatCadetName(a).localeCompare(formatCadetName(b));
+  });
   const totalPages = Math.ceil(sortedCadets.length / cadetsPerPage);
   const paginatedCadets = sortedCadets.slice(
     (currentPage - 1) * cadetsPerPage,
@@ -828,39 +842,45 @@ const handleSliderChange = (newPosition) => {
                                     <option value="3rd Platoon">3rd Platoon</option>
                                   </select>
                                 </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                                  <select
-                                    className="w-full bg-gray-100 p-2 rounded border"
-                                    value={selectedCompany}
-                                    onChange={e => setSelectedCompany(e.target.value)}
-                                  >
-                                    <option value="">Select Company</option>
-                                    <option value="Alpha">Alpha</option>
-                                    <option value="Beta">Bravo</option>
-                                    <option value="Charlie">Charlie</option>
-                                    <option value="Delta">Delta</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Battalion</label>
-                                  <select
-                                    className="w-full bg-gray-100 p-2 rounded border"
-                                    value={selectedBattalion}
-                                    onChange={e => setSelectedBattalion(e.target.value)}
-                                  >
-                                    <option value="">Select Battalion</option>
-                                    <option value="1st Battalion">1st Battalion</option>
-                                    <option value="2nd Battalion">2nd Battalion</option>
-                                  </select>
-                                </div>
+                                {!isNewFaculty && (
+                                  <>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                                      <select
+                                        className="w-full bg-gray-100 p-2 rounded border"
+                                        value={selectedCompany}
+                                        onChange={e => setSelectedCompany(e.target.value)}
+                                      >
+                                        <option value="">Select Company</option>
+                                        <option value="Alpha">Alpha</option>
+                                        <option value="Bravo">Bravo</option>
+                                        <option value="Charlie">Charlie</option>
+                                        <option value="Delta">Delta</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">Battalion</label>
+                                      <select
+                                        className="w-full bg-gray-100 p-2 rounded border"
+                                        value={selectedBattalion}
+                                        onChange={e => setSelectedBattalion(e.target.value)}
+                                      >
+                                        <option value="">Select Battalion</option>
+                                        <option value="1st Battalion">1st Battalion</option>
+                                        <option value="2nd Battalion">2nd Battalion</option>
+                                      </select>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="flex gap-2 mt-4">
                                   <button
                                     className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
                                     onClick={() => {
                                       setSelectedPlatoon('');
-                                      setSelectedCompany('');
-                                      setSelectedBattalion('');
+                                      if (!isNewFaculty) {
+                                        setSelectedCompany('');
+                                        setSelectedBattalion('');
+                                      }
                                       setShowSortPicker(false);
                                     }}
                                   >

@@ -47,14 +47,26 @@ export default function AddUsers({ auth, success, error }) {
         last_name: '',
         email: '',
         student_number: '',
-        role: 'user', // Default role is user (cadet)
+        role: '', // Default role is empty (shows "Select Role")
+        company: '',
+        battalion: '',
         password: '',
         password_confirmation: '',
     });
     const [processing, setProcessing] = useState(false);
 
     const setData = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const newData = { ...prev, [field]: value };
+            
+            // Clear company and battalion when role changes to non-faculty
+            if (field === 'role' && value !== 'faculty') {
+                newData.company = '';
+                newData.battalion = '';
+            }
+            
+            return newData;
+        });
     };
 
     const reset = () => {
@@ -64,7 +76,9 @@ export default function AddUsers({ auth, success, error }) {
             last_name: '',
             email: '',
             student_number: '',
-            role: 'user',
+            role: '',
+            company: '',
+            battalion: '',
             password: '',
             password_confirmation: '',
         });
@@ -72,6 +86,17 @@ export default function AddUsers({ auth, success, error }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate role is selected
+        if (!formData.role.trim()) {
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Validation Error',
+                message: 'Please select a role'
+            });
+            return;
+        }
         
         // Validate student number is required only for cadets
         if (formData.role === 'user' && !formData.student_number.trim()) {
@@ -82,6 +107,28 @@ export default function AddUsers({ auth, success, error }) {
                 message: 'Student number is required for cadets'
             });
             return;
+        }
+        
+        // Validate company and battalion are required for faculty
+        if (formData.role === 'faculty') {
+            if (!formData.company.trim()) {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Validation Error',
+                    message: 'Company is required for faculty members'
+                });
+                return;
+            }
+            if (!formData.battalion.trim()) {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Validation Error',
+                    message: 'Battalion is required for faculty members'
+                });
+                return;
+            }
         }
         
         setProcessing(true);
@@ -232,18 +279,55 @@ export default function AddUsers({ auth, success, error }) {
                                     </div>
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Role</label>
-                                    <select 
-                                        className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
-                                        value={formData.role}
-                                        onChange={e => setData('role', e.target.value)}
-                                        required
-                                    >
-                                        <option value="user">Cadet</option>
-                                        <option value="faculty">Faculty</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
+                                <div className={`grid gap-4 mb-4 ${formData.role === 'faculty' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                                    <div>
+                                        <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Role</label>
+                                        <select 
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                            value={formData.role}
+                                            onChange={e => setData('role', e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Select Role</option>
+                                            <option value="user">Cadet</option>
+                                            <option value="faculty">Faculty</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                    </div>
+                                    
+                                    {formData.role === 'faculty' && (
+                                        <>
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Company <span className="text-red-500">*</span></label>
+                                                <select 
+                                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                    value={formData.company}
+                                                    onChange={e => setData('company', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select Company</option>
+                                                    <option value="alpha">Alpha</option>
+                                                    <option value="bravo">Bravo</option>
+                                                    <option value="charlie">Charlie</option>
+                                                    <option value="delta">Delta</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Battalion <span className="text-red-500">*</span></label>
+                                                <select 
+                                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                    value={formData.battalion}
+                                                    onChange={e => setData('battalion', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select Battalion</option>
+                                                    <option value="1st">1st Battalion</option>
+                                                    <option value="2nd">2nd Battalion</option>
+                                                </select>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">

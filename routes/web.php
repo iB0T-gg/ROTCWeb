@@ -256,19 +256,57 @@ Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
     });
 
     Route::get('/faculty/facultyMerits', function () {
-        return Inertia::render('faculty/facultyMerits');
+        return Inertia::render('faculty/facultyMerits', [
+            'auth' => auth()->user()
+        ]);
     });
 
     Route::get('/faculty/facultyAttendance', function () {
-        return Inertia::render('faculty/facultyAttendance');
+        return Inertia::render('faculty/facultyAttendance', [
+            'auth' => auth()->user()
+        ]);
     });
 
     Route::get('/faculty/facultyExams', function () {
-        return Inertia::render('faculty/facultyExams');
+        return Inertia::render('faculty/facultyExams', [
+            'auth' => auth()->user()
+        ]);
     });
 
     Route::get('/faculty/facultyFinalGrades', function () {
-        return Inertia::render('faculty/facultyFinalGrades');
+        return Inertia::render('faculty/facultyFinalGrades', [
+            'auth' => auth()->user()
+        ]);
+    });
+
+    // Debug route to check faculty filtering
+    Route::get('/faculty/debug', function () {
+        $user = auth()->user();
+        $debug = [
+            'user_id' => $user->id,
+            'name' => $user->first_name . ' ' . $user->last_name,
+            'role' => $user->role,
+            'company' => $user->company,
+            'battalion' => $user->battalion,
+            'should_filter' => $user->role === 'faculty' && $user->company && $user->battalion,
+        ];
+        
+        if ($debug['should_filter']) {
+            $cadetCount = \App\Models\User::where('role', 'user')
+                ->where('status', 'approved')
+                ->where('archived', false)
+                ->where('company', $user->company)
+                ->where('battalion', $user->battalion)
+                ->count();
+            $debug['filtered_cadet_count'] = $cadetCount;
+        }
+        
+        $debug['total_cadets'] = \App\Models\User::where('role', 'user')
+            ->where('status', 'approved')
+            ->where('archived', false)
+            ->count();
+            
+        return response()->json($debug);
     });
 
     Route::get('/faculty/facultyReportAnIssue', [App\Http\Controllers\IssueController::class, 'facultyReportForm']);

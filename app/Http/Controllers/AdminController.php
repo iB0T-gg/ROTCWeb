@@ -37,7 +37,21 @@ class AdminController extends Controller
             $rules['student_number'] = 'nullable|numeric|unique:users,student_number';
         }
 
-        $validator = Validator::make($request->all(), $rules);
+        // Add company and battalion validation for faculty
+        if ($request->role === 'faculty') {
+            $rules['company'] = 'required|string|in:alpha,bravo,charlie,delta';
+            $rules['battalion'] = 'required|string|in:1st,2nd';
+            
+            // Add unique constraint for faculty company and battalion combination
+            $rules['company'] .= '|unique:users,company,NULL,id,role,faculty,battalion,' . $request->battalion . ' Battalion';
+        } else {
+            $rules['company'] = 'nullable|string';
+            $rules['battalion'] = 'nullable|string';
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
+            'company.unique' => 'A faculty member is already assigned to this company and battalion combination.',
+        ]);
 
         if ($validator->fails()) {
             if ($request->expectsJson()) {
@@ -64,6 +78,12 @@ class AdminController extends Controller
                 'status' => $request->role === 'admin' ? 'approved' : 'pending', // Admins are auto-approved
                 'creation_method' => 'admin_created',
             ];
+
+            // Add company and battalion for faculty users
+            if ($request->role === 'faculty') {
+                $userData['company'] = ucfirst($request->company); // Convert to proper case (Alpha, Bravo, etc.)
+                $userData['battalion'] = $request->battalion . ' Battalion'; // Add "Battalion" suffix
+            }
 
             $user = User::create($userData);
 

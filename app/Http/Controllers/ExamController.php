@@ -43,6 +43,13 @@ class ExamController extends Controller
         // We fetch all approved cadets and then look up their exam scores for the requested semester.
         $query = User::where('role', 'user')
             ->where('archived', false);
+
+        // Filter by faculty's assigned company and battalion if user is faculty and has company/battalion assigned
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
+            $query->where('company', $currentUser->company)
+                  ->where('battalion', $currentUser->battalion);
+        }
         
         $users = $query->get();
         $examData = [];
