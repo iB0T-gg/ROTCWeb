@@ -35,9 +35,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request)
     {
+        $user = $request->user();
+        
+        // Debug logging
+        if ($user) {
+            \Log::info('HandleInertiaRequests: User authenticated - ' . $user->email . ' (Role: ' . $user->role . ')');
+        } else {
+            \Log::info('HandleInertiaRequests: No authenticated user found');
+        }
+        
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
         ]);
     }

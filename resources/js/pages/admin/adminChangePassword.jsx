@@ -151,7 +151,7 @@ export default function ChangePassword({ auth }) {
         });
         
         // Use fetch API with JSON payload
-        fetch('/api/admin/change-password', {
+        fetch('/admin/change-password', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -206,7 +206,9 @@ Route::middleware(['auth', AdminMiddleware::class])->group(function () {
     });
 
     Route::get('/admin/change-password', function () {
-        return Inertia::render('admin/adminChangePassword');
+        return Inertia::render('admin/adminChangePassword', [
+            'auth' => auth()->user()
+        ]);
     });
 
     Route::get('/Issue', [App\Http\Controllers\IssueController::class, 'index']);
@@ -242,17 +244,25 @@ Route::middleware(['auth', UserMiddleware::class])->group(function () {
         ]);
     });
 
-    Route::get('/user/userReportAnIssue', [App\Http\Controllers\IssueController::class, 'userReportForm']);
+    Route::get('/user/userReportAnIssue', function () {
+        return Inertia::render('user/userReportAnIssue', [
+            'auth' => auth()->user()
+        ]);
+    });
     
     Route::get('/user/change-password', function () {
-        return Inertia::render('user/userChangePassword');
+        return Inertia::render('user/userChangePassword', [
+            'auth' => auth()->user()
+        ]);
     });
 });
 
 // Faculty routes - Only accessible to faculty
 Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
     Route::get('/faculty/facultyHome', function () {
-        return Inertia::render('faculty/facultyHome');
+        return Inertia::render('faculty/facultyHome', [
+            'auth' => auth()->user()
+        ]);
     });
 
     Route::get('/faculty/facultyMerits', function () {
@@ -309,10 +319,16 @@ Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
         return response()->json($debug);
     });
 
-    Route::get('/faculty/facultyReportAnIssue', [App\Http\Controllers\IssueController::class, 'facultyReportForm']);
+    Route::get('/faculty/facultyReportAnIssue', function () {
+        return Inertia::render('faculty/facultyReportAnIssue', [
+            'auth' => auth()->user()
+        ]);
+    });
     
     Route::get('/faculty/change-password', function () {
-        return Inertia::render('faculty/facultyChangePassword');
+        return Inertia::render('faculty/facultyChangePassword', [
+            'auth' => auth()->user()
+        ]);
     });
 });
 

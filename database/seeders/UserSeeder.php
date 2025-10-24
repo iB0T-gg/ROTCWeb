@@ -27,7 +27,8 @@ class UserSeeder extends Seeder
                 'status' => 'approved',
             ]);
 
-            // Create a faculty user
+            // Create a faculty user with general access (no company/battalion assigned)
+            // Faculty users with NULL company/battalion can see all cadets
             User::create([
                 'student_number' => 'FACULTY000',
                 'first_name' => 'Faculty',
@@ -37,6 +38,9 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('faculty@123'),
                 'role' => 'faculty',
                 'status' => 'approved',
+                'company' => null,        // NULL = general access to all cadets
+                'battalion' => null,      // NULL = general access to all cadets
+                'platoon' => null,        // NULL = general access to all cadets
             ]);
             
             // Create a robust test set of cadet users (>= 111 cadets) with realistic-looking data
@@ -101,6 +105,8 @@ class UserSeeder extends Seeder
             }
 
             // After creation, assign platoon/company/battalion deterministically
+            // NOTE: This only applies to cadets (role 'user'), not faculty or admin users
+            // Faculty users should have NULL company/battalion for general access
             $cadets = User::where('role', 'user')
                 ->orderBy('last_name')
                 ->orderBy('first_name')

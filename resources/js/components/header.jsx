@@ -12,6 +12,16 @@ export default function Header({ auth }) {
     const dropdownRef = useRef(null);
     const { post } = useForm();
 
+    // Debug auth object
+    console.log('Header component received auth:', auth);
+    console.log('Auth type:', typeof auth);
+    console.log('Auth user:', auth?.user);
+    console.log('Auth user role:', auth?.user?.role);
+    
+    // Handle both auth formats: {user: {...}} or direct user object
+    const user = auth?.user || auth;
+    const userRole = user?.role;
+
     useEffect(() => {
         function handleClickOutside(event) {
             // Close dropdown when clicking outside
@@ -36,29 +46,45 @@ export default function Header({ auth }) {
     };
 
     const getChangePasswordRoute = () => {
-        if (!auth || !auth.user) return '/user/change-password';
+        if (!user || !userRole) {
+            console.log('Header: No user or role found for password route, defaulting to user route');
+            return '/user/change-password';
+        }
         
-        switch (auth.user.role) {
+        console.log('Header: Password route - User role is:', userRole);
+        
+        switch (userRole) {
             case 'admin':
+                console.log('Header: Returning admin password route');
                 return '/admin/change-password';
             case 'faculty':
+                console.log('Header: Returning faculty password route');
                 return '/faculty/change-password';
             case 'user':
             default:
+                console.log('Header: Returning user password route');
                 return '/user/change-password';
         }
     };
 
     const getIssueRoute = () => {
-        if (!auth || !auth.user) return '/user/userReportAnIssue';
+        if (!user || !userRole) {
+            console.log('Header: No user or role found, defaulting to user route');
+            return '/user/userReportAnIssue';
+        }
         
-        switch (auth.user.role) {
+        console.log('Header: User role is:', userRole);
+        
+        switch (userRole) {
             case 'admin':
+                console.log('Header: Returning admin route');
                 return '/Issue';
             case 'faculty':
+                console.log('Header: Returning faculty route');
                 return '/faculty/facultyReportAnIssue';
             case 'user':
             default:
+                console.log('Header: Returning user route');
                 return '/user/userReportAnIssue';
         }
     };
@@ -72,19 +98,19 @@ export default function Header({ auth }) {
                     {/* Logo and Title */}
                     <Link 
                         href={
-                            auth && auth.user ?
-                                auth.user.role === 'admin' ? '/adminHome'
-                                : auth.user.role === 'faculty' ? '/faculty/facultyHome'
-                                : auth.user.role === 'user' ? '/user/userHome'
+                            user && userRole ?
+                                userRole === 'admin' ? '/adminHome'
+                                : userRole === 'faculty' ? '/faculty/facultyHome'
+                                : userRole === 'user' ? '/user/userHome'
                                 : '/user/userHome'
                             : '/user/userHome'
                         }
                         onClick={() => {
-                            console.log('Logo clicked - User role:', auth?.user?.role);
-                            console.log('Redirecting to:', auth && auth.user ?
-                                auth.user.role === 'admin' ? '/adminHome'
-                                : auth.user.role === 'faculty' ? '/faculty/facultyHome'
-                                : auth.user.role === 'user' ? '/user/userHome'
+                            console.log('Logo clicked - User role:', userRole);
+                            console.log('Redirecting to:', user && userRole ?
+                                userRole === 'admin' ? '/adminHome'
+                                : userRole === 'faculty' ? '/faculty/facultyHome'
+                                : userRole === 'user' ? '/user/userHome'
                                 : '/user/userHome'
                             : '/user/userHome');
                         }}
@@ -123,13 +149,26 @@ export default function Header({ auth }) {
                         </div>
                         {/* Hide username on extra small screens */}
                         <h1 className='hidden xs:block hover:underline text-xl truncate max-w-[120px] sm:max-w-none'>
-                            {auth && auth.user ? 
-                                auth.user.role === 'admin' ? 
+                            {user ? 
+                                userRole === 'admin' ? 
                                     'Admin' : 
-                                    `${auth.user.last_name}, ${auth.user.first_name}` 
+                                    `${user.last_name}, ${user.first_name}` 
                                 : 'Guest'}
                         </h1>
                     </Link>
+                    
+                    {/* Faculty designation - show company and battalion for faculty users */}
+                    {user && userRole === 'faculty' && (
+                        <div className="hidden md:block ml-4 mr-2">
+                            <span className="text-lg text-white/90 font-medium">
+                                {user.company && user.battalion ? 
+                                    `${user.company} Company, ${user.battalion} Instructor` :
+                                    'General Faculty Instructor'
+                                }
+                            </span>
+                        </div>
+                    )}
+                    
                     {/* Dropdown toggle button - hidden on mobile */}
                     <button
                         className="focus:outline-none hidden md:block"

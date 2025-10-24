@@ -95,18 +95,24 @@ class IssueController extends Controller
 
     /**
      * Display the issue reporting page for cadets.
+     * Note: This method is no longer used as the route now handles the view directly.
      */
     public function userReportForm()
     {
-        return inertia('user/userReportAnIssue');
+        return inertia('user/userReportAnIssue', [
+            'auth' => auth()->user()
+        ]);
     }
 
     /**
      * Display the issue reporting page for faculty.
+     * Note: This method is no longer used as the route now handles the view directly.
      */
     public function facultyReportForm()
     {
-        return inertia('faculty/facultyReportAnIssue');
+        return inertia('faculty/facultyReportAnIssue', [
+            'auth' => auth()->user()
+        ]);
     }
     
     /**

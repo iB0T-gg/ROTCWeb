@@ -81,7 +81,7 @@ const userReportAnIssue = ({ auth }) => {
     
     try {
       // Submit the issue to the backend
-      const response = await axios.post('/api/issues', {
+      const response = await axios.post('/issues', {
         issue_type: selectedIssue,
         description: issueDescription.trim(),
         is_anonymous: isAnonymous

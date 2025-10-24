@@ -21,7 +21,12 @@ const FacultyHome = ({ auth }) => {
             </div>
             {/* Page Header */}
             <div className='flex items-center justify-between mt-4 mb-4 md:mb-6 px-4 md:pl-5 py-5 md:py-7 bg-primary text-white p-3 md:p-4 rounded-lg shadow-md animate-fade-in-down'>
-              <h1 className='text-xl md:text-2xl font-semibold'>Welcome Instructor!</h1>
+              <h1 className='text-xl md:text-2xl font-semibold'>
+                Welcome {auth?.company && auth?.battalion ? 
+                  `${auth.company} Company, ${auth.battalion} Instructor` : 
+                  'General Faculty Instructor'
+                }!
+              </h1>
             </div>
             {/* Main Content: Card Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in-up">
