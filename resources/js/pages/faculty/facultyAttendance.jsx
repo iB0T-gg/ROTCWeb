@@ -156,6 +156,9 @@ const FacultyAttendance = ({ auth }) => {
     (currentPage - 1) * cadetsPerPage,
     currentPage * cadetsPerPage
   );
+  
+  // Calculate max weeks based on semester
+  const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
 
   return (
     <>
@@ -326,25 +329,28 @@ const FacultyAttendance = ({ auth }) => {
                 <h1 className='text-base md:text-lg font-semibold text-black'>Attendance Records</h1>
               </div>
               
-              <div className="overflow-x-auto animate-fade-in-up">
+              <div className="overflow-x-auto animate-fade-in-up" style={{ maxWidth: '100%' }}>
                 {isLoading ? (
                   <div className="flex justify-center items-center h-32 md:h-40">
                     <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-primary"></div>
                     <span className="ml-3 text-gray-600">Loading attendance data...</span>
                   </div>
                 ) : (
-                  <table className="w-full border-collapse">
+                  <table className="w-full border-collapse" style={{ minWidth: '800px' }}>
                     <thead className='text-gray-600'>
                       <tr>
-                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-sm md:text-base'>Cadet Names</th>
-                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>Weeks Present</th>
-                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>Attendance (30%)</th>
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-sm md:text-base sticky left-0 bg-white z-10'>Cadet Names</th>
+                        {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => (
+                          <th key={i} className='py-2 md:py-4 px-1 md:px-2 border-b font-medium text-center text-xs md:text-sm min-w-[60px]'>Week {i + 1}</th>
+                        ))}
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>Total</th>
+                        <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>% (30%)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedCadets.length === 0 ? (
                         <tr>
-                          <td colSpan="3" className="py-8 px-4 text-center text-gray-500">
+                          <td colSpan={selectedSemester === '2025-2026 1st semester' ? 12 : 17} className="py-8 px-4 text-center text-gray-500">
                             {error ? (
                               <div>
                                 <p>Error loading data: {error}</p>
@@ -364,20 +370,69 @@ const FacultyAttendance = ({ auth }) => {
                         </tr>
                       ) : (
                         paginatedCadets.map((cadet) => {
-                          // Calculate attendance from weekly data (same as adminAttendance)
+                          // Calculate attendance from weekly data
                           const weeklyAttendance = cadet.weekly_attendance || {};
                           const presentCount = Object.values(weeklyAttendance).filter(Boolean).length;
-                          const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
                           const attendancePercentage = ((presentCount / maxWeeks) * 30);
+                          
+                          // Debug logging
+                          console.log('Cadet:', formatCadetName(cadet), 'Weekly Data:', weeklyAttendance);
                           
                           return (
                             <tr className='border-b border-gray-200' key={cadet.user_id}>
-                              <td className='py-2 md:py-4 px-2 md:px-3 text-black text-sm md:text-base'>{formatCadetName(cadet)}</td>
-                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base'>{presentCount}/{maxWeeks}</td>
-                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base'>{Math.round(attendancePercentage)}</td>
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-black text-sm md:text-base sticky left-0 bg-white z-10 font-medium'>{formatCadetName(cadet)}</td>
+                              {Array.from({ length: maxWeeks }, (_, i) => {
+                                const weekNumber = i + 1;
+                                const isPresent = weeklyAttendance[weekNumber];
+                                const isRecorded = weeklyAttendance.hasOwnProperty(weekNumber);
+                                
+                                let displaySymbol, bgColor, textColor;
+                                
+                                if (isRecorded && isPresent === true) {
+                                  displaySymbol = '✓';
+                                  bgColor = 'bg-green-100';
+                                  textColor = 'text-green-800';
+                                } else {
+                                  displaySymbol = '-';
+                                  bgColor = 'bg-gray-100';
+                                  textColor = 'text-gray-600';
+                                }
+                                
+                                return (
+                                  <td key={i} className='py-2 md:py-4 px-1 md:px-2 text-center text-sm'>
+                                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
+                                      {displaySymbol}
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base font-medium'>{presentCount}/{maxWeeks}</td>
+                              <td className='py-2 md:py-4 px-2 md:px-3 text-center text-black text-sm md:text-base font-medium'>{Math.round(attendancePercentage)}</td>
                             </tr>
                           );
                         })
+                      )}
+                      {/* Summary row showing total present per week */}
+                      {paginatedCadets.length > 0 && (
+                        <tr className='border-b-2 border-gray-400 bg-gray-50 font-semibold'>
+                          <td className='py-2 md:py-4 px-2 md:px-3 text-black text-sm md:text-base sticky left-0 bg-gray-50 z-10'>Total Present</td>
+                          {Array.from({ length: maxWeeks }, (_, i) => {
+                            const weekNumber = i + 1;
+                            const weekPresentCount = cadets.filter(cadet => {
+                              const weeklyAttendance = cadet.weekly_attendance || {};
+                              return weeklyAttendance[weekNumber] === true;
+                            }).length;
+                            
+                            return (
+                              <td key={i} className='py-2 md:py-4 px-1 md:px-2 text-center text-sm'>
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-black font-semibold text-md">
+                                  {weekPresentCount}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          
+                        </tr>
                       )}
                     </tbody>
                   </table>

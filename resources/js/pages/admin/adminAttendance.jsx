@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import AdminSidebar from '../../components/adminSidebar';
-import { FaSearch, FaEdit, FaSave, FaTimes, FaUpload, FaFileUpload, FaSpinner } from 'react-icons/fa';
+import { FaSearch, FaEdit, FaSave, FaTimes, FaUpload, FaFileUpload, FaSpinner, FaDownload } from 'react-icons/fa';
 import { FaSort } from 'react-icons/fa6';
 import { usePage } from '@inertiajs/react';
 import { Link, Head } from '@inertiajs/react';
@@ -55,6 +55,8 @@ export default function AdminAttendance(){
     const [selectedCompany, setSelectedCompany] = useState('');
     const [selectedPlatoon, setSelectedPlatoon] = useState('');
     const [showFilterPicker, setShowFilterPicker] = useState(false);
+    const [showWeekSelector, setShowWeekSelector] = useState(false);
+    const [selectedWeeks, setSelectedWeeks] = useState([]);
     const cadetsPerPage = 8;
 
     // Alert state
@@ -67,6 +69,156 @@ export default function AdminAttendance(){
 
     // Semester options
     const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
+
+    // Excel Export Function
+    const exportToExcel = async () => {
+        try {
+            // Show week selector first
+            setShowWeekSelector(true);
+        } catch (error) {
+            console.error('Error opening week selector:', error);
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Export Error',
+                message: 'Failed to open week selector. Please try again.'
+            });
+        }
+    };
+
+    const handleWeekSelection = () => {
+        if (selectedWeeks.length === 0) {
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'No Weeks Selected',
+                message: 'Please select at least one week to export.'
+            });
+            return;
+        }
+        
+        setShowWeekSelector(false);
+        
+        // Load xlsx library dynamically
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = () => {
+            generateExcelFile();
+        };
+        document.head.appendChild(script);
+    };
+
+    const generateExcelFile = () => {
+        try {
+            const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+            
+            // Use filtered cadets instead of all cadets
+            const cadetsToExport = filteredCadets;
+            
+            // Group cadets by platoon
+            const cadetsByPlatoon = {};
+            cadetsToExport.forEach(cadet => {
+                const platoon = cadet.platoon || 'No Platoon';
+                if (!cadetsByPlatoon[platoon]) {
+                    cadetsByPlatoon[platoon] = [];
+                }
+                cadetsByPlatoon[platoon].push(cadet);
+            });
+            
+            // Create workbook
+            const wb = window.XLSX.utils.book_new();
+            
+            // Create a sheet for each platoon
+            Object.keys(cadetsByPlatoon).forEach(platoonName => {
+                const platoonCadets = cadetsByPlatoon[platoonName];
+                const excelData = [];
+                
+                // Add headers
+                const headers = [
+                    'Cadet Name',
+                    'Student Number',
+                    'Course',
+                    'Year',
+                    'Section',
+                    'Platoon',
+                    'Company',
+                    'Battalion',
+                    ...selectedWeeks.map(week => `Week ${week}`),
+                    'Total Present',
+                    'Attendance %'
+                ];
+                excelData.push(headers);
+                
+                // Add cadet data for this platoon
+                platoonCadets.forEach(cadet => {
+                    const weeklyAttendance = cadet.weekly_attendance || {};
+                    const presentCount = Object.values(weeklyAttendance).filter(Boolean).length;
+                    const attendancePercentage = Math.round((presentCount / maxWeeks) * 100);
+                    
+                    const row = [
+                        `${cadet.last_name}, ${cadet.first_name}`,
+                        cadet.student_number || '',
+                        cadet.course || '',
+                        cadet.year || '',
+                        cadet.section || '',
+                        cadet.platoon || '',
+                        cadet.company || '',
+                        cadet.battalion || '',
+                    ...selectedWeeks.map(weekNumber => {
+                        const isPresent = weeklyAttendance[weekNumber];
+                        if (isPresent === true) return 'Present';
+                        if (isPresent === false) return 'Absent';
+                        return 'Not Recorded';
+                    }),
+                        presentCount,
+                        `${attendancePercentage}%`
+                    ];
+                    excelData.push(row);
+                });
+                
+                // Add summary row for this platoon
+                const summaryRow = ['TOTAL PRESENT', '', '', '', '', '', '', ''];
+                selectedWeeks.forEach(week => {
+                    const weekPresentCount = platoonCadets.filter(cadet => {
+                        const weeklyAttendance = cadet.weekly_attendance || {};
+                        return weeklyAttendance[week] === true;
+                    }).length;
+                    summaryRow.push(weekPresentCount);
+                });
+                summaryRow.push('', ''); // Empty for total and percentage columns
+                excelData.push(summaryRow);
+                
+                // Create worksheet for this platoon
+                const ws = window.XLSX.utils.aoa_to_sheet(excelData);
+                const sheetName = platoonName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 31); // Excel sheet name limit
+                window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            });
+            
+            // Generate filename with current date and filter info
+            const currentDate = new Date().toISOString().split('T')[0];
+            let filterInfo = '';
+            if (selectedBattalion) filterInfo += `_${selectedBattalion.replace(/\s+/g, '_')}`;
+            if (selectedCompany) filterInfo += `_${selectedCompany}`;
+            if (selectedPlatoon) filterInfo += `_${selectedPlatoon.replace(/\s+/g, '_')}`;
+            
+            const weeksInfo = selectedWeeks.length === maxWeeks ? 'All_Weeks' : `Weeks_${selectedWeeks.join('_')}`;
+            const filename = `Attendance_Records${filterInfo}_${weeksInfo}_${selectedSemester.replace(/\s+/g, '_')}_${currentDate}.xlsx`;
+            
+            // Download the file
+            window.XLSX.writeFile(wb, filename);
+            
+            // Export completed silently without success message
+            
+        } catch (error) {
+            console.error('Error generating Excel file:', error);
+            setAlertDialog({
+                isOpen: true,
+                type: 'error',
+                title: 'Export Error',
+                message: 'Failed to generate Excel file. Please try again.'
+            });
+        }
+    };
 
     // Fetch cadets and their attendance data
     const fetchCadets = async (highlightImported = false) => {
@@ -821,6 +973,36 @@ export default function AdminAttendance(){
                                                                 </td>
                                                             </tr>
                                                         ))}
+                                                        {/* Summary row showing total present per week */}
+                                                        <tr className='border-b-2 border-gray-400 bg-gray-50 font-semibold'>
+                                                            <td className='px-3 sm:px-4 md:px-6 py-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-200 font-medium text-gray-900' style={{ minWidth: '180px', width: '180px' }}>
+                                                                Total Present
+                                                            </td>
+                                                            <td className='hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 border-r border-gray-200' style={{ minWidth: '140px', width: '140px' }}>
+                                                                {/* Empty for student number column */}
+                                                            </td>
+                                                            {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
+                                                                const weekNumber = i + 1;
+                                                                const weekPresentCount = cadets.filter(cadet => {
+                                                                    const weeklyAttendance = cadet.weekly_attendance || {};
+                                                                    return weeklyAttendance[weekNumber] === true;
+                                                                }).length;
+                                                                
+                                                                return (
+                                                                    <td key={i} className='px-2 py-3 text-center border-r border-gray-200' style={{ minWidth: '45px', width: '45px' }}>
+                                                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-black font-semibold text-sm">
+                                                                            {weekPresentCount}
+                                                                        </span>
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                            <td className='px-3 sm:px-4 md:px-6 py-3 text-center border-r border-gray-200 font-semibold text-gray-900' style={{ minWidth: '80px', width: '80px' }}>
+
+                                                            </td>
+                                                            <td className='px-3 sm:px-4 md:px-6 py-3 text-center font-semibold text-gray-900' style={{ minWidth: '80px', width: '80px' }}>
+
+                                                            </td>
+                                                        </tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -884,7 +1066,6 @@ export default function AdminAttendance(){
                                                     onClick={cancelEditing}
                                                     className="bg-gray-500 hover:bg-gray-600 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
                                                 >
-                                                    <FaTimes />
                                                     <span className="hidden sm:inline">Cancel</span>
                                                 </button>
                                             )}
@@ -909,6 +1090,16 @@ export default function AdminAttendance(){
                                                 <span className="sm:hidden">
                                                     {saving ? 'Save...' : editMode ? 'Save' : 'Edit'}
                                                 </span>
+                                            </button>
+                                            
+                                            {/* Export to Excel Button */}
+                                            <button
+                                                onClick={exportToExcel}
+                                                className="bg-primary hover:bg-primary/80 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
+                                            >
+                                                <FaDownload />
+                                                <span className="hidden sm:inline">Export Excel</span>
+                                                <span className="sm:hidden">Export</span>
                                             </button>
                                         </div>
                                     </div>
@@ -1056,14 +1247,90 @@ export default function AdminAttendance(){
                 </div>
             )}
 
-            {/* Alert Dialog */}
-            <AlertDialog
-                isOpen={alertDialog.isOpen}
-                type={alertDialog.type}
-                title={alertDialog.title}
-                message={alertDialog.message}
-                onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
-            />
+                    {/* Week Selector Modal */}
+                    {showWeekSelector && (
+                        <>
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-lg">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-black mb-4">Select Weeks to Export</h3>
+                                        <p className="text-gray-600 mb-4">Choose which weeks you want to include in the Excel export:</p>
+                                        
+                                        <div className="grid grid-cols-5 gap-2 mb-4">
+                                            {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
+                                                const weekNumber = i + 1;
+                                                const isSelected = selectedWeeks.includes(weekNumber);
+                                                
+                                                return (
+                                                    <label key={weekNumber} className="flex items-center space-x-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedWeeks([...selectedWeeks, weekNumber]);
+                                                                } else {
+                                                                    setSelectedWeeks(selectedWeeks.filter(w => w !== weekNumber));
+                                                                }
+                                                            }}
+                                                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-1"
+                                                        />
+                                                        <span className="text-sm font-medium text-gray-700">Week {weekNumber}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+                                                        setSelectedWeeks(Array.from({ length: maxWeeks }, (_, i) => i + 1));
+                                                    }}
+                                                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedWeeks([])}
+                                                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {selectedWeeks.length} week(s) selected
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2 mt-6">
+                                        <button
+                                            onClick={() => setShowWeekSelector(false)}
+                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleWeekSelection}
+                                            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                        >
+                                            Export Selected Weeks
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Alert Dialog */}
+                    <AlertDialog
+                        isOpen={alertDialog.isOpen}
+                        type={alertDialog.type}
+                        title={alertDialog.title}
+                        message={alertDialog.message}
+                        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+                    />
         </div>
         </>
     );
