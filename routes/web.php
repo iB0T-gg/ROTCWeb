@@ -34,8 +34,10 @@ use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AdminOrPlatoonLeaderMiddleware;
 use App\Http\Middleware\UserMiddleware;
 use App\Http\Middleware\FacultyMiddleware;
+use App\Http\Middleware\PlatoonLeaderMiddleware;
 
 // Authentication Routes - Accessible without login
 Route::middleware('guest')->group(function () {
@@ -332,6 +334,27 @@ Route::middleware(['auth', FacultyMiddleware::class])->group(function () {
     });
 });
 
+// Platoon Leader routes - Only accessible to platoon leaders
+Route::middleware(['auth', PlatoonLeaderMiddleware::class])->prefix('platoon-leader')->group(function () {
+    Route::get('/attendance', function () {
+        return Inertia::render('platoonLeader/platoonLeaderAttendance', [
+            'auth' => auth()->user()
+        ]);
+    });
+
+    Route::get('/change-password', function () {
+        return Inertia::render('platoonLeader/platoonLeaderChangePassword', [
+            'auth' => auth()->user()
+        ]);
+    });
+
+    Route::get('/report-issue', function () {
+        return Inertia::render('platoonLeader/platoonLeaderReportAnIssue', [
+            'auth' => auth()->user()
+        ]);
+    });
+});
+
 // Direct grade routes without API prefix
 Route::middleware(['auth', FacultyMiddleware::class])->group(function() {
     Route::get('/direct-grades', [App\Http\Controllers\GradeController::class, 'getEquivalentGrades']);
@@ -375,9 +398,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::get('/attendance', [AttendanceController::class, 'getAllAttendance']);
         // Note: /attendance/cadets and /attendance/{userId} are available to all authenticated users above
         Route::post('/attendance/update', [AttendanceController::class, 'updateAttendance']);
-        Route::post('/attendance/bulk-update', [AttendanceController::class, 'bulkUpdateAttendance']);
         Route::post('/attendance/fingerprint-scan', [AttendanceController::class, 'fingerprintScan']);
-        Route::post('/attendance/import', [AttendanceController::class, 'importAttendanceData']);
         Route::post('/fingerprint/register', [AttendanceController::class, 'registerFingerprint']);
         Route::get('/fingerprint/check-connection', [AttendanceController::class, 'checkScannerConnection']);
         Route::get('/pending-users', [AdminController::class, 'getPendingUsers']);
@@ -386,7 +407,14 @@ Route::middleware('auth')->prefix('api')->group(function () {
         Route::post('/archive-user', [AdminController::class, 'archiveUser']);
         Route::post('/restore-user', [AdminController::class, 'restoreUser']);
         Route::post('/restore-all-users', [AdminController::class, 'restoreAllUsers']);
+        Route::get('/duplicate-platoon-leaders', [AdminController::class, 'getDuplicatePlatoonLeaders']);
         Route::get('/archived-users', [AdminController::class, 'getArchivedUsers']);
+    });
+
+    // Attendance management endpoints shared by admin and platoon leader roles
+    Route::middleware(AdminOrPlatoonLeaderMiddleware::class)->group(function () {
+        Route::post('/attendance/bulk-update', [AttendanceController::class, 'bulkUpdateAttendance']);
+        Route::post('/attendance/import', [AttendanceController::class, 'importAttendanceData']);
     });
     
     // Faculty-only API endpoints

@@ -50,6 +50,57 @@ const ChevronDownIcon = ({ className }) => (
 const firstSemesterWeeks = Array.from({ length: 10 }, (_, i) => `Week ${i + 1}`);
 const secondSemesterWeeks = Array.from({ length: 15 }, (_, i) => `Week ${i + 1}`);
 
+// Week dates mapping for 2025-2026 1st semester (format: MM-DD-YYYY)
+const firstSemesterWeekDates = [
+  '08-15-2025', // Week 1
+  '08-22-2025', // Week 2
+  '08-29-2025', // Week 3
+  '09-05-2025', // Week 4
+  '09-12-2025', // Week 5
+  '09-19-2025', // Week 6
+  '09-26-2025', // Week 7
+  '10-03-2025', // Week 8
+  '10-10-2025', // Week 9
+  '10-17-2025', // Week 10
+];
+
+// Week dates mapping for 2025-2026 2nd semester (format: MM-DD-YYYY)
+const secondSemesterWeekDates = [
+  '01-15-2026', // Week 1
+  '01-22-2026', // Week 2
+  '01-29-2026', // Week 3
+  '02-05-2026', // Week 4
+  '02-12-2026', // Week 5
+  '02-19-2026', // Week 6
+  '02-26-2026', // Week 7
+  '03-05-2026', // Week 8
+  '03-12-2026', // Week 9
+  '03-19-2026', // Week 10
+  '03-26-2026', // Week 11
+  '04-02-2026', // Week 12
+  '04-09-2026', // Week 13
+  '04-16-2026', // Week 14
+  '04-23-2026', // Week 15
+];
+
+// Helper function to get date for a week
+const getWeekDate = (weekLabel, semester) => {
+  const weekMatch = weekLabel.match(/Week (\d+)/);
+  if (!weekMatch) return '';
+  const weekNumber = parseInt(weekMatch[1], 10);
+  
+  if (semester === '2025-2026 1st semester') {
+    if (weekNumber >= 1 && weekNumber <= 10) {
+      return firstSemesterWeekDates[weekNumber - 1];
+    }
+  } else if (semester === '2025-2026 2nd semester') {
+    if (weekNumber >= 1 && weekNumber <= 15) {
+      return secondSemesterWeekDates[weekNumber - 1];
+    }
+  }
+  return '';
+};
+
 const FacultyMerits = ({ auth }) => {
   // Check if faculty has company and battalion assigned (new faculty) or not (seeder faculty)
   const isNewFaculty = auth && auth.company && auth.battalion;
@@ -962,17 +1013,22 @@ const handleSliderChange = (newPosition) => {
                           <tr>
                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[140px] md:min-w-[160px] sticky left-0 bg-white z-10">Cadet Names</th>
                     {/* Dynamically render week columns with M/D subheaders */}
-                    {getCurrentWeeks().map((week) => (
+                    {getCurrentWeeks().map((week) => {
+                      const weekDate = getWeekDate(week, selectedSemester);
+                      return (
                       <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[56px] md:min-w-[72px] whitespace-nowrap">
                         <div className="flex flex-col items-center">
                           <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
+                          {weekDate && (
+                            <span className="text-[7px] sm:text-[9px] md:text-[10px] text-gray-500 mb-0.5">{weekDate}</span>
+                          )}
                           <div className="flex xl:flex-row flex-col items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5">
                             <span className="bg-green-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">M</span>
                             <span className="bg-red-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                           </div>
                         </div>
                       </th>
-                    ))}
+                    )})}
                     <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Total Merits</th>
                     <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Aptitude (30%)</th>
                   </tr>
@@ -1075,9 +1131,13 @@ const handleSliderChange = (newPosition) => {
                             <div className="grid grid-cols-3 gap-2">
                               {getCurrentWeeks().map((week, j) => {
                                 const weekIndex = currentWeekRange.start + j;
+                                const weekDate = getWeekDate(week, selectedSemester);
                                 return (
                                   <div key={j} className="border rounded p-2">
                                     <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
+                                    {weekDate && (
+                                      <div className="text-[8px] text-gray-500 mb-1 text-center">{weekDate}</div>
+                                    )}
                                     <div className="flex items-center justify-center gap-1">
                                       <input
                                         type="number"
@@ -1259,17 +1319,22 @@ const handleSliderChange = (newPosition) => {
                           <tr>
                             <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-left text-xs sm:text-sm md:text-base min-w-[140px] md:min-w-[160px] sticky left-0 bg-white z-10">Cadet Names</th>
                      {/* Dynamically render week columns with M/D subheaders */}
-                    {getCurrentWeeks().map((week) => (
+                    {getCurrentWeeks().map((week) => {
+                      const weekDate = getWeekDate(week, selectedSemester);
+                      return (
                       <th key={week} className="p-1 sm:p-2 md:p-3 border-b font-medium text-center min-w-[56px] md:min-w-[72px] whitespace-nowrap">
                          <div className="flex flex-col items-center">
                            <span className="text-[8px] sm:text-xs md:text-sm font-medium text-gray-700 mb-1">{week}</span>
+                           {weekDate && (
+                             <span className="text-[7px] sm:text-[9px] md:text-[10px] text-gray-500 mb-0.5">{weekDate}</span>
+                           )}
                           <div className="flex justify-center gap-0.5 sm:gap-1 md:gap-1.5">
                             <span className="bg-green-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">M</span>
                             <span className="bg-red-100 text-gray-700 text-[8px] sm:text-[10px] md:text-xs font-medium px-0.5 sm:px-1 md:px-1.5 py-0.5 rounded-full">D</span>
                            </div>
                          </div>
                        </th>
-                     ))}
+                    )})}
                      <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Total Merits</th>
                      <th className="p-1 sm:p-2 md:p-3 border-b font-medium text-center text-xs sm:text-sm md:text-base min-w-[80px]">Aptitude (30%)</th>
                    </tr>
@@ -1386,9 +1451,13 @@ const handleSliderChange = (newPosition) => {
                      <div className="grid grid-cols-3 gap-2">
                        {getCurrentWeeks().map((week, j) => {
                          const weekIndex = currentWeekRange.start + j;
+                         const weekDate = getWeekDate(week, selectedSemester);
                          return (
                            <div key={j} className="border rounded p-2">
                              <div className="text-[10px] text-gray-700 mb-1 text-center">{week}</div>
+                             {weekDate && (
+                               <div className="text-[8px] text-gray-500 mb-1 text-center">{weekDate}</div>
+                             )}
                              <div className="flex items-center justify-center gap-1">
                                <input
                                  type="number"

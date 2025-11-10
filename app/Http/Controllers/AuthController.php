@@ -223,6 +223,12 @@ class AuthController extends Controller
                 $request->session()->regenerate();
                 return redirect()->intended('/faculty/facultyHome');
             }
+
+            // Platoon leaders can log in if not archived
+            if ($user->role === 'platoon_leader') {
+                $request->session()->regenerate();
+                return redirect()->intended('/platoon-leader/attendance');
+            }
             
             // For regular users, check approval status
             if (isset($user->status)) {
@@ -265,11 +271,17 @@ class AuthController extends Controller
     {
         if ($user->role === 'admin') {
             return redirect('/adminHome');
-        } elseif ($user->role === 'faculty') {
-            return redirect('/faculty/facultyHome');
-        } else {
-            return redirect('/user/userHome');
         }
+
+        if ($user->role === 'faculty') {
+            return redirect('/faculty/facultyHome');
+        }
+
+        if ($user->role === 'platoon_leader') {
+            return redirect('/platoon-leader/attendance');
+        }
+
+        return redirect('/user/userHome');
     }
 
     /**

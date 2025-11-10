@@ -29,6 +29,16 @@ class AttendanceController extends Controller
             if ($currentUser && $currentUser->role === 'faculty' && $currentUser->company && $currentUser->battalion) {
                 $query->where('company', $currentUser->company)
                       ->where('battalion', $currentUser->battalion);
+            } elseif ($currentUser && $currentUser->role === 'platoon_leader') {
+                // Filter by platoon leader's assigned company and platoon (if assigned)
+                // If company/platoon is NULL, platoon leader has general access to all cadets
+                if ($currentUser->company) {
+                    $query->where('company', $currentUser->company);
+                }
+                
+                if ($currentUser->platoon) {
+                    $query->where('platoon', $currentUser->platoon);
+                }
             }
 
             $cadets = $query->orderBy('last_name')
@@ -46,7 +56,7 @@ class AttendanceController extends Controller
                         
                     if (!$attendance) {
                         // Create new attendance record with 10 weeks for 1st semester
-                        $attendanceData = [
+                        $newAttendanceData = [
                             'user_id' => $cadet->id,
                             'semester' => $semester,
                             'weeks_present' => 0,
@@ -56,10 +66,10 @@ class AttendanceController extends Controller
                         
                         // Initialize all weekly columns to false (only first 10 weeks for 1st semester)
                         for ($i = 1; $i <= 10; $i++) {
-                            $attendanceData["week_{$i}"] = false;
+                            $newAttendanceData["week_{$i}"] = false;
                         }
                         
-                        $attendance = Attendance::create($attendanceData);
+                        $attendance = Attendance::create($newAttendanceData);
                     }
                 } else {
                     $attendance = SecondSemesterAttendance::where('user_id', $cadet->id)
@@ -68,7 +78,7 @@ class AttendanceController extends Controller
                         
                     if (!$attendance) {
                         // Create new attendance record with 15 weeks
-                        $attendanceData = [
+                        $newAttendanceData = [
                             'user_id' => $cadet->id,
                             'semester' => $semester,
                             'weeks_present' => 0,
@@ -78,10 +88,10 @@ class AttendanceController extends Controller
                         
                         // Initialize all weekly columns to false
                         for ($i = 1; $i <= 15; $i++) {
-                            $attendanceData["week_{$i}"] = false;
+                            $newAttendanceData["week_{$i}"] = false;
                         }
                         
-                        $attendance = SecondSemesterAttendance::create($attendanceData);
+                        $attendance = SecondSemesterAttendance::create($newAttendanceData);
                     }
                 }
                 
@@ -229,6 +239,32 @@ class AttendanceController extends Controller
             
             $updates = $request->updates;
             $semester = $request->semester;
+            $currentUser = auth()->user();
+            
+            // For platoon leaders, verify all cadets belong to their assigned company and platoon
+            // If platoon leader has NULL company/platoon, they have general access to all cadets
+            if ($currentUser && $currentUser->role === 'platoon_leader' && ($currentUser->company || $currentUser->platoon)) {
+                $userIds = array_column($updates, 'user_id');
+                $cadets = User::whereIn('id', $userIds)
+                    ->where('role', 'user')
+                    ->get();
+                
+                foreach ($cadets as $cadet) {
+                    if ($currentUser->company && $cadet->company !== $currentUser->company) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Access denied. You can only update attendance for cadets in your assigned company.'
+                        ], 403);
+                    }
+                    
+                    if ($currentUser->platoon && $cadet->platoon !== $currentUser->platoon) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Access denied. You can only update attendance for cadets in your assigned platoon.'
+                        ], 403);
+                    }
+                }
+            }
             
             DB::beginTransaction();
             
@@ -1396,18 +1432,63 @@ class AttendanceController extends Controller
             $currentUser = auth()->user();
             
             // Allow access if user is admin/faculty OR if they're requesting their own data
-            if ($currentUser->role !== 'admin' && $currentUser->role !== 'faculty' && $currentUser->id != $userId) {
+            if (
+                $currentUser->role !== 'admin' &&
+                $currentUser->role !== 'faculty' &&
+                $currentUser->role !== 'platoon_leader' &&
+                $currentUser->id != $userId
+            ) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Access denied. You can only view your own attendance data.'
                 ], 403);
             }
+
+            // Additional scope restriction for platoon leaders
+            if ($currentUser->role === 'platoon_leader' && $currentUser->id !== (int) $userId) {
+                // If platoon leader has NULL company/platoon, they have general access
+                if ($currentUser->company || $currentUser->platoon) {
+                    $targetUser = User::find($userId);
+
+                    if (!$targetUser) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'User not found'
+                        ], 404);
+                    }
+
+                    // Check company and platoon match (battalion not required for platoon leaders)
+                    if (
+                        ($currentUser->platoon && $targetUser->platoon !== $currentUser->platoon) ||
+                        ($currentUser->company && $targetUser->company !== $currentUser->company)
+                    ) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Access denied. You can only view cadets under your assigned company and platoon.'
+                        ], 403);
+                    }
+                }
+            }
             
             // Get the user
-            $user = User::where('id', $userId)
+            $userQuery = User::where('id', $userId)
                 ->where('status', 'approved')
-                ->first(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section']);
+                ->where('archived', false);
+
+            if ($currentUser->role === 'platoon_leader') {
+                // Filter by platoon leader's assigned company and platoon (if assigned)
+                // If company/platoon is NULL, platoon leader has general access to all cadets
+                if ($currentUser->company) {
+                    $userQuery->where('company', $currentUser->company);
+                }
                 
+                if ($currentUser->platoon) {
+                    $userQuery->where('platoon', $currentUser->platoon);
+                }
+            }
+
+            $user = $userQuery->first(['id', 'first_name', 'last_name', 'student_number', 'course', 'year', 'section', 'platoon', 'company', 'battalion']);
+
             if (!$user) {
                 return response()->json([
                     'success' => false,

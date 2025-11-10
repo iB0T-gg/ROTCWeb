@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'user' => \App\Http\Middleware\UserMiddleware::class,
             'faculty' => \App\Http\Middleware\FacultyMiddleware::class,
+            'platoon_leader' => \App\Http\Middleware\PlatoonLeaderMiddleware::class,
+            'admin_or_platoon_leader' => \App\Http\Middleware\AdminOrPlatoonLeaderMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

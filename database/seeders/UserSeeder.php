@@ -42,6 +42,21 @@ class UserSeeder extends Seeder
                 'battalion' => null,      // NULL = general access to all cadets
                 'platoon' => null,        // NULL = general access to all cadets
             ]);
+
+            // Create a platoon leader user with scoped access to a specific platoon
+            User::create([
+                'student_number' => 'PLTN0001',
+                'first_name' => 'Platoon',
+                'middle_name' => '',
+                'last_name' => 'Leader',
+                'email' => 'platoonleader@example.com',
+                'password' => Hash::make('platoonleader@123'),
+                'role' => 'platoon_leader',
+                'status' => 'approved',
+                'platoon' => '1st Platoon',
+                'company' => 'Alpha',
+                'battalion' => '1st Battalion',
+            ]);
             
             // Create a robust test set of cadet users (>= 111 cadets) with realistic-looking data
             $faker = \Faker\Factory::create();
@@ -135,5 +150,29 @@ class UserSeeder extends Seeder
                 $cadet->save();
             }
         }
+
+        // Ensure platoon leader account exists regardless of current user count
+        // Platoon leader with NULL company/platoon has general access to all cadets
+        $platoonLeader = User::updateOrCreate(
+            [
+                'email' => 'platoonleader@example.com',
+            ],
+            [
+                'student_number' => 'PLTN0001',
+                'first_name' => 'Platoon',
+                'middle_name' => '',
+                'last_name' => 'Leader',
+                'password' => Hash::make('platoonleader@123'),
+                'role' => 'platoon_leader',
+                'status' => 'approved',
+            ]
+        );
+        
+        // Explicitly set company, platoon, and battalion to NULL for general access
+        // This ensures existing records are updated even if they had values before
+        $platoonLeader->company = null;
+        $platoonLeader->platoon = null;
+        $platoonLeader->battalion = null;
+        $platoonLeader->save();
     }
 }

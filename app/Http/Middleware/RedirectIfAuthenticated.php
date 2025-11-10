@@ -23,6 +23,13 @@ class RedirectIfAuthenticated
             // Log for debugging
             \Log::info('RedirectIfAuthenticated middleware triggered for user: ' . $user->id . ' with role: ' . $user->role);
             
+            // Allow pending users to access login page so they can logout
+            // This prevents the redirect loop when they click "Back to Login"
+            if ($user->status === 'pending' && ($request->is('/') || $request->is('/login'))) {
+                \Log::info('Allowing pending user to access login page');
+                return $next($request);
+            }
+            
             // Check if user status is pending
             if ($user->status === 'pending') {
                 \Log::info('Redirecting pending user to /pending');
@@ -37,6 +44,9 @@ class RedirectIfAuthenticated
                 case 'faculty':
                     \Log::info('Redirecting faculty user to /faculty/facultyHome');
                     return redirect('/faculty/facultyHome');
+                case 'platoon_leader':
+                    \Log::info('Redirecting platoon leader user to /platoon-leader/attendance');
+                    return redirect('/platoon-leader/attendance');
                 case 'user':
                     \Log::info('Redirecting regular user to /user/userHome');
                     return redirect('/user/userHome');

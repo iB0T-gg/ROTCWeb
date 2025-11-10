@@ -7,6 +7,53 @@ import { usePage } from '@inertiajs/react';
 import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
 
+// Week dates mapping for 2025-2026 1st semester (format: MM-DD-YYYY)
+const firstSemesterWeekDates = [
+  '08-15-2025', // Week 1
+  '08-22-2025', // Week 2
+  '08-29-2025', // Week 3
+  '09-05-2025', // Week 4
+  '09-12-2025', // Week 5
+  '09-19-2025', // Week 6
+  '09-26-2025', // Week 7
+  '10-03-2025', // Week 8
+  '10-10-2025', // Week 9
+  '10-17-2025', // Week 10
+];
+
+// Week dates mapping for 2025-2026 2nd semester (format: MM-DD-YYYY)
+const secondSemesterWeekDates = [
+  '01-15-2026', // Week 1
+  '01-22-2026', // Week 2
+  '01-29-2026', // Week 3
+  '02-05-2026', // Week 4
+  '02-12-2026', // Week 5
+  '02-19-2026', // Week 6
+  '02-26-2026', // Week 7
+  '03-05-2026', // Week 8
+  '03-12-2026', // Week 9
+  '03-19-2026', // Week 10
+  '03-26-2026', // Week 11
+  '04-02-2026', // Week 12
+  '04-09-2026', // Week 13
+  '04-16-2026', // Week 14
+  '04-23-2026', // Week 15
+];
+
+// Helper function to get date for a week
+const getWeekDate = (weekNumber, semester) => {
+  if (semester === '2025-2026 1st semester') {
+    if (weekNumber >= 1 && weekNumber <= 10) {
+      return firstSemesterWeekDates[weekNumber - 1];
+    }
+  } else if (semester === '2025-2026 2nd semester') {
+    if (weekNumber >= 1 && weekNumber <= 15) {
+      return secondSemesterWeekDates[weekNumber - 1];
+    }
+  }
+  return '';
+};
+
 // Alert Dialog Component
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
@@ -910,12 +957,21 @@ export default function AdminAttendance(){
                                                             <th scope="col" className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
                                                                 Student Number
                                                             </th>
-                                                            {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => (
-                                                                <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
-                                                                    <span className="hidden sm:inline">W{i + 1}</span>
-                                                                    <span className="sm:hidden">{i + 1}</span>
-                                                                </th>
-                                                            ))}
+                                                            {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
+                                                                const weekNumber = i + 1;
+                                                                const weekDate = getWeekDate(weekNumber, selectedSemester);
+                                                                return (
+                                                                    <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
+                                                                        <div className="flex flex-col items-center">
+                                                                            <span className="hidden sm:inline">W{weekNumber}</span>
+                                                                            <span className="sm:hidden">{weekNumber}</span>
+                                                                            {weekDate && (
+                                                                                <span className="text-[8px] text-gray-400 mt-0.5 hidden sm:block">{weekDate}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </th>
+                                                                );
+                                                            })}
                                                             <th scope="col" className="px-3 sm:px-4 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '80px', width: '80px' }}>
                                                                 <span className="hidden sm:inline">Present</span>
                                                                 <span className="sm:hidden">P</span>

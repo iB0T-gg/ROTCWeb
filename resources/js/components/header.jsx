@@ -60,6 +60,9 @@ export default function Header({ auth }) {
             case 'faculty':
                 console.log('Header: Returning faculty password route');
                 return '/faculty/change-password';
+            case 'platoon_leader':
+                console.log('Header: Returning platoon leader password route');
+                return '/platoon-leader/change-password';
             case 'user':
             default:
                 console.log('Header: Returning user password route');
@@ -82,6 +85,9 @@ export default function Header({ auth }) {
             case 'faculty':
                 console.log('Header: Returning faculty route');
                 return '/faculty/facultyReportAnIssue';
+            case 'platoon_leader':
+                console.log('Header: Returning platoon leader route');
+                return '/platoon-leader/report-issue';
             case 'user':
             default:
                 console.log('Header: Returning user route');
@@ -101,6 +107,7 @@ export default function Header({ auth }) {
                             user && userRole ?
                                 userRole === 'admin' ? '/adminHome'
                                 : userRole === 'faculty' ? '/faculty/facultyHome'
+                                : userRole === 'platoon_leader' ? '/platoon-leader/attendance'
                                 : userRole === 'user' ? '/user/userHome'
                                 : '/user/userHome'
                             : '/user/userHome'
@@ -164,6 +171,18 @@ export default function Header({ auth }) {
                                 {user.company && user.battalion ? 
                                     `${user.company} Company, ${user.battalion} Instructor` :
                                     'General Faculty Instructor'
+                                }
+                            </span>
+                        </div>
+                    )}
+                    
+                    {/* Platoon Leader designation - show company and platoon for platoon leader users */}
+                    {user && userRole === 'platoon_leader' && (
+                        <div className="hidden md:block ml-4 mr-2">
+                            <span className="text-lg text-white/90 font-medium">
+                                {user.company && user.platoon ? 
+                                    `${user.company} Company, ${user.platoon} Leader` :
+                                    'General Platoon Leader'
                                 }
                             </span>
                         </div>

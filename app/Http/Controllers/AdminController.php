@@ -26,7 +26,7 @@ class AdminController extends Controller
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|in:user,faculty,admin',
+            'role' => 'required|in:user,faculty,platoon_leader,admin',
             'password' => 'required|string|min:6|confirmed',
         ];
 
@@ -44,21 +44,64 @@ class AdminController extends Controller
             
             // Add unique constraint for faculty company and battalion combination
             $rules['company'] .= '|unique:users,company,NULL,id,role,faculty,battalion,' . $request->battalion . ' Battalion';
+        } elseif ($request->role === 'platoon_leader') {
+            // Add company and platoon validation for platoon leader
+            $rules['company'] = 'required|string|in:alpha,bravo,charlie,delta';
+            $rules['platoon'] = 'required|string|in:1st,2nd,3rd';
         } else {
             $rules['company'] = 'nullable|string';
             $rules['battalion'] = 'nullable|string';
+            $rules['platoon'] = 'nullable|string';
         }
 
         $validator = Validator::make($request->all(), $rules, [
             'company.unique' => 'A faculty member is already assigned to this company and battalion combination.',
         ]);
 
+        // Custom validation for platoon leader: check for duplicate company/platoon combination
+        // Exclude archived users to allow replacement of archived platoon leaders
+        // Also exclude rejected users to allow re-creation after rejection
+        $validator->after(function ($validator) use ($request) {
+            if ($request->role === 'platoon_leader') {
+                $platoonValue = $request->platoon . ' Platoon';
+                $companyValue = ucfirst($request->company);
+                
+                // Check for existing non-archived platoon leader with same company/platoon
+                // This includes both pending and approved users to prevent duplicates
+                $existingPlatoonLeader = User::where('role', 'platoon_leader')
+                    ->where('company', $companyValue)
+                    ->where('platoon', $platoonValue)
+                    ->where(function($query) {
+                        $query->where('archived', false)
+                              ->orWhereNull('archived');
+                    })
+                    ->where('status', '!=', 'rejected') // Exclude rejected users
+                    ->first();
+                
+                if ($existingPlatoonLeader) {
+                    // Add error to both fields for better UX
+                    $validator->errors()->add('company', 'A platoon leader is already assigned to this company and platoon combination.');
+                    $validator->errors()->add('platoon', 'A platoon leader is already assigned to this company and platoon combination.');
+                }
+            }
+        });
+
         if ($validator->fails()) {
+            // Check if the error is specifically about platoon leader duplication
+            $errors = $validator->errors();
+            $isDuplicateError = $errors->has('company') && 
+                                ($errors->first('company') === 'A platoon leader is already assigned to this company and platoon combination.' ||
+                                 $errors->first('platoon') === 'A platoon leader is already assigned to this company and platoon combination.');
+            
+            $errorMessage = $isDuplicateError 
+                ? 'A platoon leader is already assigned to this company and platoon combination. Please choose a different company or platoon.'
+                : 'Validation failed';
+            
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'message' => $errorMessage,
+                    'errors' => $errors
                 ], 422);
             }
             return redirect()->back()->withErrors($validator)->withInput();
@@ -83,6 +126,12 @@ class AdminController extends Controller
             if ($request->role === 'faculty') {
                 $userData['company'] = ucfirst($request->company); // Convert to proper case (Alpha, Bravo, etc.)
                 $userData['battalion'] = $request->battalion . ' Battalion'; // Add "Battalion" suffix
+            }
+            
+            // Add company and platoon for platoon leader users
+            if ($request->role === 'platoon_leader') {
+                $userData['company'] = ucfirst($request->company); // Convert to proper case (Alpha, Bravo, etc.)
+                $userData['platoon'] = $request->platoon . ' Platoon'; // Add "Platoon" suffix
             }
 
             $user = User::create($userData);
@@ -127,7 +176,7 @@ class AdminController extends Controller
     public function getPendingUsers()
     {
         $pendingUsers = User::where('status', 'pending')
-                           ->whereIn('role', ['user', 'faculty'])  // Include both users and faculty
+                           ->whereIn('role', ['user', 'faculty', 'platoon_leader'])  // Include users, faculty, and platoon leaders
                            ->orderBy('created_at', 'desc')
                            ->get();
         
@@ -145,9 +194,9 @@ class AdminController extends Controller
 
         $user = User::findOrFail($request->user_id);
         
-        // Only allow approving pending regular users or faculty
-        if (!in_array($user->role, ['user', 'faculty'])) {
-            return response()->json(['error' => 'Only regular users and faculty can be approved'], 400);
+        // Only allow approving pending regular users, faculty, or platoon leaders
+        if (!in_array($user->role, ['user', 'faculty', 'platoon_leader'])) {
+            return response()->json(['error' => 'Only regular users, faculty, and platoon leaders can be approved'], 400);
         }
         
         if ($user->status !== 'pending') {
@@ -245,9 +294,9 @@ class AdminController extends Controller
 
         $user = User::findOrFail($request->user_id);
         
-        // Only allow rejecting pending regular users or faculty
-        if (!in_array($user->role, ['user', 'faculty'])) {
-            return response()->json(['error' => 'Only regular users and faculty can be rejected'], 400);
+        // Only allow rejecting pending regular users, faculty, or platoon leaders
+        if (!in_array($user->role, ['user', 'faculty', 'platoon_leader'])) {
+            return response()->json(['error' => 'Only regular users, faculty, and platoon leaders can be rejected'], 400);
         }
         
         if ($user->status !== 'pending') {
@@ -360,6 +409,52 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'All archived users restored successfully',
             'restored_count' => $restoredCount
+        ]);
+    }
+
+    /**
+     * Get duplicate platoon leaders (same company/platoon combination)
+     */
+    public function getDuplicatePlatoonLeaders()
+    {
+        // Find all non-archived, non-rejected platoon leaders
+        $platoonLeaders = User::where('role', 'platoon_leader')
+            ->where(function($query) {
+                $query->where('archived', false)
+                      ->orWhereNull('archived');
+            })
+            ->where('status', '!=', 'rejected')
+            ->whereNotNull('company')
+            ->whereNotNull('platoon')
+            ->get();
+
+        // Group by company and platoon to find duplicates
+        $grouped = $platoonLeaders->groupBy(function($user) {
+            return $user->company . '|' . $user->platoon;
+        });
+
+        $duplicates = [];
+        foreach ($grouped as $key => $users) {
+            if ($users->count() > 1) {
+                $duplicates[] = [
+                    'company' => $users->first()->company,
+                    'platoon' => $users->first()->platoon,
+                    'users' => $users->map(function($user) {
+                        return [
+                            'id' => $user->id,
+                            'email' => $user->email,
+                            'name' => $user->first_name . ' ' . $user->last_name,
+                            'status' => $user->status,
+                            'created_at' => $user->created_at,
+                        ];
+                    })->values()
+                ];
+            }
+        }
+
+        return response()->json([
+            'duplicates' => $duplicates,
+            'count' => count($duplicates)
         ]);
     }
 } 

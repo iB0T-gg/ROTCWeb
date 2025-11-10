@@ -42,6 +42,53 @@ const ChevronDownIcon = ({ className }) => (
   </svg>
 );
 
+// Week dates mapping for 2025-2026 1st semester (format: MM-DD-YYYY)
+const firstSemesterWeekDates = [
+  '08-15-2025', // Week 1
+  '08-22-2025', // Week 2
+  '08-29-2025', // Week 3
+  '09-05-2025', // Week 4
+  '09-12-2025', // Week 5
+  '09-19-2025', // Week 6
+  '09-26-2025', // Week 7
+  '10-03-2025', // Week 8
+  '10-10-2025', // Week 9
+  '10-17-2025', // Week 10
+];
+
+// Week dates mapping for 2025-2026 2nd semester (format: MM-DD-YYYY)
+const secondSemesterWeekDates = [
+  '01-15-2026', // Week 1
+  '01-22-2026', // Week 2
+  '01-29-2026', // Week 3
+  '02-05-2026', // Week 4
+  '02-12-2026', // Week 5
+  '02-19-2026', // Week 6
+  '02-26-2026', // Week 7
+  '03-05-2026', // Week 8
+  '03-12-2026', // Week 9
+  '03-19-2026', // Week 10
+  '03-26-2026', // Week 11
+  '04-02-2026', // Week 12
+  '04-09-2026', // Week 13
+  '04-16-2026', // Week 14
+  '04-23-2026', // Week 15
+];
+
+// Helper function to get date for a week
+const getWeekDate = (weekNumber, semester) => {
+  if (semester === '2025-2026 1st semester') {
+    if (weekNumber >= 1 && weekNumber <= 10) {
+      return firstSemesterWeekDates[weekNumber - 1];
+    }
+  } else if (semester === '2025-2026 2nd semester') {
+    if (weekNumber >= 1 && weekNumber <= 15) {
+      return secondSemesterWeekDates[weekNumber - 1];
+    }
+  }
+  return '';
+};
+
 const FacultyAttendance = ({ auth }) => {
   // Check if faculty has company and battalion assigned (new faculty) or not (seeder faculty)
   const isNewFaculty = auth && auth.company && auth.battalion;
@@ -340,9 +387,20 @@ const FacultyAttendance = ({ auth }) => {
                     <thead className='text-gray-600'>
                       <tr>
                         <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-left text-sm md:text-base sticky left-0 bg-white z-10'>Cadet Names</th>
-                        {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => (
-                          <th key={i} className='py-2 md:py-4 px-1 md:px-2 border-b font-medium text-center text-xs md:text-sm min-w-[60px]'>Week {i + 1}</th>
-                        ))}
+                        {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
+                          const weekNumber = i + 1;
+                          const weekDate = getWeekDate(weekNumber, selectedSemester);
+                          return (
+                            <th key={i} className='py-2 md:py-4 px-1 md:px-2 border-b font-medium text-center text-xs md:text-sm min-w-[60px]'>
+                              <div className="flex flex-col items-center">
+                                <span>Week {weekNumber}</span>
+                                {weekDate && (
+                                  <span className="text-[9px] md:text-[10px] text-gray-500 mt-0.5">{weekDate}</span>
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })}
                         <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>Total</th>
                         <th className='py-2 md:py-4 px-2 md:px-3 border-b font-medium text-center text-sm md:text-base'>% (30%)</th>
                       </tr>

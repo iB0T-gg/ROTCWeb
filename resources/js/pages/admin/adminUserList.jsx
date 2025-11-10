@@ -427,6 +427,7 @@ export default function AdminUserList({ auth }) {
                                             <option value="all">All Roles</option>
                                             <option value="admin">Admin</option>
                                             <option value="faculty">Faculty</option>
+                                            <option value="platoon_leader">Platoon Leader</option>
                                             <option value="user">Cadets</option>
                                         </select>
                                         <FaChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />

@@ -50,6 +50,7 @@ export default function AddUsers({ auth, success, error }) {
         role: '', // Default role is empty (shows "Select Role")
         company: '',
         battalion: '',
+        platoon: '',
         password: '',
         password_confirmation: '',
     });
@@ -59,10 +60,19 @@ export default function AddUsers({ auth, success, error }) {
         setFormData(prev => {
             const newData = { ...prev, [field]: value };
             
-            // Clear company and battalion when role changes to non-faculty
-            if (field === 'role' && value !== 'faculty') {
+            // Clear company, battalion, and platoon when role changes
+            if (field === 'role') {
+                if (value !== 'faculty' && value !== 'platoon_leader') {
                 newData.company = '';
                 newData.battalion = '';
+                    newData.platoon = '';
+                } else if (value === 'faculty') {
+                    // Clear platoon for faculty
+                    newData.platoon = '';
+                } else if (value === 'platoon_leader') {
+                    // Clear battalion for platoon leader
+                    newData.battalion = '';
+                }
             }
             
             return newData;
@@ -79,6 +89,7 @@ export default function AddUsers({ auth, success, error }) {
             role: '',
             company: '',
             battalion: '',
+            platoon: '',
             password: '',
             password_confirmation: '',
         });
@@ -126,6 +137,28 @@ export default function AddUsers({ auth, success, error }) {
                     type: 'error',
                     title: 'Validation Error',
                     message: 'Battalion is required for faculty members'
+                });
+                return;
+            }
+        }
+        
+        // Validate company and platoon are required for platoon leader
+        if (formData.role === 'platoon_leader') {
+            if (!formData.company.trim()) {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Validation Error',
+                    message: 'Company is required for platoon leaders'
+                });
+                return;
+            }
+            if (!formData.platoon.trim()) {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Validation Error',
+                    message: 'Platoon is required for platoon leaders'
                 });
                 return;
             }
@@ -279,7 +312,7 @@ export default function AddUsers({ auth, success, error }) {
                                     </div>
                                 </div>
 
-                                <div className={`grid gap-4 mb-4 ${formData.role === 'faculty' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                                <div className={`grid gap-4 mb-4 ${formData.role === 'faculty' || formData.role === 'platoon_leader' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
                                     <div>
                                         <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Role</label>
                                         <select 
@@ -291,6 +324,7 @@ export default function AddUsers({ auth, success, error }) {
                                             <option value="">Select Role</option>
                                             <option value="user">Cadet</option>
                                             <option value="faculty">Faculty</option>
+                                            <option value="platoon_leader">Platoon Leader</option>
                                             <option value="admin">Admin</option>
                                         </select>
                                     </div>
@@ -324,6 +358,41 @@ export default function AddUsers({ auth, success, error }) {
                                                     <option value="">Select Battalion</option>
                                                     <option value="1st">1st Battalion</option>
                                                     <option value="2nd">2nd Battalion</option>
+                                                </select>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {formData.role === 'platoon_leader' && (
+                                        <>
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Company <span className="text-red-500">*</span></label>
+                                                <select 
+                                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                    value={formData.company}
+                                                    onChange={e => setData('company', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select Company</option>
+                                                    <option value="alpha">Alpha</option>
+                                                    <option value="bravo">Bravo</option>
+                                                    <option value="charlie">Charlie</option>
+                                                    <option value="delta">Delta</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Platoon <span className="text-red-500">*</span></label>
+                                                <select 
+                                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                    value={formData.platoon}
+                                                    onChange={e => setData('platoon', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select Platoon</option>
+                                                    <option value="1st">1st Platoon</option>
+                                                    <option value="2nd">2nd Platoon</option>
+                                                    <option value="3rd">3rd Platoon</option>
                                                 </select>
                                             </div>
                                         </>
