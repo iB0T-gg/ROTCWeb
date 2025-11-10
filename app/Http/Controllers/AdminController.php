@@ -45,8 +45,9 @@ class AdminController extends Controller
             // Add unique constraint for faculty company and battalion combination
             $rules['company'] .= '|unique:users,company,NULL,id,role,faculty,battalion,' . $request->battalion . ' Battalion';
         } elseif ($request->role === 'platoon_leader') {
-            // Add company and platoon validation for platoon leader
+            // Add company, battalion and platoon validation for platoon leader
             $rules['company'] = 'required|string|in:alpha,bravo,charlie,delta';
+            $rules['battalion'] = 'required|string|in:1st,2nd';
             $rules['platoon'] = 'required|string|in:1st,2nd,3rd';
         } else {
             $rules['company'] = 'nullable|string';
@@ -58,19 +59,23 @@ class AdminController extends Controller
             'company.unique' => 'A faculty member is already assigned to this company and battalion combination.',
         ]);
 
-        // Custom validation for platoon leader: check for duplicate company/platoon combination
+        // Custom validation for platoon leader: check for duplicate company/battalion/platoon combination
         // Exclude archived users to allow replacement of archived platoon leaders
         // Also exclude rejected users to allow re-creation after rejection
         $validator->after(function ($validator) use ($request) {
             if ($request->role === 'platoon_leader') {
                 $platoonValue = $request->platoon . ' Platoon';
                 $companyValue = ucfirst($request->company);
+                $battalionValue = $request->battalion ? ($request->battalion . ' Battalion') : null;
                 
                 // Check for existing non-archived platoon leader with same company/platoon
                 // This includes both pending and approved users to prevent duplicates
                 $existingPlatoonLeader = User::where('role', 'platoon_leader')
                     ->where('company', $companyValue)
                     ->where('platoon', $platoonValue)
+                    ->when($battalionValue, function ($q) use ($battalionValue) {
+                        $q->where('battalion', $battalionValue);
+                    })
                     ->where(function($query) {
                         $query->where('archived', false)
                               ->orWhereNull('archived');
@@ -80,8 +85,11 @@ class AdminController extends Controller
                 
                 if ($existingPlatoonLeader) {
                     // Add error to both fields for better UX
-                    $validator->errors()->add('company', 'A platoon leader is already assigned to this company and platoon combination.');
-                    $validator->errors()->add('platoon', 'A platoon leader is already assigned to this company and platoon combination.');
+                    $validator->errors()->add('company', 'A platoon leader is already assigned to this Company/Battalion/Platoon combination.');
+                    $validator->errors()->add('platoon', 'A platoon leader is already assigned to this Company/Battalion/Platoon combination.');
+                    if ($battalionValue) {
+                        $validator->errors()->add('battalion', 'A platoon leader is already assigned to this Company/Battalion/Platoon combination.');
+                    }
                 }
             }
         });
@@ -128,9 +136,12 @@ class AdminController extends Controller
                 $userData['battalion'] = $request->battalion . ' Battalion'; // Add "Battalion" suffix
             }
             
-            // Add company and platoon for platoon leader users
+            // Add company, battalion and platoon for platoon leader users
             if ($request->role === 'platoon_leader') {
                 $userData['company'] = ucfirst($request->company); // Convert to proper case (Alpha, Bravo, etc.)
+                if ($request->battalion) {
+                    $userData['battalion'] = $request->battalion . ' Battalion';
+                }
                 $userData['platoon'] = $request->platoon . ' Platoon'; // Add "Platoon" suffix
             }
 

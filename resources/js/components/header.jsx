@@ -180,10 +180,13 @@ export default function Header({ auth }) {
                     {user && userRole === 'platoon_leader' && (
                         <div className="hidden md:block ml-4 mr-2">
                             <span className="text-lg text-white/90 font-medium">
-                                {user.company && user.platoon ? 
-                                    `${user.company} Company, ${user.platoon} Leader` :
-                                    'General Platoon Leader'
-                                }
+                                {(() => {
+                                    const order = [];
+                                    if (user.battalion) order.push(user.battalion);
+                                    if (user.company) order.push(`${user.company} Company`);
+                                    if (user.platoon) order.push(user.platoon);
+                                    return order.length ? `${order.join(', ')} Leader` : 'General Platoon Leader';
+                                })()}
                             </span>
                         </div>
                     )}

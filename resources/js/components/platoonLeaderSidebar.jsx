@@ -119,15 +119,6 @@ export default function PlatoonLeaderSidebar() {
                             </button>
                         </li>
                     </ul>
-
-                <div className="mt-6 px-4">
-                    <button
-                        onClick={handleLogout}
-                        className={`flex items-center justify-center p-2 ${isOpen ? 'px-6' : 'px-2 my-1'} rounded-md w-full transition-colors duration-200 bg-primary text-white hover:bg-primary/85`}
-                    >
-                        Log Out
-                    </button>
-                </div>
                 </div>
             </div>
         </>

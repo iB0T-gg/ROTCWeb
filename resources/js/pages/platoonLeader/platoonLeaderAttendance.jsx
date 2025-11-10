@@ -1,10 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/header';
 import PlatoonLeaderSidebar from '../../components/platoonLeaderSidebar';
-import { FaSearch, FaEdit, FaSave, FaTimes, FaSpinner, FaDownload } from 'react-icons/fa';
-import { FaSort } from 'react-icons/fa6';
+import { FaSearch, FaEdit, FaSave, FaSpinner } from 'react-icons/fa';
 import { usePage, Link, Head } from '@inertiajs/react';
 import axios from 'axios';
+
+// Week dates mapping for 2025-2026 1st semester (format: MM-DD-YYYY)
+const firstSemesterWeekDates = [
+  '08-15-2025', // Week 1
+  '08-22-2025', // Week 2
+  '08-29-2025', // Week 3
+  '09-05-2025', // Week 4
+  '09-12-2025', // Week 5
+  '09-19-2025', // Week 6
+  '09-26-2025', // Week 7
+  '10-03-2025', // Week 8
+  '10-10-2025', // Week 9
+  '10-17-2025', // Week 10
+];
+
+// Week dates mapping for 2025-2026 2nd semester (format: MM-DD-YYYY)
+const secondSemesterWeekDates = [
+  '01-15-2026', // Week 1
+  '01-22-2026', // Week 2
+  '01-29-2026', // Week 3
+  '02-05-2026', // Week 4
+  '02-12-2026', // Week 5
+  '02-19-2026', // Week 6
+  '02-26-2026', // Week 7
+  '03-05-2026', // Week 8
+  '03-12-2026', // Week 9
+  '03-19-2026', // Week 10
+  '03-26-2026', // Week 11
+  '04-02-2026', // Week 12
+  '04-09-2026', // Week 13
+  '04-16-2026', // Week 14
+  '04-23-2026', // Week 15
+];
+
+// Helper function to get date for a week
+const getWeekDate = (weekNumber, semester) => {
+  if (semester === '2025-2026 1st semester') {
+    if (weekNumber >= 1 && weekNumber <= 10) {
+      return firstSemesterWeekDates[weekNumber - 1];
+    }
+  } else if (semester === '2025-2026 2nd semester') {
+    if (weekNumber >= 1 && weekNumber <= 15) {
+      return secondSemesterWeekDates[weekNumber - 1];
+    }
+  }
+  return '';
+};
 
 const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
   if (!isOpen) return null;
@@ -32,7 +78,8 @@ const AlertDialog = ({ isOpen, type, title, message, onClose }) => {
 };
 
 export default function PlatoonLeaderAttendance() {
-  const { auth } = usePage().props;
+  const pageProps = usePage().props;
+  const currentUser = pageProps?.auth?.user ?? pageProps?.auth ?? {};
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,12 +90,6 @@ export default function PlatoonLeaderAttendance() {
   const [selectedSemester, setSelectedSemester] = useState('2025-2026 1st semester');
   const [attendanceData, setAttendanceData] = useState({});
   const [originalData, setOriginalData] = useState({});
-  const [selectedBattalion, setSelectedBattalion] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedPlatoon, setSelectedPlatoon] = useState('');
-  const [showFilterPicker, setShowFilterPicker] = useState(false);
-  const [showWeekSelector, setShowWeekSelector] = useState(false);
-  const [selectedWeeks, setSelectedWeeks] = useState([]);
   const cadetsPerPage = 8;
 
   const [alertDialog, setAlertDialog] = useState({
@@ -60,139 +101,6 @@ export default function PlatoonLeaderAttendance() {
 
   const semesterOptions = ['2025-2026 1st semester', '2025-2026 2nd semester'];
 
-  const exportToExcel = () => {
-    try {
-      setShowWeekSelector(true);
-    } catch (error) {
-      console.error('Error opening week selector:', error);
-      setAlertDialog({
-        isOpen: true,
-        type: 'error',
-        title: 'Export Error',
-        message: 'Failed to open week selector. Please try again.'
-      });
-    }
-  };
-
-  const handleWeekSelection = () => {
-    if (selectedWeeks.length === 0) {
-      setAlertDialog({
-        isOpen: true,
-        type: 'error',
-        title: 'No Weeks Selected',
-        message: 'Please select at least one week to export.'
-      });
-      return;
-    }
-
-    setShowWeekSelector(false);
-
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    script.onload = () => {
-      generateExcelFile();
-    };
-    document.head.appendChild(script);
-  };
-
-  const generateExcelFile = () => {
-    try {
-      const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-      const cadetsToExport = filteredCadets;
-      const cadetsByPlatoon = {};
-
-      cadetsToExport.forEach((cadet) => {
-        const platoon = cadet.platoon || 'No Platoon';
-        if (!cadetsByPlatoon[platoon]) {
-          cadetsByPlatoon[platoon] = [];
-        }
-        cadetsByPlatoon[platoon].push(cadet);
-      });
-
-      const wb = window.XLSX.utils.book_new();
-
-      Object.keys(cadetsByPlatoon).forEach((platoonName) => {
-        const platoonCadets = cadetsByPlatoon[platoonName];
-        const excelData = [];
-
-        const headers = [
-          'Cadet Name',
-          'Student Number',
-          'Course',
-          'Year',
-          'Section',
-          'Platoon',
-          'Company',
-          'Battalion',
-          ...selectedWeeks.map((week) => `Week ${week}`),
-          'Total Present',
-          'Attendance %'
-        ];
-        excelData.push(headers);
-
-        platoonCadets.forEach((cadet) => {
-          const weeklyAttendance = cadet.weekly_attendance || {};
-          const presentCount = Object.values(weeklyAttendance).filter(Boolean).length;
-          const attendancePercentage = Math.round((presentCount / maxWeeks) * 100);
-
-          const row = [
-            `${cadet.last_name}, ${cadet.first_name}`,
-            cadet.student_number || '',
-            cadet.course || '',
-            cadet.year || '',
-            cadet.section || '',
-            cadet.platoon || '',
-            cadet.company || '',
-            cadet.battalion || '',
-            ...selectedWeeks.map((weekNumber) => {
-              const isPresent = weeklyAttendance[weekNumber];
-              if (isPresent === true) return 'Present';
-              if (isPresent === false) return 'Absent';
-              return 'Not Recorded';
-            }),
-            presentCount,
-            `${attendancePercentage}%`
-          ];
-          excelData.push(row);
-        });
-
-        const summaryRow = ['TOTAL PRESENT', '', '', '', '', '', '', ''];
-        selectedWeeks.forEach((week) => {
-          const weekPresentCount = platoonCadets.filter((cadet) => {
-            const weeklyAttendance = cadet.weekly_attendance || {};
-            return weeklyAttendance[week] === true;
-          }).length;
-          summaryRow.push(weekPresentCount);
-        });
-        summaryRow.push('', '');
-        excelData.push(summaryRow);
-
-        const ws = window.XLSX.utils.aoa_to_sheet(excelData);
-        const sheetName = platoonName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 31);
-        window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      });
-
-      const currentDate = new Date().toISOString().split('T')[0];
-      let filterInfo = '';
-      if (selectedBattalion) filterInfo += `_${selectedBattalion.replace(/\s+/g, '_')}`;
-      if (selectedCompany) filterInfo += `_${selectedCompany}`;
-      if (selectedPlatoon) filterInfo += `_${selectedPlatoon.replace(/\s+/g, '_')}`;
-
-      const weeksInfo = selectedWeeks.length === maxWeeks ? 'All_Weeks' : `Weeks_${selectedWeeks.join('_')}`;
-      const filename = `Attendance_Records${filterInfo}_${weeksInfo}_${selectedSemester.replace(/\s+/g, '_')}_${currentDate}.xlsx`;
-
-      window.XLSX.writeFile(wb, filename);
-    } catch (error) {
-      console.error('Error generating Excel file:', error);
-      setAlertDialog({
-        isOpen: true,
-        type: 'error',
-        title: 'Export Error',
-        message: 'Failed to generate Excel file. Please try again.'
-      });
-    }
-  };
-
   const fetchCadets = async () => {
     try {
       setLoading(true);
@@ -200,10 +108,29 @@ export default function PlatoonLeaderAttendance() {
       const response = await axios.get(`/api/attendance/cadets?semester=${encodeURIComponent(selectedSemester)}`);
 
       if (response.data.success && Array.isArray(response.data.data)) {
-        setCadets(response.data.data);
+        const assignedCompany = currentUser?.company ? currentUser.company.toLowerCase() : null;
+        const assignedPlatoon = currentUser?.platoon ? currentUser.platoon.toLowerCase() : null;
+        const assignedBattalion = currentUser?.battalion ? currentUser.battalion.toLowerCase() : null;
+        const isPlatoonLeader = currentUser?.role === 'platoon_leader';
+
+        const filteredCadets = isPlatoonLeader
+          ? response.data.data.filter((cadet) => {
+              const cadetCompany = cadet.company ? cadet.company.toLowerCase() : null;
+              const cadetPlatoon = cadet.platoon ? cadet.platoon.toLowerCase() : null;
+              const cadetBattalion = cadet.battalion ? cadet.battalion.toLowerCase() : null;
+
+              const companyMatches = !assignedCompany || cadetCompany === assignedCompany;
+              const platoonMatches = !assignedPlatoon || cadetPlatoon === assignedPlatoon;
+              const battalionMatches = !assignedBattalion || cadetBattalion === assignedBattalion;
+
+              return companyMatches && platoonMatches && battalionMatches;
+            })
+          : response.data.data;
+
+        setCadets(filteredCadets);
 
         const initialAttendanceData = {};
-        response.data.data.forEach((cadet) => {
+        filteredCadets.forEach((cadet) => {
           const weeklyData = {};
           const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
 
@@ -382,41 +309,12 @@ export default function PlatoonLeaderAttendance() {
     }
   };
 
-  const getUniqueFilterOptions = () => {
-    if (!Array.isArray(cadets)) return { battalions: [], companies: [], platoons: [] };
-
-    const battalions = [...new Set(cadets.map((cadet) => cadet.battalion).filter(Boolean))].sort();
-
-    let filteredCadetsForCompany = cadets;
-    if (selectedBattalion) {
-      filteredCadetsForCompany = cadets.filter((cadet) => cadet.battalion === selectedBattalion);
-    }
-    const companies = [...new Set(filteredCadetsForCompany.map((cadet) => cadet.company).filter(Boolean))].sort();
-
-    let filteredCadetsForPlatoon = cadets;
-    if (selectedBattalion) {
-      filteredCadetsForPlatoon = filteredCadetsForPlatoon.filter((cadet) => cadet.battalion === selectedBattalion);
-    }
-    if (selectedCompany) {
-      filteredCadetsForPlatoon = filteredCadetsForPlatoon.filter((cadet) => cadet.company === selectedCompany);
-    }
-    const platoons = [...new Set(filteredCadetsForPlatoon.map((cadet) => cadet.platoon).filter(Boolean))].sort();
-
-    return { battalions, companies, platoons };
-  };
-
-  const { battalions, companies, platoons } = getUniqueFilterOptions();
-
   const filteredCadets = Array.isArray(cadets) ? cadets.filter((cadet) => {
     const fullName = `${cadet.last_name}, ${cadet.first_name}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-      cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesBattalion = !selectedBattalion || cadet.battalion === selectedBattalion;
-    const matchesCompany = !selectedCompany || cadet.company === selectedCompany;
-    const matchesPlatoon = !selectedPlatoon || cadet.platoon === selectedPlatoon;
-
-    return matchesSearch && matchesBattalion && matchesCompany && matchesPlatoon;
+    return (
+      fullName.includes(searchTerm.toLowerCase()) ||
+      cadet.student_number?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }).sort((a, b) => {
     const lastNameA = a.last_name ? a.last_name.toLowerCase() : '';
     const lastNameB = b.last_name ? b.last_name.toLowerCase() : '';
@@ -452,7 +350,7 @@ export default function PlatoonLeaderAttendance() {
     <>
       <Head title="ROTC Portal - Platoon Leader Attendance" />
       <div className="w-full min-h-screen bg-backgroundColor">
-        <Header auth={auth} />
+        <Header auth={pageProps?.auth || currentUser} />
         <div className="flex flex-col md:flex-row">
           <PlatoonLeaderSidebar />
           <div className="flex-1 p-3 md:p-6 md:ml-0 max-w-full overflow-hidden animate-fade-in-up">
@@ -488,108 +386,16 @@ export default function PlatoonLeaderAttendance() {
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
-                    <div className="relative flex-grow sm:flex-grow-0">
+                  <div className="flex w-full sm:w-auto mt-2 sm:mt-0">
+                    <div className="relative flex-grow sm:flex-grow-0 w-full">
                       <FaSearch className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="search"
-                        placeholder="Search"
-                        className="w-full sm:w-48 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
+                        placeholder="Search by name or student number"
+                        className="w-full sm:w-56 p-2 pl-10 border border-gray-300 rounded-lg text-sm md:text-base"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
-                    </div>
-
-                    <div className="relative w-full sm:w-auto">
-                      <div
-                        className="bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 cursor-pointer w-full text-sm md:text-base"
-                        onClick={() => setShowFilterPicker(!showFilterPicker)}
-                      >
-                        <span className="text-gray-600">
-                          {selectedPlatoon || selectedCompany || selectedBattalion
-                            ? `Filters: ${[
-                                selectedPlatoon || '',
-                                selectedCompany || '',
-                                selectedBattalion || ''
-                              ].filter(Boolean).join(', ')}`
-                            : 'Sort by : All'}
-                        </span>
-                        <FaSort className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      </div>
-
-                      {showFilterPicker && (
-                        <>
-                          <div
-                            className="fixed inset-0 bg-black bg-opacity-30 z-40"
-                            onClick={() => setShowFilterPicker(false)}
-                          ></div>
-                          <div
-                            className="fixed sm:absolute inset-x-0 sm:inset-auto z-50 bg-white border border-gray-300 rounded-lg p-4 mt-1 shadow-lg w-[90%] sm:w-64 left-1/2 sm:left-auto right-0 sm:right-0 -translate-x-1/2 sm:translate-x-0 mx-auto sm:mx-0"
-                            style={{ maxWidth: '400px' }}
-                          >
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Platoon</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded border"
-                                  value={selectedPlatoon}
-                                  onChange={(e) => setSelectedPlatoon(e.target.value)}
-                                >
-                                  <option value="">Select Platoon</option>
-                                  {platoons.map((platoon) => (
-                                    <option key={platoon} value={platoon}>{platoon}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded border"
-                                  value={selectedCompany}
-                                  onChange={(e) => setSelectedCompany(e.target.value)}
-                                >
-                                  <option value="">Select Company</option>
-                                  {companies.map((company) => (
-                                    <option key={company} value={company}>{company}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Battalion</label>
-                                <select
-                                  className="w-full bg-gray-100 p-2 rounded border"
-                                  value={selectedBattalion}
-                                  onChange={(e) => setSelectedBattalion(e.target.value)}
-                                >
-                                  <option value="">Select Battalion</option>
-                                  {battalions.map((battalion) => (
-                                    <option key={battalion} value={battalion}>{battalion}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="flex gap-2 mt-4">
-                                <button
-                                  className="flex-1 px-4 py-2 bg-gray-300 rounded text-sm hover:bg-gray-400 text-gray-700"
-                                  onClick={() => {
-                                    setSelectedPlatoon('');
-                                    setSelectedCompany('');
-                                    setSelectedBattalion('');
-                                    setShowFilterPicker(false);
-                                  }}
-                                >
-                                  Clear
-                                </button>
-                                <button
-                                  className="flex-1 px-4 py-2 bg-primary rounded text-sm md:text-base text-white hover:bg-opacity-90"
-                                  onClick={() => setShowFilterPicker(false)}
-                                >
-                                  Apply
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -621,12 +427,21 @@ export default function PlatoonLeaderAttendance() {
                                 <th scope="col" className="hidden lg:table-cell px-3 sm:px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '140px', width: '140px' }}>
                                   Student Number
                                 </th>
-                                {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => (
-                                  <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
-                                    <span className="hidden sm:inline">W{i + 1}</span>
-                                    <span className="sm:hidden">{i + 1}</span>
-                                  </th>
-                                ))}
+                                {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
+                                  const weekNumber = i + 1;
+                                  const weekDate = getWeekDate(weekNumber, selectedSemester);
+                                  return (
+                                    <th key={i + 1} scope="col" className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '45px', width: '45px' }}>
+                                      <div className="flex flex-col items-center">
+                                        <span className="hidden sm:inline">W{weekNumber}</span>
+                                        <span className="sm:hidden">{weekNumber}</span>
+                                        {weekDate && (
+                                          <span className="text-[8px] text-gray-400 mt-0.5 hidden sm:block">{weekDate}</span>
+                                        )}
+                                      </div>
+                                    </th>
+                                  );
+                                })}
                                 <th scope="col" className="px-3 sm:px-4 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200" style={{ minWidth: '80px', width: '80px' }}>
                                   <span className="hidden sm:inline">Present</span>
                                   <span className="sm:hidden">P</span>
@@ -787,14 +602,6 @@ export default function PlatoonLeaderAttendance() {
                             </span>
                           </button>
 
-                          <button
-                            onClick={exportToExcel}
-                            className="bg-primary hover:bg-primary/80 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm"
-                          >
-                            <FaDownload />
-                            <span className="hidden sm:inline">Export Excel</span>
-                            <span className="sm:hidden">Export</span>
-                          </button>
                         </div>
                       </div>
                     </>
@@ -804,79 +611,6 @@ export default function PlatoonLeaderAttendance() {
             </div>
           </div>
         </div>
-
-        {showWeekSelector && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-lg">
-              <div>
-                <h3 className="text-lg font-semibold text-black mb-4">Select Weeks to Export</h3>
-                <p className="text-gray-600 mb-4">Choose which weeks you want to include in the Excel export:</p>
-
-                <div className="grid grid-cols-5 gap-2 mb-4">
-                  {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
-                    const weekNumber = i + 1;
-                    const isSelected = selectedWeeks.includes(weekNumber);
-
-                    return (
-                      <label key={weekNumber} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedWeeks([...selectedWeeks, weekNumber]);
-                            } else {
-                              setSelectedWeeks(selectedWeeks.filter((w) => w !== weekNumber));
-                            }
-                          }}
-                          className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-1"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Week {weekNumber}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
-                        setSelectedWeeks(Array.from({ length: maxWeeks }, (_, i) => i + 1));
-                      }}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={() => setSelectedWeeks([])}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {selectedWeeks.length} week(s) selected
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  onClick={() => setShowWeekSelector(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleWeekSelection}
-                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-                >
-                  Export Selected Weeks
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <AlertDialog
           isOpen={alertDialog.isOpen}

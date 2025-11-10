@@ -60,19 +60,11 @@ export default function AddUsers({ auth, success, error }) {
         setFormData(prev => {
             const newData = { ...prev, [field]: value };
             
-            // Clear company, battalion, and platoon when role changes
+            // Clear assignment fields whenever role changes
             if (field === 'role') {
-                if (value !== 'faculty' && value !== 'platoon_leader') {
                 newData.company = '';
                 newData.battalion = '';
-                    newData.platoon = '';
-                } else if (value === 'faculty') {
-                    // Clear platoon for faculty
-                    newData.platoon = '';
-                } else if (value === 'platoon_leader') {
-                    // Clear battalion for platoon leader
-                    newData.battalion = '';
-                }
+                newData.platoon = '';
             }
             
             return newData;
@@ -144,6 +136,15 @@ export default function AddUsers({ auth, success, error }) {
         
         // Validate company and platoon are required for platoon leader
         if (formData.role === 'platoon_leader') {
+            if (!formData.battalion.trim()) {
+                setAlertDialog({
+                    isOpen: true,
+                    type: 'error',
+                    title: 'Validation Error',
+                    message: 'Battalion is required for platoon leaders'
+                });
+                return;
+            }
             if (!formData.company.trim()) {
                 setAlertDialog({
                     isOpen: true,
@@ -365,6 +366,20 @@ export default function AddUsers({ auth, success, error }) {
                                     
                                     {formData.role === 'platoon_leader' && (
                                         <>
+                                            <div>
+                                                <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Battalion <span className="text-red-500">*</span></label>
+                                                <select 
+                                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary text-sm md:text-base"
+                                                    value={formData.battalion}
+                                                    onChange={e => setData('battalion', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select Battalion</option>
+                                                    <option value="1st">1st Battalion</option>
+                                                    <option value="2nd">2nd Battalion</option>
+                                                </select>
+                                            </div>
+                                            
                                             <div>
                                                 <label className="block text-gray-700 font-medium mb-1 md:mb-2 text-sm md:text-base">Company <span className="text-red-500">*</span></label>
                                                 <select 

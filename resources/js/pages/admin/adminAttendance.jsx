@@ -120,6 +120,10 @@ export default function AdminAttendance(){
     // Excel Export Function
     const exportToExcel = async () => {
         try {
+            const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+            const defaultWeeks = Array.from({ length: maxWeeks }, (_, i) => i + 1);
+            setSelectedWeeks(defaultWeeks);
+
             // Show week selector first
             setShowWeekSelector(true);
         } catch (error) {
@@ -158,6 +162,9 @@ export default function AdminAttendance(){
     const generateExcelFile = () => {
         try {
             const maxWeeks = selectedSemester === '2025-2026 1st semester' ? 10 : 15;
+            const weeksToExport = (selectedWeeks.length > 0
+                ? [...selectedWeeks].sort((a, b) => a - b)
+                : Array.from({ length: maxWeeks }, (_, i) => i + 1));
             
             // Use filtered cadets instead of all cadets
             const cadetsToExport = filteredCadets;
@@ -190,7 +197,10 @@ export default function AdminAttendance(){
                     'Platoon',
                     'Company',
                     'Battalion',
-                    ...selectedWeeks.map(week => `Week ${week}`),
+                    ...weeksToExport.map(week => {
+                        const weekDate = getWeekDate(week, selectedSemester);
+                        return weekDate ? `Week ${week} (${weekDate})` : `Week ${week}`;
+                    }),
                     'Total Present',
                     'Attendance %'
                 ];
@@ -211,7 +221,7 @@ export default function AdminAttendance(){
                         cadet.platoon || '',
                         cadet.company || '',
                         cadet.battalion || '',
-                    ...selectedWeeks.map(weekNumber => {
+                    ...weeksToExport.map(weekNumber => {
                         const isPresent = weeklyAttendance[weekNumber];
                         if (isPresent === true) return 'Present';
                         if (isPresent === false) return 'Absent';
@@ -225,7 +235,7 @@ export default function AdminAttendance(){
                 
                 // Add summary row for this platoon
                 const summaryRow = ['TOTAL PRESENT', '', '', '', '', '', '', ''];
-                selectedWeeks.forEach(week => {
+                weeksToExport.forEach(week => {
                     const weekPresentCount = platoonCadets.filter(cadet => {
                         const weeklyAttendance = cadet.weekly_attendance || {};
                         return weeklyAttendance[week] === true;
@@ -248,7 +258,7 @@ export default function AdminAttendance(){
             if (selectedCompany) filterInfo += `_${selectedCompany}`;
             if (selectedPlatoon) filterInfo += `_${selectedPlatoon.replace(/\s+/g, '_')}`;
             
-            const weeksInfo = selectedWeeks.length === maxWeeks ? 'All_Weeks' : `Weeks_${selectedWeeks.join('_')}`;
+            const weeksInfo = weeksToExport.length === maxWeeks ? 'All_Weeks' : `Weeks_${weeksToExport.join('_')}`;
             const filename = `Attendance_Records${filterInfo}_${weeksInfo}_${selectedSemester.replace(/\s+/g, '_')}_${currentDate}.xlsx`;
             
             // Download the file
@@ -1220,7 +1230,7 @@ export default function AdminAttendance(){
                                     <li><strong>Required Columns:</strong> UserID, Date (Time is optional)</li>
                                     <li><strong>Date Format:</strong> YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY</li>
                                     <li><strong>User Matching:</strong> 8-digit Deli IDs matched to last 8 digits of 10-digit student numbers</li>
-                                    <li><strong>File Support:</strong> .csv, .txt, .xlsx, .xls files</li>
+                                    <li><strong>File Support:</strong> .csv</li>
                                 </ul>
                                 <div className="mt-2 p-2 bg-primary/20 rounded text-primary">
                                     <p className="text-xs"><strong>Current Semester:</strong> {selectedSemester}</p>
@@ -1316,6 +1326,7 @@ export default function AdminAttendance(){
                                             {Array.from({ length: selectedSemester === '2025-2026 1st semester' ? 10 : 15 }, (_, i) => {
                                                 const weekNumber = i + 1;
                                                 const isSelected = selectedWeeks.includes(weekNumber);
+                                                const weekDate = getWeekDate(weekNumber, selectedSemester);
                                                 
                                                 return (
                                                     <label key={weekNumber} className="flex items-center space-x-2 cursor-pointer">
@@ -1323,15 +1334,20 @@ export default function AdminAttendance(){
                                                             type="checkbox"
                                                             checked={isSelected}
                                                             onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setSelectedWeeks([...selectedWeeks, weekNumber]);
-                                                                } else {
-                                                                    setSelectedWeeks(selectedWeeks.filter(w => w !== weekNumber));
-                                                                }
+                                                                setSelectedWeeks(prev => {
+                                                                    if (e.target.checked) {
+                                                                        if (prev.includes(weekNumber)) return prev;
+                                                                        return [...prev, weekNumber].sort((a, b) => a - b);
+                                                                    }
+                                                                    return prev.filter(w => w !== weekNumber);
+                                                                });
                                                             }}
                                                             className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-1"
                                                         />
-                                                        <span className="text-sm font-medium text-gray-700">Week {weekNumber}</span>
+                                                        <span className="text-sm font-medium text-gray-700">
+                                                            Week {weekNumber}
+                                                            {weekDate && <span className="block text-xs text-gray-400">{weekDate}</span>}
+                                                        </span>
                                                     </label>
                                                 );
                                             })}
